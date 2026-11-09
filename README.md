@@ -8,6 +8,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Network+ (N10-009) | https://mikeriveira.github.io/study-guides/netplus/ |
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
+| Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
 
 ## CompTIA A+ study guide
 
@@ -107,6 +108,28 @@ The page is built from `az900/src/` in the same way as the other guides. After e
 python3 az900/build.py
 ```
 
+## Cisco CCNA study guide
+
+Five modules, one for each domain of the CCNA 200-301 v2.0 exam:
+
+| Module | Exam weight |
+|---|---|
+| 1. Network Infrastructure and Connectivity | 25% |
+| 2. Switching and Network Access | 25% |
+| 3. IP Routing | 20% |
+| 4. Network Services and Security | 20% |
+| 5. Network Operations and Automation | 10% |
+
+The signature feature is a **simulated Cisco IOS command line**. It has user, privileged and configuration modes, abbreviations, `?` help, Tab completion, `show` commands and a live network model behind it, so OSPF neighbors form, spanning tree blocks ports, NAT builds translations, ACLs drop pings and port security err-disables ports as you type. 16 hands-on labs and 7 mini labs in the lessons use it, from addressing a router to troubleshooting OSPF, building EtherChannels, PAT and DHCP snooping.
+
+It has 34 lessons with 77 interactive diagrams (such as a MAC learning animation, a spanning tree election, a longest prefix match explorer, an OSPF DR election, a PAT table, an ACL evaluator and an AI prompt builder), 26 simulations, 520 spaced-repetition flashcards, 271 quiz questions, and a timed practice exam (100 questions in 120 minutes, or a 50-question half exam) weighted by domain. Cisco doesn't publish a passing score, so the exam is scored on a 300–1000 scale against an unofficial target of 825. It uses the same level-up system as the other guides, with network engineering ranks from Network Apprentice to CCNA Master and 69 badges. Progress is kept separately from the other guides.
+
+The page is built from `ccna/src/` in the same way as the other guides, plus `ccna/src/ios/` for the command-line simulator. After editing, run:
+
+```
+python3 ccna/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA or Microsoft. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA, Microsoft or Cisco. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies. Cisco, Cisco IOS and CCNA are trademarks of Cisco Systems, Inc.
