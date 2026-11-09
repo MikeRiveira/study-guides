@@ -227,7 +227,7 @@ GigabitEthernet1/0/7 is up, line protocol is up
     $(".poe-ports",el).innerHTML=Array.from({length:24},(_,i)=>{const x=st[i];return `<div class="pp ${x?x.s:""}" title="${x?x.t[0]:"empty"}"><span>${i+1}</span>${x?`<em>${x.s==="deny"?"denied":x.s==="low"?"30 W only":x.w+" W"}</em>`:""}</div>`}).join("");
     const d=st.filter(x=>x.s==="deny").length,l=st.filter(x=>x.s==="low").length;if(d)sawDeny=true;
     $(".caption",el).innerHTML=(d?`<span class="status-bad">${d} device${d>1?"s":""} denied power</span>: the budget is spent. `:"")+(l?`<span class="status-bad">${l} 802.3bt device${l>1?"s":""} underpowered</span>: this switch tops out at 30 W per port (incorrect PoE standard). `:"")+(!d&&!l?"Add devices and watch the budget.":"Fixes: a switch with a bigger budget or 802.3bt support, a second PoE switch, or PoE injectors.");
-    if(sawDeny&&l)award("viz:poe",20,"Hit both PoE limits")}
+    if(sawDeny&&l)award("viz:poe",20,"Hit both PoE limits");if(ports.length===24&&d)flag("overload")}
   el.addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;if(b.dataset.t==="c")ports=[];else if(ports.length<24)ports.push(+b.dataset.t);draw()});draw();
 })();
 
@@ -406,7 +406,7 @@ AP-Floor2     Gi1/0/11        131      T           AIR-AP    Gi0`}}};
   el.innerHTML=`<div class="viz-title">Run real commands (no typing needed)</div><div class="chips"><button class="chip" data-o="win">Windows</button><button class="chip" data-o="lin">Linux</button><button class="chip" data-o="sw">Switch</button></div><div class="chips cmds"></div><pre class="term cli-o" aria-live="polite"></pre>`;
   function draw(){el.querySelectorAll("[data-o]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.o===os));$(".cmds",el).innerHTML=Object.keys(O[os].c).map(c=>`<button class="chip mono" data-c="${esc(c)}">${esc(c)}</button>`).join("");$(".cli-o",el).innerHTML=`<span class="t-n">Pick a command to run it.</span>`}
   el.addEventListener("click",e=>{const o=e.target.closest("[data-o]"),c=e.target.closest("[data-c]");if(o){os=o.dataset.o;draw()}
-    if(c){const cmd=c.dataset.c;ran.add(os+cmd);$(".cli-o",el).innerHTML=`<span class="t-c">${esc(O[os].p+cmd)}</span>\n${esc(O[os].c[cmd]).replace(/(&lt;- [^\n]+)/g,'<span class="t-bad">$1</span>')}`;if(ran.size>=8)award("viz:cli",30,"Ran eight troubleshooting commands")}});
+    if(c){const cmd=c.dataset.c;ran.add(os+cmd);$(".cli-o",el).innerHTML=`<span class="t-c">${esc(O[os].p+cmd)}</span>\n${esc(O[os].c[cmd]).replace(/(&lt;- [^\n]+)/g,'<span class="t-bad">$1</span>')}`;if(ran.size>=8)award("viz:cli",30,"Ran eight troubleshooting commands");if(ran.size===Object.values(O).reduce((a,o)=>a+Object.keys(o.c).length,0))flag("collector")}});
   draw();
 })();
 

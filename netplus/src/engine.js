@@ -22,7 +22,7 @@ const modBySlug=s=>MODULES.find(m=>m.slug===s);
 
 /* ---------- storage ---------- */
 const KEY="netplus-guide-v1";
-let S={earned:{},streak:{n:0,last:null},badges:{},mods:{},tabs:{},last:null};
+let S={earned:{},streak:{n:0,last:null},badges:{},mods:{},tabs:{},last:null,flags:{},days:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)S=Object.assign(S,s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const MS=id=>S.mods[id]||(S.mods[id]={studied:{},box:{},due:{},best:null,sims:{}});
@@ -40,26 +40,62 @@ function awardRaw(key,xp,label){
   if(!gameReady)return;
   const today=new Date().toDateString();
   if(S.streak.last!==today){const y=new Date(Date.now()-864e5).toDateString();S.streak.n=S.streak.last===y?S.streak.n+1:1;S.streak.last=today}
+  const mid=key.split(":")[0],d=(S.days||(S.days={}))[today]||(S.days[today]=[]);if(MODULES.some(m=>m.id===mid)&&!d.includes(mid))d.push(mid);
+  const now=new Date();if(now.getHours()<5)S.flags.night=1;if(now.getDay()===0||now.getDay()===6)S.flags.weekend=1;
   save();toast(`+${xp} XP`,label);
   const after=levelOf(xpTotal());if(after>before)setTimeout(()=>levelUp(after),450);
   checkBadges();renderHUD();if(CUR)updateStats(CUR);
 }
 /* Modules call award() with short keys; it is scoped to the open module. */
 function award(key,xp,label){if(CUR)awardRaw(CUR.id+":"+key,xp,label)}
+/* Modules call flag() for hidden achievements that pay no XP. */
+function flag(k){if(!S.flags[k]){S.flags[k]=Date.now();save();if(gameReady)checkBadges()}}
 
 /* ---------- badges ---------- */
+/* [id, monogram, name, description, test, category, progress()] */
+const allMods=()=>MODULES.map(m=>({m,c:ctxFor(m),st:MS(m.id)}));
+const cnt=f=>allMods().reduce((a,x)=>a+f(x),0);
+const sims=()=>cnt(x=>(x.m.sims||[]).filter(s=>x.st.sims[s.id]).length),simsAll=()=>cnt(x=>(x.m.sims||[]).length);
+const vizN=()=>cnt(x=>(x.m.vizKeys||[]).filter(k=>S.earned[x.m.id+":viz:"+k]!==undefined).length),vizAll=()=>cnt(x=>(x.m.vizKeys||[]).length);
+const lesN=()=>cnt(x=>x.m.lessons.filter(l=>x.st.studied[l.id]).length),lesAll=()=>cnt(x=>x.m.lessons.length);
+const mastered=()=>cnt(x=>x.c.countAtLeast(4)),cardsAll=()=>cnt(x=>x.m.cards.length);
+const studyDays=()=>Object.keys(S.days||{}).length,fiveDay=()=>Object.values(S.days||{}).some(d=>d.length>=5);
+const EXA=()=>S.exams?.c1?.attempts||[];
+const comeback=()=>{const a=EXA();let lo=Infinity;for(const x of a){if(x.score-lo>=100)return true;lo=Math.min(lo,x.score)}return false};
 const GLOBAL_BADGES=[
-  ["first","FB","First Boot","Earn your first XP",()=>xpTotal()>0],
-  ["streak3","OR","On a Roll","Study 3 days in a row",()=>S.streak.n>=3],
-  ["streak7","UP","Uptime: 7 Days","Study 7 days in a row",()=>S.streak.n>=7],
-  ["ready","NR","Network Ready","Reach 80% completion on all five modules",()=>coreReady(1)],
-  ["exam1","E1","Exam Ready","Score 720+ on a full or half practice exam",()=>(S.exams?.c1?.best??0)>=720],
-  ["exam2","E+","Overclocked","Score 820+ on a practice exam",()=>(S.exams?.c1?.best??0)>=820],
-  ["master","N+","Network+ Master","Reach the top rank",()=>levelOf(xpTotal())===RANKS.length-1]
+  ["first","FB","First Boot","Earn your first XP",()=>xpTotal()>0,"Dedication"],
+  ["streak3","OR","On a Roll","Study 3 days in a row",()=>S.streak.n>=3,"Dedication",()=>`${Math.min(S.streak.n,3)}/3 days`],
+  ["streak7","UP","Uptime: 7 Days","Study 7 days in a row",()=>S.streak.n>=7,"Dedication",()=>`${Math.min(S.streak.n,7)}/7 days`],
+  ["streak14","14","Two-Week Uptime","Study 14 days in a row",()=>S.streak.n>=14,"Dedication",()=>`${Math.min(S.streak.n,14)}/14 days`],
+  ["streak30","SL","Thirty-Day SLA","Study 30 days in a row",()=>S.streak.n>=30,"Dedication",()=>`${Math.min(S.streak.n,30)}/30 days`],
+  ["days10","RG","Regular on the NOC","Earn XP on 10 different days",()=>studyDays()>=10,"Dedication",()=>`${Math.min(studyDays(),10)}/10 days`],
+  ["weekend","MW","Maintenance Window","Study on a Saturday or Sunday",()=>!!S.flags.weekend,"Dedication"],
+  ["night","NS","Night Shift","Earn XP between midnight and 5 a.m.",()=>!!S.flags.night,"Dedication"],
+  ["five","5×5","Five by Five","Earn XP in all five modules on the same day",()=>fiveDay(),"Mastery"],
+  ["lessons","FS","Full Syllabus","Mark every lesson in the guide studied",()=>lesN()>=lesAll(),"Mastery",()=>`${lesN()}/${lesAll()} lessons`],
+  ["viz","HO","Hands-On","Complete every interactive diagram",()=>vizN()>=vizAll(),"Mastery",()=>`${vizN()}/${vizAll()} diagrams`],
+  ["sims","LC","Lab Certified","Pass all simulations in the guide",()=>sims()>=simsAll(),"Mastery",()=>`${sims()}/${simsAll()} simulations`],
+  ["cards100","C","Century","Get 100 flashcards to Mastered",()=>mastered()>=100,"Mastery",()=>`${Math.min(mastered(),100)}/100 cards`],
+  ["cardsall","PM","Photographic Memory","Get every flashcard to Mastered",()=>mastered()>=cardsAll(),"Mastery",()=>`${mastered()}/${cardsAll()} cards`],
+  ["sweep","CS","Clean Sweep","Score 80%+ on the quiz in all five modules",()=>MODULES.length>0&&MODULES.every(m=>(MS(m.id).best??0)>=80),"Mastery",()=>`${MODULES.filter(m=>(MS(m.id).best??0)>=80).length}/5 modules`],
+  ["fullbank","FB+","Full Bank","Score 90%+ on a module's full question bank",()=>MODULES.some(m=>S.earned[m.id+":fullbank"]!==undefined),"Mastery"],
+  ["ready","NR","Network Ready","Reach 80% completion on all five modules",()=>coreReady(1),"Mastery"],
+  ["marathon","26","Marathon","Finish a full 90-question practice exam",()=>EXA().some(a=>a.n>=90),"Practice exam"],
+  ["exam1","E1","Exam Ready","Score 720+ on a full or half practice exam",()=>(S.exams?.c1?.best??0)>=720,"Practice exam"],
+  ["exam2","E+","Overclocked","Score 820+ on a practice exam",()=>(S.exams?.c1?.best??0)>=820,"Practice exam"],
+  ["linerate","LR","Line Rate","Score a perfect 900 on a practice exam",()=>(S.exams?.c1?.best??0)>=900,"Practice exam"],
+  ["spare","TS","Time to Spare","Pass a full exam with 30+ minutes left on the clock",()=>EXA().some(a=>a.n>=90&&a.score>=720&&a.left>=1800),"Practice exam"],
+  ["comeback","CB","Comeback","Beat an earlier exam score by 100+ points",()=>comeback(),"Practice exam"],
+  ["season","ES","Exam Season","Take 5 practice exams",()=>EXA().length>=5,"Practice exam",()=>`${Math.min(EXA().length,5)}/5 exams`],
+  ["master","N+","Network+ Master","Reach the top rank",()=>levelOf(xpTotal())===RANKS.length-1,"Mastery"],
+  ["island","IS","Island Network","Secret: cut a topology into isolated pieces, every link gone",()=>!!S.flags.island,"Secret"],
+  ["overload","OL","Breaker Tripped","Secret: fill every PoE port and run out of power",()=>!!S.flags.overload,"Secret"],
+  ["collector","CC","Command Collector","Secret: run every command in the CLI simulator",()=>!!S.flags.collector,"Secret"],
+  ["blackout","BO","Blackout","Secret: in the DDoS lab, drop your defenses after the site is up, then restore them",()=>!!S.flags.blackout,"Secret"]
 ];
 function coreReady(c){const os=OUTLINE.filter(o=>o.core===c);return os.every(o=>{const m=modBySlug(o.slug);return m&&completion(m)>=80})}
 function allBadges(){
-  const out=GLOBAL_BADGES.map(b=>({id:b[0],mono:b[1],name:b[2],desc:b[3],test:b[4],mod:null}));
+  const out=GLOBAL_BADGES.map(b=>({id:b[0],mono:b[1],name:b[2],desc:b[3],test:b[4],cat:b[5],prog:b[6],mod:null}));
   MODULES.forEach(m=>(m.badges||[]).forEach(b=>out.push({id:m.id+":"+b[0],mono:b[1],name:b[2],desc:b[3],test:()=>b[4](ctxFor(m)),mod:m})));
   return out;
 }
@@ -314,7 +350,7 @@ function renderQuiz(m){
   if(V.qi>=N){
     const score=correct(),pct=Math.round(score/N*100);
     if(st.best===null||pct>st.best){st.best=pct;save();updateStats(m)}
-    if(pct>=80)award("quiz80",50,"Quiz score of 80% or better");if(pct===100&&N>=QUICK)award("quiz100",100,"Perfect quiz score");
+    if(pct>=80)award("quiz80",50,"Quiz score of 80% or better");if(V.qMode==="full"&&pct>=90)award("fullbank",100,"Full question bank at 90%+");if(pct===100&&N>=QUICK)award("quiz100",100,"Perfect quiz score");
     const missed=V.qOrder.map((qn,i)=>V.answers[i]!==Q[qn].a?Q[qn]:null).filter(Boolean);
     el.innerHTML=intro+`<div class="qcard result"><div class="eyebrow">Your score</div><div class="score">${score} / ${N}</div><div class="mono">${pct}%</div>
       <div>${pct>=80?"Strong result. You're ready to move on.":pct>=60?"Close. Review the questions below and try again.":"Go back over the lessons, then try again."}</div>
@@ -370,7 +406,9 @@ function renderRanks(){
   <h2 class="sec">Rank ladder</h2>
   <ol class="ladder">${RANKS.map(([req,name],i)=>`<li class="${i<lv?"done":i===lv?"cur":""}"><span class="lvn">L${i+1}</span><span>${name}</span><span class="xpreq">${i<=lv?(i===lv?"Current":"Reached"):fmt(req)+" XP"}</span></li>`).join("")}</ol>
   <h2 class="sec">Badges · ${got} of ${B.length}</h2>
-  <div class="badges">${B.map(b=>{const on=!!S.badges[b.id];return `<div class="bdg${on?" on":""}"><svg viewBox="0 0 100 112" aria-hidden="true"><polygon class="bh" points="${HEX}"/><text x="50" y="66" text-anchor="middle" class="bt">${on?b.mono:"?"}</text></svg><b>${b.name}</b><span>${b.desc}</span>${b.mod?`<em>${b.mod.title}</em>`:""}</div>`}).join("")}</div>`;
+  <div class="bdg-bar"><i style="width:${(got/B.length*100).toFixed(1)}%"></i></div>
+  ${[...new Set(B.map(b=>b.mod?b.mod.title:b.cat))].map(g=>{const G=B.filter(b=>(b.mod?b.mod.title:b.cat)===g);return `<h3 class="bdg-g">${g}<span class="mono">${G.filter(b=>S.badges[b.id]).length}/${G.length}</span></h3>
+  <div class="badges">${G.map(b=>{const on=!!S.badges[b.id],hid=b.cat==="Secret"&&!on;return `<div class="bdg${on?" on":""}${b.cat==="Secret"?" secret":""}"><svg viewBox="0 0 100 112" aria-hidden="true"><polygon class="bh" points="${HEX}"/><text x="50" y="66" text-anchor="middle" class="bt">${on?b.mono:"?"}</text></svg><b>${hid?"Hidden achievement":b.name}</b><span>${hid?"Keep exploring the diagrams to find it.":b.desc.replace(/^Secret: /,"")}</span>${!on&&b.prog?`<em class="mono">${b.prog()}</em>`:""}</div>`}).join("")}</div>`}).join("")}`;
 }
 
 /* ---------- timed practice exams ----------
@@ -458,7 +496,7 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now()});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);

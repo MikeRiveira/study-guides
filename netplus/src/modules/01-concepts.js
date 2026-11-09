@@ -452,7 +452,7 @@ seqViz($("#viz-tcp"),{title:"TCP opens and closes a connection",left:"Client",ri
     const iso=t.n.filter((_,i)=>comp[i]!==big).map(x=>x[2]);
     $(".caption",el).innerHTML=`<b>${t.name}.</b> ${t.l.length} links. ${cut.size?(iso.length?`<span class="status-bad">Cut off:</span> ${iso.join(", ")}.`:`<span class="status-good">Everyone can still reach everyone</span> with ${cut.size} link${cut.size>1?"s":""} cut.`):t.note}`;
   }
-  svg.addEventListener("click",e=>{const l=e.target.closest("[data-l]");if(!l)return;const i=+l.dataset.l;cut.has(i)?cut.delete(i):cut.add(i);tried.add(k);draw();if(tried.size>=3)award("viz:topo",30,"Stress-tested three topologies")});
+  svg.addEventListener("click",e=>{const l=e.target.closest("[data-l]");if(!l)return;const i=+l.dataset.l;cut.has(i)?cut.delete(i):cut.add(i);tried.add(k);draw();if(cut.size===T[k].l.length)flag("island");if(tried.size>=3)award("viz:topo",30,"Stress-tested three topologies")});
   el.addEventListener("click",e=>{const b=e.target.closest("[data-k]"),a=e.target.closest("[data-a]");if(b){k=b.dataset.k;cut.clear();draw()}if(a){cut.clear();draw()}});
   draw();
 })();

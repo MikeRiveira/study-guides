@@ -232,7 +232,7 @@ registerModule({
 (function(){
   const el=$("#viz-ddos");
   const M=[["rate","Rate limiting at the edge",0.35],["scrub","Upstream scrubbing service",0.85],["cdn","CDN / anycast to spread the load",0.6]];
-  let on=new Set();const atk=48,legit=2,cap=10;
+  let on=new Set(),wasUp=false,wasDown=false;const atk=48,legit=2,cap=10;
   el.innerHTML=`<div class="viz-title">Keep the site up during a 50 Gbps DDoS</div><div class="chips">${M.map(m=>`<button class="chip" data-m="${m[0]}">${m[1]}</button>`).join("")}</div>
   <div class="dd"><div class="dd-row"><span>Attack traffic reaching the server</span><div class="dd-bar"><i class="dd-a"></i><b class="dd-cap"></b></div><em class="mono dd-av"></em></div>
   <div class="dd-row"><span>Legitimate users</span><div class="dd-bar"><i class="dd-l"></i></div><em class="mono">2 Gbps</em></div></div><div class="caption" aria-live="polite"></div>`;
@@ -240,7 +240,7 @@ registerModule({
     el.querySelectorAll("[data-m]").forEach(b=>b.setAttribute("aria-pressed",on.has(b.dataset.m)));
     const W=v=>Math.min(100,v/50*100);$(".dd-a",el).style.width=W(left)+"%";$(".dd-l",el).style.width=W(legit)+"%";$(".dd-cap",el).style.left=W(cap)+"%";$(".dd-av",el).textContent=left.toFixed(1)+" Gbps";
     $(".caption",el).innerHTML=`The server's link handles ${cap} Gbps (white line). ${up?`<span class="status-good">Site is up.</span> ${total.toFixed(1)} Gbps arrives, within capacity.`:`<span class="status-bad">Site is down.</span> ${total.toFixed(1)} Gbps arrives and the link is saturated, so real users time out.`} ${on.size===0?"No single firewall on your own link can fix this: the pipe is already full before traffic reaches it.":""}`;
-    if(up)award("viz:ddos",20,"Survived a DDoS")}
+    if(!up&&wasUp)wasDown=true;if(up&&wasDown)flag("blackout");if(up)wasUp=true;if(up)award("viz:ddos",20,"Survived a DDoS")}
   el.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const k=b.dataset.m;on.has(k)?on.delete(k):on.add(k);draw()});draw();
 })();
 
