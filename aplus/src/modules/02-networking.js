@@ -277,7 +277,7 @@ seqViz($("#viz-dora"),{title:"Watch DHCP hand out an address",left:"New laptop (
     const end=pts[pts.length-1];
     if(REDUCED){dot.setAttribute("cx",end.x);dot.setAttribute("cy",end.y);return}
     const dur=total/0.32;let t0=null;
-    const tick=ts=>{t0??=ts;let dist=Math.min((ts-t0)/dur,1)*total,i=0;
+    const tick=ts=>{if(!dot.isConnected)return;t0??=ts;let dist=Math.min((ts-t0)/dur,1)*total,i=0;
       while(i<seg.length-1&&dist>seg[i]){dist-=seg[i];i++}
       const f=seg[i]?Math.min(dist/seg[i],1):1,a=pts[i],b=pts[i+1];
       dot.setAttribute("cx",a.x+(b.x-a.x)*f);dot.setAttribute("cy",a.y+(b.y-a.y)*f);

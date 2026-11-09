@@ -319,7 +319,7 @@ document.addEventListener("keydown",e=>{
 
 /* ---------- quiz ---------- */
 const QUICK=15;
-function startQuiz(m){V.qOrder=shuffleArr(m.quiz.map((_,i)=>i));if(V.qMode==="quick")V.qOrder=V.qOrder.slice(0,QUICK);V.qi=0;V.answers=[]}
+function startQuiz(m){V.qOrder=shuffleArr(m.quiz.map((_,i)=>i));if(V.qMode==="quick")V.qOrder=V.qOrder.slice(0,QUICK);V.qPerm=V.qOrder.map(qn=>shuffleArr(m.quiz[qn].o.map((_,k)=>k)));V.qi=0;V.answers=[]}
 function renderQuiz(m){
   const st=MS(m.id),el=$("#quiz"),N=V.qOrder.length,Q=m.quiz;
   const intro=`<p class="intro">${Q.length} exam-style questions, each with an explanation.${st.best!==null?` Your best score so far is <b>${st.best}%</b>.`:""}</p>
@@ -341,7 +341,7 @@ function renderQuiz(m){
   el.innerHTML=intro+`<div class="qcard">
     <div class="qmeta"><span>Question ${V.qi+1} of ${N}</span><span>${correct()} correct so far</span></div>
     <p class="qtext">${q.q}</p>
-    <div class="opts">${q.o.map((o,i)=>`<button class="opt ${done&&i===q.a?"right":""} ${done&&i===ans&&ans!==q.a?"wrong":""}" data-i="${i}" ${done?"disabled":""}><span class="k">${"ABCD"[i]}</span><span>${o}</span></button>`).join("")}</div>
+    <div class="opts">${V.qPerm[V.qi].map((i,k)=>`<button class="opt ${done&&i===q.a?"right":""} ${done&&i===ans&&ans!==q.a?"wrong":""}" data-i="${i}" ${done?"disabled":""}><span class="k">${"ABCD"[k]}</span><span>${q.o[i]}</span></button>`).join("")}</div>
     ${done?`<div class="explain"><b>${ans===q.a?"Correct.":"Not quite."}</b> ${q.e}</div>`:""}
     <div class="qnav"><button class="btn" id="restart">Start over</button>${done?`<button class="btn primary" id="next">${V.qi===N-1?"See results":"Next question"}</button>`:""}</div></div>`;
   bindMode();

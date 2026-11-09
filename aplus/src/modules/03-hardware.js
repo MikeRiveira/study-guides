@@ -231,7 +231,7 @@ registerModule({
   <div class="viz-controls"><button class="btn primary" data-a="go">Start the race</button></div>`;
   $('[data-a="go"]',el).onclick=()=>{
     cancelAnimationFrame(raf);const t0=performance.now(),SPEED=8;
-    const tick=now=>{const t=(now-t0)/1000*SPEED;let done=true;
+    const tick=now=>{if(!el.isConnected)return;const t=(now-t0)/1000*SPEED;let done=true;
       D.forEach(([,s],i)=>{const need=MB/s,p=Math.min(t/need,1);$("#rb"+i).style.width=(p*100)+"%";$("#rt"+i).textContent=p>=1?need.toFixed(1)+" s":(t).toFixed(1)+" s";if(p<1)done=false});
       if(!done&&!REDUCED)raf=requestAnimationFrame(tick);
       else{D.forEach(([,s],i)=>{$("#rb"+i).style.width="100%";$("#rt"+i).textContent=(MB/s).toFixed(1)+" s"});

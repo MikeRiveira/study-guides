@@ -242,7 +242,7 @@ registerModule({
     if(m){mode=m.dataset.m;draw()}
     if(a){cancelAnimationFrame(raf);hour=0;last=0;
       if(REDUCED){hour=23;draw();award("viz:elastic",20,"Watched cloud elasticity in action");return}
-      const tick=t=>{if(!last)last=t;if(t-last>220){last=t;hour++;draw()}if(hour<23)raf=requestAnimationFrame(tick);else award("viz:elastic",20,"Watched cloud elasticity in action")};raf=requestAnimationFrame(tick)}});
+      const tick=t=>{if(!el.isConnected)return;if(!last)last=t;if(t-last>220){last=t;hour++;draw()}if(hour<23)raf=requestAnimationFrame(tick);else award("viz:elastic",20,"Watched cloud elasticity in action")};raf=requestAnimationFrame(tick)}});
   hour=23;draw();
 })();
   },

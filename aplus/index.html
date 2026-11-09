@@ -1030,7 +1030,7 @@ document.addEventListener("keydown",e=>{
 
 /* ---------- quiz ---------- */
 const QUICK=15;
-function startQuiz(m){V.qOrder=shuffleArr(m.quiz.map((_,i)=>i));if(V.qMode==="quick")V.qOrder=V.qOrder.slice(0,QUICK);V.qi=0;V.answers=[]}
+function startQuiz(m){V.qOrder=shuffleArr(m.quiz.map((_,i)=>i));if(V.qMode==="quick")V.qOrder=V.qOrder.slice(0,QUICK);V.qPerm=V.qOrder.map(qn=>shuffleArr(m.quiz[qn].o.map((_,k)=>k)));V.qi=0;V.answers=[]}
 function renderQuiz(m){
   const st=MS(m.id),el=$("#quiz"),N=V.qOrder.length,Q=m.quiz;
   const intro=`<p class="intro">${Q.length} exam-style questions, each with an explanation.${st.best!==null?` Your best score so far is <b>${st.best}%</b>.`:""}</p>
@@ -1052,7 +1052,7 @@ function renderQuiz(m){
   el.innerHTML=intro+`<div class="qcard">
     <div class="qmeta"><span>Question ${V.qi+1} of ${N}</span><span>${correct()} correct so far</span></div>
     <p class="qtext">${q.q}</p>
-    <div class="opts">${q.o.map((o,i)=>`<button class="opt ${done&&i===q.a?"right":""} ${done&&i===ans&&ans!==q.a?"wrong":""}" data-i="${i}" ${done?"disabled":""}><span class="k">${"ABCD"[i]}</span><span>${o}</span></button>`).join("")}</div>
+    <div class="opts">${V.qPerm[V.qi].map((i,k)=>`<button class="opt ${done&&i===q.a?"right":""} ${done&&i===ans&&ans!==q.a?"wrong":""}" data-i="${i}" ${done?"disabled":""}><span class="k">${"ABCD"[k]}</span><span>${q.o[i]}</span></button>`).join("")}</div>
     ${done?`<div class="explain"><b>${ans===q.a?"Correct.":"Not quite."}</b> ${q.e}</div>`:""}
     <div class="qnav"><button class="btn" id="restart">Start over</button>${done?`<button class="btn primary" id="next">${V.qi===N-1?"See results":"Next question"}</button>`:""}</div></div>`;
   bindMode();
@@ -1810,7 +1810,7 @@ seqViz($("#viz-dora"),{title:"Watch DHCP hand out an address",left:"New laptop (
     const end=pts[pts.length-1];
     if(REDUCED){dot.setAttribute("cx",end.x);dot.setAttribute("cy",end.y);return}
     const dur=total/0.32;let t0=null;
-    const tick=ts=>{t0??=ts;let dist=Math.min((ts-t0)/dur,1)*total,i=0;
+    const tick=ts=>{if(!dot.isConnected)return;t0??=ts;let dist=Math.min((ts-t0)/dur,1)*total,i=0;
       while(i<seg.length-1&&dist>seg[i]){dist-=seg[i];i++}
       const f=seg[i]?Math.min(dist/seg[i],1):1,a=pts[i],b=pts[i+1];
       dot.setAttribute("cx",a.x+(b.x-a.x)*f);dot.setAttribute("cy",a.y+(b.y-a.y)*f);
@@ -2226,7 +2226,7 @@ registerModule({
   <div class="viz-controls"><button class="btn primary" data-a="go">Start the race</button></div>`;
   $('[data-a="go"]',el).onclick=()=>{
     cancelAnimationFrame(raf);const t0=performance.now(),SPEED=8;
-    const tick=now=>{const t=(now-t0)/1000*SPEED;let done=true;
+    const tick=now=>{if(!el.isConnected)return;const t=(now-t0)/1000*SPEED;let done=true;
       D.forEach(([,s],i)=>{const need=MB/s,p=Math.min(t/need,1);$("#rb"+i).style.width=(p*100)+"%";$("#rt"+i).textContent=p>=1?need.toFixed(1)+" s":(t).toFixed(1)+" s";if(p<1)done=false});
       if(!done&&!REDUCED)raf=requestAnimationFrame(tick);
       else{D.forEach(([,s],i)=>{$("#rb"+i).style.width="100%";$("#rt"+i).textContent=(MB/s).toFixed(1)+" s"});
@@ -2649,7 +2649,7 @@ registerModule({
     if(m){mode=m.dataset.m;draw()}
     if(a){cancelAnimationFrame(raf);hour=0;last=0;
       if(REDUCED){hour=23;draw();award("viz:elastic",20,"Watched cloud elasticity in action");return}
-      const tick=t=>{if(!last)last=t;if(t-last>220){last=t;hour++;draw()}if(hour<23)raf=requestAnimationFrame(tick);else award("viz:elastic",20,"Watched cloud elasticity in action")};raf=requestAnimationFrame(tick)}});
+      const tick=t=>{if(!el.isConnected)return;if(!last)last=t;if(t-last>220){last=t;hour++;draw()}if(hour<23)raf=requestAnimationFrame(tick);else award("viz:elastic",20,"Watched cloud elasticity in action")};raf=requestAnimationFrame(tick)}});
   hour=23;draw();
 })();
   },
@@ -2924,7 +2924,7 @@ registerModule({
     el.querySelectorAll("[data-f]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===cur));
     ST.forEach((_,i)=>$("#bt"+i).className="bt-st");
     $(".caption",el).innerHTML="Starting up…";
-    let i=0;const step=()=>{if(i<stop){$("#bt"+i).className="bt-st ok";i++;anim=setTimeout(step,REDUCED?0:260)}else{if(stop<ST.length)$("#bt"+stop).className="bt-st fail";$(".caption",el).innerHTML=msg;if(seen.size>=6)award("viz:boot",30,"Diagnosed boot failures")}};
+    let i=0;const step=()=>{if(!el.isConnected)return;if(i<stop){$("#bt"+i).className="bt-st ok";i++;anim=setTimeout(step,REDUCED?0:260)}else{if(stop<ST.length)$("#bt"+stop).className="bt-st fail";$(".caption",el).innerHTML=msg;if(seen.size>=6)award("viz:boot",30,"Diagnosed boot failures")}};
     step();
   }
   el.addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(b){cur=b.dataset.f;run()}});

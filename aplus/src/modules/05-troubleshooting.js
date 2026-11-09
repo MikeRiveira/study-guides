@@ -208,7 +208,7 @@ registerModule({
     el.querySelectorAll("[data-f]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===cur));
     ST.forEach((_,i)=>$("#bt"+i).className="bt-st");
     $(".caption",el).innerHTML="Starting up…";
-    let i=0;const step=()=>{if(i<stop){$("#bt"+i).className="bt-st ok";i++;anim=setTimeout(step,REDUCED?0:260)}else{if(stop<ST.length)$("#bt"+stop).className="bt-st fail";$(".caption",el).innerHTML=msg;if(seen.size>=6)award("viz:boot",30,"Diagnosed boot failures")}};
+    let i=0;const step=()=>{if(!el.isConnected)return;if(i<stop){$("#bt"+i).className="bt-st ok";i++;anim=setTimeout(step,REDUCED?0:260)}else{if(stop<ST.length)$("#bt"+stop).className="bt-st fail";$(".caption",el).innerHTML=msg;if(seen.size>=6)award("viz:boot",30,"Diagnosed boot failures")}};
     step();
   }
   el.addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(b){cur=b.dataset.f;run()}});
