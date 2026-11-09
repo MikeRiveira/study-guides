@@ -5,6 +5,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | Guide | Live site |
 |---|---|
 | CompTIA A+ (Core 1 220-1201, Core 2 220-1202) | https://mikeriveira.github.io/study-guides/aplus/ |
+| CompTIA Network+ (N10-009) | https://mikeriveira.github.io/study-guides/netplus/ |
 
 ## CompTIA A+ study guide
 
@@ -46,6 +47,26 @@ python3 aplus/build.py
 
 This writes `aplus/index.html`, which is the file GitHub Pages serves.
 
+## CompTIA Network+ study guide
+
+Five modules, one for each N10-009 exam domain:
+
+| Module | Exam weight |
+|---|---|
+| 1. Networking Concepts | 23% |
+| 2. Network Implementation | 20% |
+| 3. Network Operations | 19% |
+| 4. Network Security | 14% |
+| 5. Network Troubleshooting | 24% |
+
+It has 36 lessons with 41 interactive diagrams (such as an OSI encapsulation builder, a spanning tree election, an ACL rule-order puzzle and a command-line simulator), 20 hands-on simulations, 337 spaced-repetition flashcards, 278 quiz questions, and a timed practice exam (90 questions in 90 minutes, or a 45-question half exam) weighted by domain. It uses the same level-up system as the A+ guide, with its own network career ranks. Progress is kept separately from the A+ guide.
+
+The page is built from `netplus/src/` in the same way as the A+ guide. After editing, run:
+
+```
+python3 netplus/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA. CompTIA and A+ are trademarks of CompTIA, Inc.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA. CompTIA, A+ and Network+ are trademarks of CompTIA, Inc.
