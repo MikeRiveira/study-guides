@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Free printable IT cheat sheets: ports and protocols, subnetting, OSI model, Windows, Linux and Cisco IOS commands, acronyms, Wi-Fi, cables, RAID and attacks.">
+<title>IT Quick Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* IT Quick Reference: same single dark "holographic console" theme as the guides and roadmap
+   (ice-cyan and violet light on ink). Print switches to a compact black-on-white layout. */
+:root{
+  color-scheme:dark;
+  --bg:#060a14; --surface:rgba(17,25,46,.62); --surface-solid:#0f172b; --fg:#e9eefb; --muted:#8f9bbb; --line:rgba(150,175,255,.15);
+  --accent:#56e0ff; --accent-soft:rgba(86,224,255,.10); --blue:#a495ff; --blue-soft:rgba(164,149,255,.12);
+  --good:#5fe3a1; --good-soft:rgba(95,227,161,.11); --bad:#ff7393; --bad-soft:rgba(255,115,147,.12);
+  --gold:#ffd27a; --gold-soft:rgba(255,210,122,.12); --threat:#ff9a5c; --threat-soft:rgba(255,154,92,.12); --on-accent:#03141c;
+  --glow:0 0 0 1px rgba(86,224,255,.22),0 10px 34px -12px rgba(86,224,255,.45);
+  --display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --body:"Sora","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body{color:var(--fg);font-family:var(--body);font-size:15.5px;line-height:1.6;margin:0;font-weight:300;
+  background:
+    radial-gradient(1100px 560px at 85% -10%,rgba(164,149,255,.18),transparent 60%),
+    radial-gradient(900px 520px at -10% 5%,rgba(86,224,255,.13),transparent 60%),
+    linear-gradient(rgba(150,175,255,.035) 1px,transparent 1px) 0 0/44px 44px,
+    linear-gradient(90deg,rgba(150,175,255,.035) 1px,transparent 1px) 0 0/44px 44px,
+    var(--bg);
+  background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+b,strong{font-weight:600}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.9em}
+.dim{color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.btn{border:1px solid rgba(86,224,255,.4);background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:7px 14px;font-family:var(--display);font-weight:600;font-size:14px;white-space:nowrap}
+.btn:hover{background:rgba(86,224,255,.18);box-shadow:var(--glow)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+.btn.ghost:hover{color:var(--accent);border-color:var(--accent)}
+.printonly{display:none}
+
+/* Header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(6,10,20,.8);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:14px;padding-top:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);font-family:var(--display);font-weight:700;font-size:16px;white-space:nowrap}
+.brand svg{width:24px;height:27px;flex:none}
+.search{flex:1;position:relative;max-width:460px;margin-left:auto}
+.search svg{position:absolute;left:11px;top:50%;width:17px;height:17px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:8px 12px 8px 36px;font-size:14.5px}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:var(--glow)}
+.search input::placeholder{color:var(--muted)}
+#nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:8px -8px 0;padding-bottom:6px}
+#nav::-webkit-scrollbar{display:none}
+#nav a{display:flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-family:var(--display);font-weight:600;font-size:14px;padding:6px 9px;border-radius:8px;white-space:nowrap;border:1px solid transparent}
+#nav a:hover{color:var(--fg);background:rgba(255,255,255,.04)}
+#nav a[aria-current=page]{color:var(--accent);background:var(--accent-soft);border-color:rgba(86,224,255,.3)}
+#nav .gl{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:1px 5px;border-radius:5px;border:1px solid currentColor;opacity:.8}
+@media (max-width:720px){
+  .top{flex-wrap:wrap;gap:10px}
+  .brand{font-size:15px}
+  .search{order:3;flex-basis:100%;max-width:none}
+  .brand .full{display:none}
+  .top .btn{margin-left:auto}
+}
+
+/* Sheets */
+main{padding-bottom:40px}
+.sheet{display:none;padding-top:26px}
+.sheet.on{display:block}
+body.searching .sheet{display:none}
+body.searching .sheet.has{display:block}
+body.searching .ns,body.searching .qempty,.r.qhide,.r.fhide{display:none!important}
+body.searching .sheet+.sheet{border-top:1px solid var(--line);margin-top:20px}
+.qcount{margin:14px 0 0;font-family:var(--mono);font-size:13px;color:var(--accent);min-height:0}
+.qcount:empty{display:none}
+.sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h2{font-size:clamp(26px,4.5vw,36px);font-weight:700;background:linear-gradient(90deg,var(--fg) 40%,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;margin-top:4px}
+.lead{color:var(--muted);max-width:760px;margin:10px 0 4px}
+.blk{margin-top:22px}
+h3{font-size:18px;font-weight:600;margin-bottom:10px;color:var(--fg);display:flex;align-items:center;gap:10px}
+h3::before{content:"";width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,var(--accent),var(--blue));box-shadow:0 0 10px var(--accent);flex:none}
+.tool{border:1px solid rgba(164,149,255,.3);background:linear-gradient(135deg,rgba(164,149,255,.08),rgba(86,224,255,.04));border-radius:16px;padding:16px 18px}
+.tool h3::before{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.note{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:860px}
+.more{margin-top:28px;font-size:14px;color:var(--muted)}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+
+/* Tables */
+.tw{border:1px solid var(--line);border-radius:14px;background:var(--surface);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14.5px}
+.t th{text-align:left;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.t td{padding:8px 12px;border-bottom:1px solid rgba(150,175,255,.08);vertical-align:top}
+.t tr:last-child td{border-bottom:0}
+.t tbody tr:hover td{background:rgba(86,224,255,.04)}
+.port{font-family:var(--mono);color:var(--accent);white-space:nowrap;font-weight:600}
+.tr{font-family:var(--mono);font-size:12.5px;color:var(--blue)}
+.ports td:nth-child(5){color:var(--good)}
+.ex{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;margin:1px 3px 1px 0;border:1px solid;white-space:nowrap}
+.ex-A{color:var(--good);border-color:rgba(95,227,161,.4)}
+.ex-N{color:var(--accent);border-color:rgba(86,224,255,.4)}
+.ex-S{color:var(--threat);border-color:rgba(255,154,92,.4)}
+.ex-C{color:var(--blue);border-color:rgba(164,149,255,.45)}
+.cidr tr.hl td{background:var(--gold-soft)!important}
+.cidr tr.hl .port{color:var(--gold)}
+.cmds td:first-child{width:46%}
+.cmd{display:inline-block;text-align:left;border:1px solid transparent;background:rgba(86,224,255,.06);border-radius:7px;padding:2px 8px;margin:2px 0;color:var(--fg);max-width:100%}
+.cmd code{white-space:pre-wrap;word-break:break-word;font-size:13.5px}
+.cmd:hover{border-color:rgba(86,224,255,.45);color:var(--accent)}
+.cmd:hover::after{content:"copy";font-family:var(--mono);font-size:10px;color:var(--accent);margin-left:8px;vertical-align:1px}
+.prompt{color:var(--muted);font-size:13px;margin-left:4px}
+.prompt code{color:var(--blue)}
+.def{color:var(--good)}
+.atk td:first-child{width:24%}
+
+@media (max-width:680px){
+  .t thead{display:none}
+  .t,.t tbody,.t tr,.t td{display:block;width:100%!important}
+  .t tr{padding:10px 12px;border-bottom:1px solid rgba(150,175,255,.1)}
+  .t tr:last-child{border-bottom:0}
+  .t td{border:0;padding:2px 0;display:flex;gap:10px}
+  .t td::before{content:attr(data-l);flex:0 0 96px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+  .t td[data-l=""]::before{display:none}
+  .cmds td::before{display:none}
+  .cmds td:last-child{color:var(--muted);font-size:14px}
+}
+
+/* Lists */
+.facts{margin:0;padding-left:22px;display:grid;gap:6px;max-width:900px}
+.facts li{overflow-wrap:anywhere}
+.facts li::marker{color:var(--accent);font-family:var(--mono)}
+ol.facts li{overflow-wrap:anywhere}
+.facts li::marker{font-weight:600}
+.pow{display:flex;flex-wrap:wrap;gap:6px}
+.pow span{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:5px 10px;font-family:var(--mono);font-size:13px;display:flex;gap:8px}
+.pow b{color:var(--accent)}
+
+/* OSI stack */
+.stack{display:grid;gap:6px}
+.layer{display:grid;grid-template-columns:56px 1fr;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.ln{display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:24px;color:var(--on-accent)}
+.l7 .ln{background:#a495ff}.l6 .ln{background:#9aa6ff}.l5 .ln{background:#8fb8ff}.l4 .ln{background:#7fcaff}.l3 .ln{background:#6bd8ff}.l2 .ln{background:#5fe3d0}.l1 .ln{background:#5fe3a1}
+.lbody{padding:10px 14px}
+.lt{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.lt b{font-family:var(--display);font-size:17px}
+.pdu{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.lbody p{margin:2px 0 4px;color:var(--muted);font-size:14px}
+.lbody dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:14px}
+.lbody dt{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:2px}
+.lbody dd{margin:0}
+.encap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
+.encap span:not(:nth-child(even)){border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--surface)}
+.encap span:nth-child(even){color:var(--muted)}
+.e-data{color:var(--blue)}.e-seg{color:#7fcaff}.e-pkt{color:var(--accent)}.e-frm{color:#5fe3d0}.e-bit{color:var(--good)}
+
+/* Acronyms */
+.acr{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:6px;margin:0}
+.acr div{display:flex;gap:10px;align-items:baseline;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 10px;font-size:14px}
+.acr dt{font-family:var(--mono);font-weight:600;color:var(--accent);min-width:64px;flex:none}
+.acr dd{margin:0}
+.a-S dt{color:var(--threat)}.a-H dt{color:var(--good)}.a-C dt{color:var(--blue)}.a-O dt{color:var(--gold)}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 14px;font-size:14px;background:rgba(255,255,255,.02)}
+.chip:hover{border-color:var(--accent)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+
+/* Troubleshooting */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px}
+.sn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:18px;background:linear-gradient(135deg,var(--accent),var(--blue));color:var(--on-accent)}
+.steps b{font-family:var(--display);font-size:16.5px}
+.steps p{margin:2px 0 0;color:var(--muted);font-size:14px}
+
+/* Pinouts */
+.pins{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.pinout{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px}
+.pinout ol{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.pinout li{display:flex;align-items:center;gap:10px;font-size:14px}
+.pn{font-family:var(--mono);color:var(--muted);width:14px;text-align:right}
+.wire{width:46px;height:12px;border-radius:6px;flex:none;order:-1}
+.w-orange{background:#ff9a3c}.w-green{background:#3fbf5f}.w-blue{background:#3b7bff}.w-brown{background:#9a6234}
+.wire.striped{background-image:repeating-linear-gradient(90deg,#f4f6fb 0 6px,transparent 6px 12px)}
+
+/* Calculators and drill */
+.calc{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end}
+.calc label{display:grid;gap:4px;font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.calc input,.calc select,.chmod-out input{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:var(--mono);font-size:15px;color:var(--fg);text-transform:none;letter-spacing:0}
+.calc input:focus,.calc select:focus,.chmod-out input:focus{outline:none;border-color:var(--accent)}
+#sc-ip{width:180px}
+.pfx{display:flex;align-items:center;gap:2px;font-family:var(--mono);font-size:16px;color:var(--fg)}
+#sc-n{width:70px}
+#sc-r{flex:1;min-width:160px;accent-color:var(--accent);margin-bottom:10px}
+#rc-n,#rc-s{width:100px}
+.calc-out{margin-top:14px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kv div{border:1px solid var(--line);background:rgba(0,0,0,.2);border-radius:10px;padding:8px 12px;display:grid}
+.kv span{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:14.5px;color:var(--fg);word-break:break-word}
+.bin{margin-top:10px;display:grid;gap:4px}
+.bin code{font-size:13.5px;word-break:break-all;letter-spacing:.04em}
+.bin .nb{color:var(--accent)}.bin .hb{color:var(--gold)}
+.leg{font-size:12px}.leg i{font-style:normal;margin-right:12px}
+.bad{color:var(--bad);margin:0}
+.chmod{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
+.chmod fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 14px 10px;margin:0;display:grid;gap:4px;min-width:120px}
+.chmod legend{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 4px}
+.chmod label{display:flex;gap:8px;align-items:center;font-size:14px}
+.chmod input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.chmod-out{display:flex;flex-direction:column;gap:8px;justify-content:center}
+.chmod-out label{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase}
+#ch-oct{width:70px}
+#ch-sym{font-size:18px;color:var(--gold)}
+.dq{margin:0 0 10px;font-size:16px}
+.dopts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{min-width:84px;border:1px solid var(--line);background:rgba(0,0,0,.2);border-radius:10px;padding:8px 14px;font-family:var(--mono);font-size:15px}
+.opt:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+.opt.good{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.opt.bad{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.opt[disabled]{cursor:default}
+.dres{margin:10px 0 0;font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--surface-solid);border:1px solid rgba(86,224,255,.45);box-shadow:var(--glow);color:var(--accent);border-radius:10px;padding:8px 16px;font-family:var(--mono);font-size:13px;z-index:20}
+
+/* ---------- Print: black on white, compact, one sheet per page ---------- */
+@media print{
+  @page{margin:12mm}
+  :root{--fg:#000;--muted:#444;--line:#bbb}
+  body{background:#fff!important;color:#000;font-size:9.5pt;line-height:1.35}
+  header,.noprint,.tool,.ns,.qcount,.toast,.more{display:none!important}
+  .printonly{display:block;margin-top:8mm;font-size:8pt;color:#555;border-top:1px solid #bbb;padding-top:2mm}
+  .wrap{max-width:none;padding:0}
+  .sheet{padding-top:0}
+  body.print-all .sheet{display:block!important}
+  body.print-all .sheet+.sheet{break-before:page}
+  .sheet-head{display:block}
+  .eyebrow{color:#555}
+  h2{background:none;color:#000;font-size:18pt;-webkit-text-fill-color:#000}
+  h3{font-size:11pt;margin-bottom:2mm;break-after:avoid}
+  h3::before{background:#000;box-shadow:none}
+  .blk{margin-top:4mm;break-inside:auto}
+  .tw{border:1px solid #999;border-radius:0;background:none;backdrop-filter:none}
+  .t{font-size:8.5pt}
+  .t th{color:#000;background:#eee;padding:1.2mm 2mm;font-size:7pt}
+  .t td{padding:1mm 2mm;border-bottom:1px solid #ddd}
+  .t tr{break-inside:avoid}
+  .t thead{display:table-header-group}
+  .port,.tr,.pdu,.acr dt,.def,.ports td:nth-child(5),.prompt code{color:#000!important}
+  .ex{color:#000!important;border-color:#777!important;font-size:6.5pt;padding:0 2px;margin:0 1px 1px 0}
+  .cmd{background:none;border:0;padding:0;color:#000}
+  .cmd::after{display:none}
+  .note{color:#333;font-size:8pt}
+  .layer,.steps li,.pinout,.acr div,.pow span,.encap span{background:none!important;border-color:#999!important;break-inside:avoid}
+  .ln,.sn{color:#000!important;background:#ddd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lbody p,.steps p{color:#333}
+  .acr{grid-template-columns:repeat(3,1fr);gap:1mm}
+  .acr div{padding:1mm 2mm;font-size:8pt}
+  .acr dt{min-width:15mm}
+  .wire{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  a{color:#000;text-decoration:none}
+}
+
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="../" aria-label="IT Study Guides: career roadmap">
+        <svg viewBox="0 0 100 112" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#56e0ff"/><stop offset="1" stop-color="#a495ff"/></linearGradient></defs><polygon points="50,4 94,29 94,83 50,108 6,83 6,29" fill="none" stroke="url(#hg)" stroke-width="8"/><path d="M30 76 L50 40 L70 76" fill="none" stroke="url(#hg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span><span class="full">IT Study Guides <span class="dim">/</span> </span>Quick Reference</span>
+      </a>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="q" type="search" placeholder="Search ports, commands, acronyms…  ( / )" aria-label="Search every cheat sheet" autocomplete="off" spellcheck="false">
+      </div>
+      <button type="button" class="btn noprint" data-print="all">Print all</button>
+    </div>
+    <nav id="nav" aria-label="Cheat sheets"></nav>
+  </div>
+</header>
+<main class="wrap">
+  <p id="qcount" class="qcount" aria-live="polite"></p>
+  <div id="sheets"></div>
+  <footer class="noprint">Free and independent study aid, not affiliated with CompTIA, Cisco or Microsoft. <a href="../">Back to the IT career roadmap</a>.</footer>
+  <footer class="printonly">IT Quick Reference · mikeriveira.github.io/study-guides/cheatsheets/</footer>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+/* Cheat sheet content. Pipe-separated rows keep the data compact; app.js parses and renders them. */
+
+/* port | transport | protocol | what it does | secure alternative | exams (A=A+, N=Network+, S=Security+, C=CCNA) */
+const PORTS = `
+20, 21|TCP|FTP|File transfer: 20 data, 21 control. Sends credentials in clear text.|SFTP (22) or FTPS (989/990)|ANSC
+22|TCP|SSH / SFTP / SCP|Encrypted remote shell and file transfer|—|ANSC
+23|TCP|Telnet|Remote shell in clear text. Avoid it.|SSH (22)|ANSC
+25|TCP|SMTP|Sends mail between mail servers|SMTP with STARTTLS (587) or SMTPS (465)|ANC
+49|TCP|TACACS+|Cisco AAA for device admin logins; encrypts the whole payload|—|SC
+53|TCP/UDP|DNS|Name resolution. UDP for queries, TCP for zone transfers and large replies.|DNS over TLS (853), DNSSEC for integrity|ANSC
+67, 68|UDP|DHCP|Hands out IP settings. Server 67, client 68.|—|ANC
+69|UDP|TFTP|Trivial file transfer with no login. Used for config and firmware loads.|SFTP|NC
+80|TCP|HTTP|Web traffic in clear text|HTTPS (443)|ANSC
+88|TCP/UDP|Kerberos|Ticket-based authentication in Active Directory|—|S
+110|TCP|POP3|Downloads mail from a server|POP3S (995)|A
+123|UDP|NTP|Time sync. Logs, Kerberos and certificates depend on it.|NTS (NTP with TLS)|NSC
+137–139|TCP/UDP|NetBIOS|Legacy Windows name and session services|SMB over 445 only|A
+143|TCP|IMAP|Reads mail while leaving it on the server|IMAPS (993)|A
+161, 162|UDP|SNMP|Device monitoring. 161 polls the agent, 162 receives traps.|SNMPv3 (auth + encryption)|NSC
+179|TCP|BGP|Routing between internet autonomous systems|—|N
+389|TCP/UDP|LDAP|Directory lookups (Active Directory)|LDAPS (636)|ANS
+443|TCP/UDP|HTTPS|Web over TLS. UDP 443 carries HTTP/3 (QUIC).|—|ANSC
+445|TCP|SMB / CIFS|Windows file and printer sharing|SMB 3 encryption; never expose to the internet|ANS
+465|TCP|SMTPS|SMTP with TLS from the first byte|—|S
+500|UDP|IKE / ISAKMP|Sets up IPsec VPN tunnels|—|NS
+514|UDP|Syslog|Sends log messages to a collector|Syslog over TLS (6514)|NSC
+520|UDP|RIP|Distance vector routing (hop count)|—|N
+546, 547|UDP|DHCPv6|DHCP for IPv6. Client 546, server 547.|—|N
+587|TCP|SMTP submission|Mail clients sending mail, with STARTTLS|—|NS
+636|TCP|LDAPS|LDAP over TLS|—|NS
+853|TCP|DNS over TLS|Encrypted DNS queries|—|S
+989, 990|TCP|FTPS|FTP over TLS|—|S
+993|TCP|IMAPS|IMAP over TLS|—|AS
+995|TCP|POP3S|POP3 over TLS|—|AS
+1433|TCP|MS SQL Server|Microsoft SQL database|TLS encrypted connections|N
+1701|UDP|L2TP|Layer 2 tunnel, usually paired with IPsec|—|N
+1723|TCP|PPTP|Old VPN with weak security|IPsec or SSL/TLS VPN|N
+1812, 1813|UDP|RADIUS|AAA for Wi-Fi and VPN logins. 1812 auth, 1813 accounting.|RADIUS over TLS (RadSec)|NSC
+3306|TCP|MySQL|MySQL and MariaDB databases|TLS encrypted connections|N
+3389|TCP/UDP|RDP|Windows Remote Desktop|RDP through a VPN or RD Gateway, with NLA|ANS
+4500|UDP|IPsec NAT-T|IPsec through NAT|—|NS
+5060, 5061|TCP/UDP|SIP|VoIP call setup. 5061 is SIP over TLS.|SIP over TLS (5061) plus SRTP|NS
+5900|TCP|VNC|Cross-platform remote desktop|Tunnel through SSH or VPN|A
+5985, 5986|TCP|WinRM|PowerShell remoting. 5985 HTTP, 5986 HTTPS.|WinRM over HTTPS (5986)|—
+8080|TCP|HTTP alternate|Web proxies and app servers|HTTPS (8443)|—
+`;
+
+/* IP protocol numbers: these ride directly on IP, so they have no port. */
+const PROTO_NUMS = `
+1|ICMP|Ping, traceroute and error messages
+2|IGMP|IPv4 multicast group membership
+6|TCP|Reliable, connection-oriented transport
+17|UDP|Fast, connectionless transport
+47|GRE|Generic tunnels (often under IPsec)
+50|ESP|IPsec encryption and integrity
+51|AH|IPsec integrity only (no encryption)
+88|EIGRP|Cisco advanced distance vector routing
+89|OSPF|Link-state routing
+112|VRRP|Gateway redundancy (open standard)
+`;
+
+/* TCP vs UDP comparison rows */
+const TCP_UDP = `
+Connection|Connection-oriented (3-way handshake: SYN, SYN-ACK, ACK)|Connectionless, no handshake
+Reliability|Acknowledges, retransmits and reorders segments|Best effort; the app handles loss
+Flow control|Sliding window|None
+Header|20 bytes minimum|8 bytes
+Ending|FIN / ACK (graceful) or RST (abort)|Nothing to close
+Used by|HTTP(S), SSH, SMTP, FTP, RDP, SMB|DNS queries, DHCP, TFTP, SNMP, NTP, VoIP, video, QUIC
+`;
+
+/* ---------- Subnetting ---------- */
+const RANGES = `
+10.0.0.0/8|Private (RFC 1918)|10.0.0.0 – 10.255.255.255
+172.16.0.0/12|Private (RFC 1918)|172.16.0.0 – 172.31.255.255
+192.168.0.0/16|Private (RFC 1918)|192.168.0.0 – 192.168.255.255
+100.64.0.0/10|Carrier-grade NAT (shared)|100.64.0.0 – 100.127.255.255
+169.254.0.0/16|APIPA / link-local. DHCP failed.|169.254.0.1 – 169.254.255.254
+127.0.0.0/8|Loopback (127.0.0.1)|127.0.0.0 – 127.255.255.255
+224.0.0.0/4|Multicast (Class D)|224.0.0.0 – 239.255.255.255
+240.0.0.0/4|Reserved (Class E)|240.0.0.0 – 255.255.255.254
+192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24|Documentation examples (TEST-NET)|Never routed
+255.255.255.255/32|Limited broadcast|Stays on the local segment
+`;
+
+const CLASSES = `
+A|1 – 126|/8 (255.0.0.0)|0
+B|128 – 191|/16 (255.255.0.0)|10
+C|192 – 223|/24 (255.255.255.0)|110
+D|224 – 239|Multicast, no mask|1110
+E|240 – 255|Experimental|1111
+`;
+
+const MAGIC = [
+  ["Find the interesting octet", "The octet where the mask isn't 255 or 0. For /26 (255.255.255.192) it's the 4th octet."],
+  ["Get the block size", "256 minus the mask value in that octet. 256 − 192 = 64, so subnets go up in steps of 64."],
+  ["List the subnets", "Count up by the block size: .0, .64, .128, .192. Your host falls in the one at or below it. 10.1.1.100 is in 10.1.1.64."],
+  ["Read the rest off", "Broadcast = next subnet − 1 (.127). Usable hosts = network + 1 to broadcast − 1 (.65 – .126). Hosts = 2^host bits − 2 = 62."]
+];
+
+const IPV6 = `
+::1/128|Loopback|Like 127.0.0.1
+::/128|Unspecified|No address yet (like 0.0.0.0)
+2000::/3|Global unicast|Public, routable on the internet
+fe80::/10|Link-local|Auto-assigned on every IPv6 interface, never routed
+fc00::/7 (fd00::/8 in use)|Unique local|Private, like RFC 1918
+ff00::/8|Multicast|Replaces broadcast (ff02::1 = all nodes, ff02::2 = all routers)
+2001:db8::/32|Documentation|Examples only
+::ffff:0:0/96|IPv4-mapped|IPv4 address inside IPv6
+`;
+
+const IPV6_FACTS = [
+  "128 bits, written as 8 groups of 4 hex digits: 2001:0db8:0000:0000:0000:ff00:0042:8329",
+  "Drop leading zeros in a group: 0db8 → db8, 0042 → 42",
+  "Replace ONE run of all-zero groups with :: → 2001:db8::ff00:42:8329",
+  "A normal LAN is a /64: 64 bits of network prefix, 64 bits of interface ID",
+  "No broadcast. Neighbor Discovery (NDP, ICMPv6) replaces ARP.",
+  "SLAAC lets hosts build their own address from the router's prefix (EUI-64 or a random ID)",
+  "EUI-64: split the 48-bit MAC, insert fffe in the middle, flip the 7th bit",
+  "Dual stack runs IPv4 and IPv6 side by side. Tunneling (6to4, Teredo) and NAT64 bridge the two."
+];
+
+/* ---------- OSI ---------- */
+const OSI = `
+7|Application|Data|Network services for apps|HTTP, HTTPS, DNS, SMTP, FTP, SSH, SNMP, DHCP|Hosts, L7 firewalls, load balancers, proxies
+6|Presentation|Data|Formatting, encryption, compression|TLS/SSL, JPEG, ASCII, MPEG|—
+5|Session|Data|Opens, manages and closes sessions|RPC, NetBIOS, SQL sessions, SIP|—
+4|Transport|Segment (TCP) / Datagram (UDP)|End-to-end delivery, ports, reliability|TCP, UDP|Stateful firewalls
+3|Network|Packet|Logical addressing and routing|IPv4, IPv6, ICMP, IPsec, OSPF|Routers, L3 switches
+2|Data Link|Frame|MAC addressing, local delivery, error detection|Ethernet, 802.11, ARP, VLAN (802.1Q), STP, PPP|Switches, bridges, WAPs, NICs
+1|Physical|Bits|Signals on the wire or the air|Cabling, fiber, radio, DSL|Hubs, repeaters, cables, media converters
+`;
+
+const TCPIP = `
+Application|7, 6, 5|HTTP, DNS, SSH, SMTP
+Transport|4|TCP, UDP
+Internet|3|IP, ICMP, ARP*
+Network access (link)|2, 1|Ethernet, Wi-Fi
+`;
+
+/* ---------- Commands: [section, [[command, what it does], ...]] ---------- */
+const WINDOWS = [
+  ["Networking", [
+    ["ipconfig /all", "Full IP config: address, mask, gateway, DNS, MAC, DHCP lease"],
+    ["ipconfig /release && ipconfig /renew", "Drop and request a new DHCP lease"],
+    ["ipconfig /flushdns", "Clear the local DNS cache"],
+    ["ipconfig /displaydns", "Show cached DNS lookups"],
+    ["ping -t 8.8.8.8", "Ping until Ctrl+C. -n 10 sends 10, -a resolves names, -l sets size."],
+    ["tracert example.com", "Show each router hop to a destination"],
+    ["pathping example.com", "Traceroute plus packet loss per hop"],
+    ["nslookup example.com 1.1.1.1", "Query DNS, optionally against a specific server"],
+    ["netstat -ano", "All connections and listening ports with the owning process ID"],
+    ["arp -a", "Show the IP-to-MAC cache"],
+    ["route print", "Show the routing table"],
+    ["netsh wlan show profiles", "Saved Wi-Fi networks"],
+    ["netsh advfirewall show allprofiles", "Windows Firewall status"],
+    ["Test-NetConnection server -Port 443", "PowerShell: ping plus TCP port check"],
+    ["Resolve-DnsName example.com", "PowerShell DNS lookup"],
+    ["Get-NetIPConfiguration", "PowerShell IP summary"]
+  ]],
+  ["Disk and repair", [
+    ["sfc /scannow", "Scan and repair protected system files"],
+    ["DISM /Online /Cleanup-Image /RestoreHealth", "Repair the Windows image (run before sfc if sfc fails)"],
+    ["chkdsk C: /f /r", "Fix file system errors and find bad sectors"],
+    ["diskpart", "Partition tool: list disk, select disk 1, clean, create partition primary"],
+    ["format D: /fs:NTFS /q", "Quick format a volume"],
+    ["bootrec /fixmbr  ·  bootrec /fixboot  ·  bootrec /rebuildbcd", "Repair boot records from the recovery console"],
+    ["bcdedit", "View or edit boot configuration data"],
+    ["winver", "Show the Windows version and build"]
+  ]],
+  ["Files", [
+    ["dir /a", "List files, including hidden"],
+    ["cd \\Users  ·  cd ..", "Change directory, go up one level"],
+    ["md Reports  ·  rd /s Reports", "Make or remove a directory"],
+    ["copy a.txt D:\\  ·  move a.txt D:\\", "Copy or move a file"],
+    ["xcopy C:\\Data D:\\Data /e /h", "Copy folders with subfolders and hidden files"],
+    ["robocopy C:\\Data \\\\srv\\backup /mir", "Robust copy. /mir mirrors (deletes extras at the target)."],
+    ["del /f file.txt", "Delete a file"],
+    ["attrib +h file.txt", "Set or clear attributes (hidden, read-only, system)"]
+  ]],
+  ["Users, shares and policy", [
+    ["whoami /all", "Current user, groups and privileges"],
+    ["net user", "List local users. net user bob /add creates one."],
+    ["net localgroup administrators bob /add", "Add a user to the local Administrators group"],
+    ["net use Z: \\\\server\\share", "Map a network drive"],
+    ["net share", "List shares on this PC"],
+    ["gpupdate /force", "Reapply Group Policy now"],
+    ["gpresult /r", "Show which Group Policies applied"],
+    ["runas /user:admin cmd", "Run a program as another user"]
+  ]],
+  ["System and processes", [
+    ["systeminfo", "OS, build, uptime, RAM, hotfixes"],
+    ["hostname", "This computer's name"],
+    ["tasklist", "Running processes"],
+    ["taskkill /PID 4321 /F", "Force-end a process (or /IM notepad.exe)"],
+    ["shutdown /r /t 0", "Restart now. /s shuts down, /a aborts."],
+    ["Get-Process  ·  Stop-Process -Id 4321", "PowerShell process tools"],
+    ["Get-Service  ·  Restart-Service Spooler", "PowerShell service tools"],
+    ["Get-WinEvent -LogName System -MaxEvents 20", "Latest System log entries"],
+    ["Get-Help Get-Process -Examples", "Built-in PowerShell help"]
+  ]],
+  ["Run box shortcuts (Win+R)", [
+    ["devmgmt.msc", "Device Manager"],
+    ["diskmgmt.msc", "Disk Management"],
+    ["services.msc", "Services"],
+    ["eventvwr.msc", "Event Viewer"],
+    ["compmgmt.msc", "Computer Management"],
+    ["gpedit.msc", "Local Group Policy Editor (Pro and up)"],
+    ["lusrmgr.msc", "Local Users and Groups"],
+    ["taskschd.msc", "Task Scheduler"],
+    ["certmgr.msc", "Certificate Manager"],
+    ["perfmon  ·  resmon", "Performance Monitor, Resource Monitor"],
+    ["msconfig", "System Configuration (boot options)"],
+    ["msinfo32", "System Information"],
+    ["regedit", "Registry Editor"],
+    ["ncpa.cpl", "Network Connections"],
+    ["appwiz.cpl", "Programs and Features"],
+    ["sysdm.cpl", "System Properties"],
+    ["mstsc", "Remote Desktop client"],
+    ["cleanmgr", "Disk Cleanup"]
+  ]]
+];
+
+const LINUX = [
+  ["Files and navigation", [
+    ["pwd", "Print the current directory"],
+    ["ls -la", "List all files with permissions, owner and size"],
+    ["cd /etc  ·  cd ~  ·  cd ..", "Change directory: absolute, home, up one"],
+    ["mkdir -p a/b/c", "Make directories, including parents"],
+    ["cp -r src/ dst/", "Copy (recursive for folders)"],
+    ["mv old.txt new.txt", "Move or rename"],
+    ["rm file  ·  rm -r dir", "Delete. There is no recycle bin, so take care with rm -rf."],
+    ["touch notes.txt", "Create an empty file or update its timestamp"],
+    ["cat  ·  less  ·  head -n 20  ·  tail -n 20", "View a file"],
+    ["tail -f /var/log/syslog", "Follow a log as it grows"],
+    ["find / -name \"*.conf\" 2>/dev/null", "Find files by name"],
+    ["grep -ri \"error\" /var/log", "Search text, case-insensitive and recursive"],
+    ["ln -s /target linkname", "Make a symbolic link"],
+    ["tar -czvf backup.tar.gz dir/  ·  tar -xzvf backup.tar.gz", "Create or extract a gzip archive"],
+    ["nano file  ·  vi file", "Edit text. In vi: i to insert, Esc then :wq to save and quit."]
+  ]],
+  ["Permissions and users", [
+    ["chmod 755 script.sh", "Owner rwx, group r-x, others r-x"],
+    ["chmod u+x script.sh", "Add execute for the owner"],
+    ["chown alice:devs file", "Change owner and group"],
+    ["sudo command", "Run one command as root"],
+    ["su - alice", "Switch user with a login shell"],
+    ["useradd -m alice  ·  passwd alice", "Create a user with a home folder, set the password"],
+    ["usermod -aG sudo alice", "Add to a group (wheel on RHEL-family)"],
+    ["id  ·  whoami  ·  groups", "Who am I and which groups"],
+    ["umask", "Default permission mask for new files"]
+  ]],
+  ["Processes, services and system", [
+    ["ps aux", "All running processes"],
+    ["top  ·  htop", "Live CPU and memory view"],
+    ["kill 1234  ·  kill -9 1234", "End a process (-9 forces it)"],
+    ["systemctl status sshd", "Service status. Also start, stop, restart, enable, disable."],
+    ["journalctl -u sshd --since today", "Logs for one service"],
+    ["df -h", "Disk space per file system"],
+    ["du -sh *", "Size of each item in this folder"],
+    ["free -h", "Memory and swap use"],
+    ["lsblk  ·  mount  ·  fdisk -l", "Disks, partitions and mounts"],
+    ["uname -a  ·  cat /etc/os-release", "Kernel and distro version"],
+    ["dmesg | tail", "Kernel messages (hardware, drivers)"],
+    ["crontab -e", "Schedule recurring jobs"],
+    ["history", "Previous commands"],
+    ["man ls  ·  ls --help", "Manual and help"]
+  ]],
+  ["Networking", [
+    ["ip a", "Interfaces and addresses (replaces ifconfig)"],
+    ["ip route", "Routing table and default gateway"],
+    ["ip link set eth0 up", "Bring an interface up"],
+    ["ping -c 4 8.8.8.8", "Send 4 pings"],
+    ["traceroute example.com", "Hops to a destination (tracepath also works)"],
+    ["ss -tulpn", "Listening TCP/UDP ports and processes (replaces netstat)"],
+    ["dig example.com  ·  dig +short MX example.com", "DNS lookups"],
+    ["nslookup example.com", "DNS lookup"],
+    ["curl -I https://example.com", "Fetch HTTP headers"],
+    ["wget https://example.com/file", "Download a file"],
+    ["ssh alice@10.0.0.5", "Remote shell"],
+    ["scp file alice@10.0.0.5:/tmp/", "Copy a file over SSH"],
+    ["nmcli device status", "NetworkManager status"],
+    ["tcpdump -i eth0 port 53", "Capture packets"],
+    ["nmap -sV 10.0.0.0/24", "Scan for hosts and services (only on networks you're allowed to scan)"],
+    ["cat /etc/resolv.conf", "Configured DNS servers"]
+  ]],
+  ["Packages", [
+    ["sudo apt update && sudo apt upgrade", "Debian/Ubuntu: refresh and upgrade"],
+    ["sudo apt install nginx", "Debian/Ubuntu: install a package"],
+    ["sudo dnf install nginx", "Fedora/RHEL: install (yum on older releases)"],
+    ["dpkg -l  ·  rpm -qa", "List installed packages"],
+    ["snap install  ·  flatpak install", "Distro-independent packages"]
+  ]],
+  ["Key paths", [
+    ["/etc", "System config files"],
+    ["/var/log", "Logs"],
+    ["/home/alice  ·  /root", "User home folders"],
+    ["/bin  ·  /usr/bin  ·  /sbin", "Programs"],
+    ["/tmp", "Temporary files, cleared on reboot"],
+    ["/dev", "Device files (disks are /dev/sda, /dev/nvme0n1)"],
+    ["/proc", "Live kernel and process info"],
+    ["/etc/passwd  ·  /etc/shadow", "User accounts and password hashes"]
+  ]],
+  ["Shell operators", [
+    ["cmd1 | cmd2", "Pipe output into the next command"],
+    ["cmd > file  ·  cmd >> file", "Write output to a file (overwrite, append)"],
+    ["cmd 2> errors.txt", "Redirect errors"],
+    ["cmd1 && cmd2", "Run cmd2 only if cmd1 succeeds"],
+    ["cmd &", "Run in the background"]
+  ]]
+];
+
+const IOS = [
+  ["Modes and prompts", [
+    ["Router>", "User EXEC: look only"],
+    ["enable  →  Router#", "Privileged EXEC: show, debug, copy, reload"],
+    ["configure terminal  →  Router(config)#", "Global configuration"],
+    ["interface g0/0  →  Router(config-if)#", "Interface configuration"],
+    ["line vty 0 4  →  Router(config-line)#", "Console or remote line configuration"],
+    ["router ospf 1  →  Router(config-router)#", "Routing protocol configuration"],
+    ["exit  ·  end (Ctrl+Z)", "Up one level, or straight back to privileged EXEC"],
+    ["do show ip int brief", "Run an EXEC command from config mode"],
+    ["?  ·  Tab", "Help and command completion. Abbreviations work: sh ip int br."]
+  ]],
+  ["Initial setup", [
+    ["hostname R1", "Set the device name"],
+    ["enable secret Str0ng!", "Hashed password for privileged mode"],
+    ["service password-encryption", "Hide plain-text passwords in the config"],
+    ["banner motd #Authorized access only#", "Login banner"],
+    ["no ip domain-lookup", "Stop typos being treated as hostnames"],
+    ["line console 0 / password x / login", "Console password"],
+    ["logging synchronous", "Stop log messages interrupting your typing"]
+  ]],
+  ["Show commands", [
+    ["show running-config", "Active config in RAM"],
+    ["show startup-config", "Saved config in NVRAM"],
+    ["show version", "IOS version, uptime, config register"],
+    ["show ip interface brief", "Every interface with IP and up/down status"],
+    ["show interfaces g0/0", "Counters, errors, duplex and speed"],
+    ["show interfaces status", "Switch ports: VLAN, duplex, speed"],
+    ["show ip route", "Routing table (C connected, S static, O OSPF)"],
+    ["show vlan brief", "VLANs and their access ports"],
+    ["show interfaces trunk", "Trunk ports, allowed and native VLANs"],
+    ["show mac address-table", "Learned MAC addresses per port"],
+    ["show spanning-tree", "STP root, port roles and states"],
+    ["show cdp neighbors detail  ·  show lldp neighbors", "Directly connected devices"],
+    ["show ip ospf neighbor", "OSPF adjacencies"],
+    ["show ip nat translations", "Active NAT entries"],
+    ["show access-lists", "ACLs with hit counts"],
+    ["show port-security interface f0/1", "Port security status and violations"],
+    ["show etherchannel summary", "Port-channel bundles"],
+    ["show ip arp", "ARP table"],
+    ["show running-config | include ospf", "Filter output (also section, begin, exclude)"]
+  ]],
+  ["Interfaces and IP", [
+    ["interface g0/0", "Enter an interface"],
+    ["ip address 192.168.1.1 255.255.255.0", "Assign an IPv4 address"],
+    ["no shutdown", "Turn the interface on (router ports start shut down)"],
+    ["description Uplink to SW1", "Label the port"],
+    ["ipv6 unicast-routing", "Enable IPv6 routing (global)"],
+    ["ipv6 address 2001:db8:1::1/64", "Assign an IPv6 address"],
+    ["interface range f0/1 - 24", "Configure many ports at once"]
+  ]],
+  ["VLANs and trunks", [
+    ["vlan 10 / name SALES", "Create and name a VLAN"],
+    ["switchport mode access", "Make the port an access port"],
+    ["switchport access vlan 10", "Put the port in VLAN 10"],
+    ["switchport mode trunk", "Make the port an 802.1Q trunk"],
+    ["switchport trunk allowed vlan 10,20", "Limit which VLANs cross the trunk"],
+    ["switchport trunk native vlan 99", "Change the native (untagged) VLAN"],
+    ["switchport nonegotiate", "Turn off DTP (stops VLAN hopping by switch spoofing)"],
+    ["interface vlan 10 / ip address …", "SVI for management or inter-VLAN routing"],
+    ["spanning-tree portfast  ·  spanning-tree bpduguard enable", "Edge port settings"]
+  ]],
+  ["Routing", [
+    ["ip route 0.0.0.0 0.0.0.0 203.0.113.1", "Default static route"],
+    ["ip route 10.2.0.0 255.255.0.0 10.0.0.2 200", "Static route with AD 200 (floating backup)"],
+    ["router ospf 1", "Start OSPF process 1"],
+    ["router-id 1.1.1.1", "Set the OSPF router ID"],
+    ["network 10.0.0.0 0.0.0.255 area 0", "Enable OSPF on matching interfaces (wildcard mask)"],
+    ["ip ospf 1 area 0", "Enable OSPF directly on an interface"],
+    ["passive-interface g0/1", "Advertise the network but send no hellos"],
+    ["ip helper-address 10.0.0.10", "Forward DHCP broadcasts to a server (on the client-side interface)"]
+  ]],
+  ["ACLs", [
+    ["access-list 10 permit 192.168.1.0 0.0.0.255", "Standard ACL: matches source only. Place near the destination."],
+    ["ip access-list extended WEB", "Named extended ACL: source, destination, port. Place near the source."],
+    ["permit tcp any host 10.1.1.10 eq 443", "Allow HTTPS to one server"],
+    ["deny ip any any log", "Explicit deny with logging (there's always an implicit deny at the end)"],
+    ["ip access-group WEB in", "Apply the ACL to an interface, inbound"]
+  ]],
+  ["NAT / PAT and DHCP", [
+    ["ip nat inside  ·  ip nat outside", "Mark the LAN and WAN interfaces"],
+    ["ip nat inside source list 1 interface g0/1 overload", "PAT: many inside hosts share the WAN address"],
+    ["ip nat inside source static 192.168.1.10 203.0.113.10", "Static one-to-one NAT"],
+    ["ip dhcp excluded-address 192.168.1.1 192.168.1.10", "Keep addresses out of the pool"],
+    ["ip dhcp pool LAN / network 192.168.1.0 255.255.255.0", "Create a DHCP pool"],
+    ["default-router 192.168.1.1 / dns-server 8.8.8.8", "Gateway and DNS for clients"]
+  ]],
+  ["Security and SSH", [
+    ["ip domain-name lab.local", "Needed before making RSA keys"],
+    ["crypto key generate rsa modulus 2048", "Create SSH keys"],
+    ["username admin secret Pa55w0rd!", "Local user account"],
+    ["ip ssh version 2", "SSH version 2 only"],
+    ["line vty 0 4 / transport input ssh / login local", "Allow only SSH with local accounts"],
+    ["switchport port-security", "Turn on port security"],
+    ["switchport port-security maximum 2", "Allow up to 2 MACs"],
+    ["switchport port-security mac-address sticky", "Learn and save MACs"],
+    ["switchport port-security violation restrict", "Drop and log (protect drops silently, shutdown err-disables)"],
+    ["ip dhcp snooping  ·  ip arp inspection vlan 10", "Block rogue DHCP and ARP spoofing"]
+  ]],
+  ["Save and troubleshoot", [
+    ["copy running-config startup-config", "Save the config (or write memory)"],
+    ["reload", "Restart the device"],
+    ["erase startup-config", "Wipe the saved config"],
+    ["ping 10.0.0.2  ·  traceroute 10.0.0.2", "Test reachability (! success, . timeout, U unreachable)"],
+    ["debug ip ospf adj  ·  undebug all", "Live debugging. Turn it off when done."],
+    ["clear mac address-table dynamic", "Flush learned MACs"],
+    ["shutdown / no shutdown", "Bounce an err-disabled port after fixing the cause"]
+  ]]
+];
+
+/* Acronym | meaning | area (N network, S security, H hardware, C cloud, O ops and general) */
+const ACRONYMS = `
+AAA|Authentication, Authorization, and Accounting|S
+ACL|Access Control List|S
+AD|Active Directory (also Administrative Distance in routing)|O
+AES|Advanced Encryption Standard|S
+AH|Authentication Header (IPsec)|S
+AI|Artificial Intelligence|O
+ALE|Annualized Loss Expectancy|S
+AP|Access Point|N
+API|Application Programming Interface|O
+APIPA|Automatic Private IP Addressing (169.254.x.x)|N
+APT|Advanced Persistent Threat|S
+ARO|Annualized Rate of Occurrence|S
+ARP|Address Resolution Protocol|N
+AS|Autonomous System|N
+ASLR|Address Space Layout Randomization|S
+ATX|Advanced Technology eXtended (motherboard form factor)|H
+AUP|Acceptable Use Policy|S
+AV|Antivirus|S
+BCP|Business Continuity Plan|S
+BGP|Border Gateway Protocol|N
+BIA|Business Impact Analysis|S
+BIOS|Basic Input/Output System|H
+BPDU|Bridge Protocol Data Unit (spanning tree)|N
+BSOD|Blue Screen of Death|O
+BSSID|Basic Service Set Identifier (an AP's radio MAC)|N
+BYOD|Bring Your Own Device|S
+CA|Certificate Authority|S
+CAPEX|Capital Expenditure|C
+CASB|Cloud Access Security Broker|S
+CDN|Content Delivery Network|N
+CDP|Cisco Discovery Protocol|N
+CI/CD|Continuous Integration / Continuous Delivery|C
+CIA|Confidentiality, Integrity, Availability|S
+CIDR|Classless Inter-Domain Routing|N
+CLI|Command-Line Interface|O
+CMOS|Complementary Metal-Oxide Semiconductor (BIOS settings memory)|H
+CNAME|Canonical Name (DNS alias record)|N
+CPU|Central Processing Unit|H
+CRL|Certificate Revocation List|S
+CSMA/CA|Carrier Sense Multiple Access with Collision Avoidance (Wi-Fi)|N
+CSMA/CD|Carrier Sense Multiple Access with Collision Detection (old Ethernet)|N
+CSR|Certificate Signing Request|S
+CSRF|Cross-Site Request Forgery|S
+CVE|Common Vulnerabilities and Exposures|S
+CVSS|Common Vulnerability Scoring System|S
+DAI|Dynamic ARP Inspection|S
+DDoS|Distributed Denial of Service|S
+DHCP|Dynamic Host Configuration Protocol|N
+DKIM|DomainKeys Identified Mail|S
+DLP|Data Loss Prevention|S
+DMARC|Domain-based Message Authentication, Reporting, and Conformance|S
+DMZ|Demilitarized Zone (screened subnet)|S
+DNAT|Destination Network Address Translation|N
+DNS|Domain Name System|N
+DNSSEC|DNS Security Extensions|S
+DoS|Denial of Service|S
+DR|Disaster Recovery (also Designated Router in OSPF)|S
+DRP|Disaster Recovery Plan|S
+DSL|Digital Subscriber Line|N
+DTP|Dynamic Trunking Protocol|N
+DVI|Digital Visual Interface|H
+EAP|Extensible Authentication Protocol|S
+EDR|Endpoint Detection and Response|S
+EFS|Encrypting File System (Windows)|S
+EIGRP|Enhanced Interior Gateway Routing Protocol|N
+EOL|End of Life|O
+ESD|Electrostatic Discharge|H
+ESP|Encapsulating Security Payload (IPsec)|S
+ESSID|Extended Service Set Identifier|N
+EUI-64|Extended Unique Identifier, 64-bit|N
+FDE|Full Disk Encryption|S
+FHRP|First Hop Redundancy Protocol|N
+FQDN|Fully Qualified Domain Name|N
+FTP|File Transfer Protocol|N
+GDPR|General Data Protection Regulation|S
+GPO|Group Policy Object|O
+GPT|GUID Partition Table|H
+GPU|Graphics Processing Unit|H
+GRE|Generic Routing Encapsulation|N
+GUI|Graphical User Interface|O
+HA|High Availability|C
+HDD|Hard Disk Drive|H
+HDMI|High-Definition Multimedia Interface|H
+HIDS|Host-based Intrusion Detection System|S
+HIPAA|Health Insurance Portability and Accountability Act|S
+HMAC|Hash-based Message Authentication Code|S
+HSM|Hardware Security Module|S
+HSRP|Hot Standby Router Protocol (Cisco)|N
+HTTP|Hypertext Transfer Protocol|N
+HTTPS|HTTP Secure (over TLS)|N
+HVAC|Heating, Ventilation, and Air Conditioning|O
+IaaS|Infrastructure as a Service|C
+IaC|Infrastructure as Code|C
+ICMP|Internet Control Message Protocol|N
+IDS|Intrusion Detection System|S
+IKE|Internet Key Exchange|S
+IMAP|Internet Message Access Protocol|N
+IoC|Indicator of Compromise|S
+IoT|Internet of Things|N
+IP|Internet Protocol|N
+IPAM|IP Address Management|N
+IPS|Intrusion Prevention System|S
+IPsec|Internet Protocol Security|S
+ISP|Internet Service Provider|N
+ITIL|Information Technology Infrastructure Library|O
+KVM|Keyboard, Video, Mouse (switch); also Kernel-based Virtual Machine|H
+LAN|Local Area Network|N
+LACP|Link Aggregation Control Protocol|N
+LDAP|Lightweight Directory Access Protocol|N
+LDAPS|LDAP over TLS|S
+LLDP|Link Layer Discovery Protocol|N
+MAC|Media Access Control (address); also Mandatory Access Control|N
+MAN|Metropolitan Area Network|N
+MBR|Master Boot Record|H
+MDM|Mobile Device Management|S
+MFA|Multifactor Authentication|S
+MIB|Management Information Base (SNMP)|N
+MITM|Man-in-the-Middle (now called on-path attack)|S
+MOU|Memorandum of Understanding|S
+MPLS|Multiprotocol Label Switching|N
+MSA|Master Service Agreement|S
+MSP|Managed Service Provider|O
+MTBF|Mean Time Between Failures|S
+MTTR|Mean Time to Repair (or Recover)|S
+MTU|Maximum Transmission Unit (1500 bytes on Ethernet)|N
+MX|Mail Exchanger (DNS record)|N
+NAC|Network Access Control|S
+NAS|Network-Attached Storage|H
+NAT|Network Address Translation|N
+NDA|Non-Disclosure Agreement|S
+NDP|Neighbor Discovery Protocol (IPv6)|N
+NFC|Near-Field Communication|H
+NFV|Network Functions Virtualization|C
+NGFW|Next-Generation Firewall|S
+NIC|Network Interface Card|H
+NIDS|Network-based Intrusion Detection System|S
+NIST|National Institute of Standards and Technology|S
+NLA|Network Level Authentication (RDP)|S
+NTP|Network Time Protocol|N
+NVMe|Non-Volatile Memory Express|H
+OCSP|Online Certificate Status Protocol|S
+OS|Operating System|O
+OSI|Open Systems Interconnection (model)|N
+OSINT|Open-Source Intelligence|S
+OSPF|Open Shortest Path First|N
+OTP|One-Time Password|S
+OUI|Organizationally Unique Identifier (first half of a MAC)|N
+PaaS|Platform as a Service|C
+PAT|Port Address Translation (NAT overload)|N
+PCI DSS|Payment Card Industry Data Security Standard|S
+PCIe|Peripheral Component Interconnect Express|H
+PDU|Protocol Data Unit; also Power Distribution Unit|N
+PII|Personally Identifiable Information|S
+PIN|Personal Identification Number|S
+PKI|Public Key Infrastructure|S
+PoE|Power over Ethernet|N
+POP3|Post Office Protocol version 3|N
+POST|Power-On Self-Test|H
+PPTP|Point-to-Point Tunneling Protocol|N
+PSK|Pre-Shared Key|S
+PSU|Power Supply Unit|H
+PTR|Pointer record (reverse DNS)|N
+PXE|Preboot Execution Environment (network boot)|H
+QoS|Quality of Service|N
+RADIUS|Remote Authentication Dial-In User Service|S
+RAID|Redundant Array of Independent Disks|H
+RAM|Random Access Memory|H
+RAT|Remote Access Trojan|S
+RBAC|Role-Based Access Control|S
+RDP|Remote Desktop Protocol|N
+RFC|Request for Comments|N
+RFID|Radio-Frequency Identification|H
+RIP|Routing Information Protocol|N
+RMM|Remote Monitoring and Management|O
+RPO|Recovery Point Objective|S
+RSA|Rivest, Shamir, Adleman (public key algorithm)|S
+RTO|Recovery Time Objective|S
+SaaS|Software as a Service|C
+SAE|Simultaneous Authentication of Equals (WPA3)|S
+SAML|Security Assertion Markup Language|S
+SAN|Storage Area Network; also Subject Alternative Name|H
+SASE|Secure Access Service Edge|S
+SATA|Serial Advanced Technology Attachment|H
+SCADA|Supervisory Control and Data Acquisition|S
+SD-WAN|Software-Defined Wide Area Network|N
+SDN|Software-Defined Networking|N
+SED|Self-Encrypting Drive|S
+SFP|Small Form-factor Pluggable (transceiver)|N
+SFTP|SSH File Transfer Protocol|N
+SHA|Secure Hash Algorithm|S
+SIEM|Security Information and Event Management|S
+SIP|Session Initiation Protocol|N
+SLA|Service-Level Agreement|O
+SLAAC|Stateless Address Autoconfiguration (IPv6)|N
+SLE|Single Loss Expectancy|S
+SMB|Server Message Block|N
+SMTP|Simple Mail Transfer Protocol|N
+SNMP|Simple Network Management Protocol|N
+SOAR|Security Orchestration, Automation, and Response|S
+SOC|Security Operations Center|S
+SOHO|Small Office / Home Office|N
+SOP|Standard Operating Procedure|O
+SOW|Statement of Work|O
+SPF|Sender Policy Framework|S
+SQL|Structured Query Language|O
+SQLi|SQL Injection|S
+SSD|Solid-State Drive|H
+SSH|Secure Shell|N
+SSID|Service Set Identifier (Wi-Fi network name)|N
+SSL|Secure Sockets Layer (replaced by TLS)|S
+SSO|Single Sign-On|S
+STP|Spanning Tree Protocol; also Shielded Twisted Pair|N
+SVI|Switched Virtual Interface|N
+TACACS+|Terminal Access Controller Access-Control System Plus|S
+TCP|Transmission Control Protocol|N
+TFTP|Trivial File Transfer Protocol|N
+TKIP|Temporal Key Integrity Protocol (old WPA)|S
+TLS|Transport Layer Security|S
+TOTP|Time-based One-Time Password|S
+TPM|Trusted Platform Module|S
+TTL|Time to Live|N
+UAC|User Account Control|S
+UDP|User Datagram Protocol|N
+UEFI|Unified Extensible Firmware Interface|H
+UPS|Uninterruptible Power Supply|H
+URL|Uniform Resource Locator|N
+USB|Universal Serial Bus|H
+UTM|Unified Threat Management|S
+UTP|Unshielded Twisted Pair|N
+VDI|Virtual Desktop Infrastructure|C
+VLAN|Virtual Local Area Network|N
+VM|Virtual Machine|C
+VNC|Virtual Network Computing|N
+VoIP|Voice over IP|N
+VPC|Virtual Private Cloud|C
+VPN|Virtual Private Network|S
+VRRP|Virtual Router Redundancy Protocol|N
+VXLAN|Virtual Extensible LAN|N
+WAF|Web Application Firewall|S
+WAN|Wide Area Network|N
+WAP|Wireless Access Point|N
+WEP|Wired Equivalent Privacy (broken)|S
+WLAN|Wireless LAN|N
+WPA|Wi-Fi Protected Access (WPA2, WPA3)|S
+WPS|Wi-Fi Protected Setup (PIN is weak; turn it off)|S
+XDR|Extended Detection and Response|S
+XSS|Cross-Site Scripting|S
+ZTNA|Zero Trust Network Access|S
+`;
+
+/* ---------- Extras ---------- */
+const TROUBLE = [
+  ["Identify the problem", "Gather information, question users, find symptoms, ask what changed, duplicate the problem if you can, approach multiple problems one at a time. Back up data before you change anything (A+)."],
+  ["Establish a theory of probable cause", "Question the obvious. Work top-to-bottom or bottom-to-top through the OSI model, or divide and conquer. Research if needed."],
+  ["Test the theory to determine the cause", "If it's confirmed, move on. If not, form a new theory or escalate."],
+  ["Establish a plan of action", "Plan the fix and identify potential effects. Check change management and get approval."],
+  ["Implement the solution or escalate", "Make the change, or hand it off with your notes."],
+  ["Verify full system functionality", "Confirm it works for the user, and implement preventive measures if they apply."],
+  ["Document findings, actions, outcomes and lessons learned", "Update the ticket and knowledge base so the next tech is faster."]
+];
+
+/* standard | Wi-Fi name | bands | max data rate | notes */
+const WIFI = `
+802.11a|—|5 GHz|54 Mbps|OFDM, 1999
+802.11b|—|2.4 GHz|11 Mbps|DSSS, 1999
+802.11g|—|2.4 GHz|54 Mbps|Backward compatible with b
+802.11n|Wi-Fi 4|2.4 / 5 GHz|600 Mbps|MIMO, 40 MHz channels
+802.11ac|Wi-Fi 5|5 GHz|~6.9 Gbps|MU-MIMO (downlink), 80/160 MHz channels
+802.11ax|Wi-Fi 6 / 6E|2.4 / 5 GHz (6E adds 6 GHz)|~9.6 Gbps|OFDMA, BSS coloring, TWT
+802.11be|Wi-Fi 7|2.4 / 5 / 6 GHz|~46 Gbps|320 MHz channels, multi-link operation (MLO), 4096-QAM
+`;
+
+const WIFI_SEC = `
+WEP|RC4|Broken. Never use it.
+WPA|TKIP (RC4)|Deprecated stopgap
+WPA2|AES-CCMP|Still common. Personal (PSK) or Enterprise (802.1X + RADIUS).
+WPA3|AES-GCMP / CCMP|SAE replaces PSK (resists offline cracking), forward secrecy, 192-bit Enterprise mode, protected management frames
+`;
+
+const WIFI_FACTS = [
+  "2.4 GHz non-overlapping channels: 1, 6 and 11 (US). Longer range, more interference.",
+  "5 GHz and 6 GHz: many more non-overlapping channels, less range, less interference.",
+  "Site survey and heat map before you place APs. Overlap cells about 15–20% for roaming.",
+  "Interference sources: microwaves, cordless phones, Bluetooth, neighboring APs, walls and metal.",
+  "Antennas: omnidirectional covers all around; directional (Yagi, parabolic) reaches far in one direction."
+];
+
+/* category | max speed | max length | notes */
+const CABLES = `
+Cat 5|100 Mbps|100 m|Obsolete
+Cat 5e|1 Gbps|100 m|Minimum for gigabit
+Cat 6|1 Gbps (10 Gbps to 55 m)|100 m|Common in new installs
+Cat 6a|10 Gbps|100 m|Thicker, better crosstalk protection
+Cat 7|10 Gbps|100 m|Shielded, not a TIA standard
+Cat 8|25 / 40 Gbps|30 m|Data center switch-to-server runs
+`;
+
+const FIBER = `
+Single-mode (SMF)|Laser, 1310 / 1550 nm|Up to tens of km|Thin 9 µm core, yellow jacket
+Multimode (MMF)|LED or VCSEL, 850 nm|Up to ~550 m (OM3/OM4)|Wider 50 / 62.5 µm core, orange or aqua jacket
+`;
+
+const CONNECTORS = `
+RJ45|8-pin Ethernet (twisted pair)
+RJ11|Phone line / DSL (smaller, 6-position)
+LC|Small square fiber connector, push-latch. Most common on SFPs.
+SC|Square fiber connector, push-pull
+ST|Round bayonet fiber connector (twist-lock)
+MPO / MTP|Multi-fiber ribbon for 40/100G
+F-type|Coax for cable modems and TV (RG-6)
+BNC|Bayonet coax (older networks, video)
+SFP / SFP+ / QSFP|Hot-swappable transceiver modules: 1G / 10G / 40G+
+USB-C|Reversible connector for USB 3.x/4, Thunderbolt, DisplayPort alt mode, power delivery
+`;
+
+const PINOUT_B = ["White/orange", "Orange", "White/green", "Blue", "White/blue", "Green", "White/brown", "Brown"];
+const PINOUT_A = ["White/green", "Green", "White/orange", "Blue", "White/blue", "Orange", "White/brown", "Brown"];
+
+const ETH_STD = `
+10BASE-T|10 Mbps|Cat 3+ copper, 100 m
+100BASE-TX|100 Mbps|Cat 5+ copper, 100 m
+1000BASE-T|1 Gbps|Cat 5e+ copper, 100 m
+10GBASE-T|10 Gbps|Cat 6a copper, 100 m
+1000BASE-SX / LX|1 Gbps|Multimode (SX) / single-mode (LX) fiber
+10GBASE-SR / LR|10 Gbps|Multimode short range / single-mode long range (10 km)
+`;
+
+/* level | name | min drives | survives | usable capacity | notes */
+const RAID = `
+0|Striping|2|No drive failures|100%|Fastest, but one failure loses everything
+1|Mirroring|2|1 drive (per mirror)|50%|Simple redundancy, fast reads
+5|Striping with parity|3|1 drive|(n − 1) / n|Good balance; slow rebuilds on big drives
+6|Striping with double parity|4|2 drives|(n − 2) / n|Safer for large arrays
+10 (1+0)|Mirrored stripes|4|1 drive per mirror pair|50%|Fast and redundant, costs the most
+`;
+
+/* attack | what it is | defenses | area */
+const ATTACKS = `
+Phishing (spear, whaling, vishing, smishing)|Fake messages that trick users into clicking, paying or sharing credentials. Spear targets one person, whaling targets executives, vishing is voice, smishing is SMS.|User training, email filtering, SPF/DKIM/DMARC, MFA, report-phish button|Social
+Pretexting and impersonation|An invented story to get access or information, such as a fake help desk call|Verify identity by call-back, clear procedures, training|Social
+Tailgating / piggybacking|Following an authorized person through a secured door|Access control vestibule (mantrap), badges, guards, training|Physical
+Shoulder surfing|Watching someone type a password or PIN|Privacy screens, awareness|Physical
+Ransomware|Malware that encrypts data and demands payment|Offline / immutable backups, patching, EDR, least privilege, segmentation|Malware
+Trojan / RAT|Malware disguised as legitimate software; a RAT gives remote control|Application allow lists, EDR, downloads from trusted sources only|Malware
+Worm|Self-spreading malware across a network|Patching, segmentation, firewalls|Malware
+Rootkit|Hides deep in the OS or firmware to keep admin access|Secure Boot, measured boot, reimaging|Malware
+Keylogger / spyware|Records keystrokes or activity|EDR, MFA (makes stolen passwords less useful)|Malware
+SQL injection|Malicious SQL in an input field runs against the database|Parameterized queries, input validation, least privilege DB accounts, WAF|App
+Cross-site scripting (XSS)|Injected script runs in other users' browsers|Output encoding, input validation, Content Security Policy|App
+Cross-site request forgery (CSRF)|Tricks a signed-in browser into sending a request|Anti-CSRF tokens, SameSite cookies, re-authentication|App
+Buffer overflow|Writes past a memory buffer to crash or run code|Bounds checking, DEP, ASLR, memory-safe languages|App
+Directory traversal|../ sequences reach files outside the web root|Input validation, least privilege, chroot / sandbox|App
+On-path (man-in-the-middle)|Attacker relays and reads or changes traffic|TLS everywhere, HSTS, certificate validation, 802.1X|Network
+ARP poisoning|Fake ARP replies redirect LAN traffic|Dynamic ARP Inspection, static ARP for critical hosts|Network
+DHCP spoofing / starvation|Rogue DHCP server or a flood that exhausts the pool|DHCP snooping, port security|Network
+DNS poisoning|Fake DNS answers send users to the wrong site|DNSSEC, trusted resolvers, DNS over TLS/HTTPS|Network
+MAC flooding|Overflows the switch MAC table so it floods frames|Port security|Network
+VLAN hopping|Double tagging or switch spoofing reaches another VLAN|Disable DTP, unused native VLAN, shut unused ports|Network
+DoS / DDoS|Floods a service so real users can't reach it|Rate limiting, CDN / DDoS scrubbing, redundancy|Network
+Rogue AP / evil twin|Unauthorized or look-alike Wi-Fi access point|Wireless IDS, 802.1X / WPA3-Enterprise, site surveys|Wireless
+Brute force / password spraying|Many guesses at one account, or one common password across many accounts|Account lockout, MFA, strong password policy, monitoring|Credentials
+Credential stuffing|Reusing leaked username/password pairs|MFA, breached-password checks, unique passwords|Credentials
+Pass-the-hash|Reusing a stolen password hash without cracking it|Credential Guard, limit admin logons, LAPS|Credentials
+Replay|Capturing and resending valid authentication|Timestamps, nonces, session tokens, Kerberos|Credentials
+Privilege escalation|Gaining rights beyond what was granted|Least privilege, patching, monitoring admin use|Access
+Insider threat|Misuse by an employee or contractor|Least privilege, separation of duties, DLP, logging, offboarding|Access
+Zero-day|An exploit for a flaw with no patch yet|Defense in depth, EDR, segmentation, fast patching once available|Access
+Supply chain|Compromise through a vendor, update or library|Vendor risk assessment, SBOM, code signing, update verification|Access
+`;
+
+</script>
+<script>
+/* IT Quick Reference: tabbed cheat sheets with cross-sheet search, copy-to-clipboard commands,
+   a few calculators and drills, and print layouts for one sheet or all of them. */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rows = txt => txt.trim().split("\n").map(l => l.split("|"));
+
+const EXAMS = { A: ["A+", "aplus"], N: ["Network+", "netplus"], S: ["Security+", "securityplus"], C: ["CCNA", "ccna"] };
+const GUIDE = { aplus: "A+", netplus: "Network+", securityplus: "Security+", az900: "AZ-900", ccna: "CCNA" };
+
+/* table(headers, rows): rows are arrays of cell HTML; opts.cls adds a table class, opts.attr(row,i) adds tr attributes */
+function table(head, body, opts = {}) {
+  return `<div class="tw"><table class="t ${opts.cls || ""}"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${
+    body.map((r, i) => `<tr class="r"${opts.attr ? " " + opts.attr(r, i) : ""}>${r.map((c, j) => `<td data-l="${esc(head[j]).replace(/<[^>]+>/g, "")}">${c}</td>`).join("")}</tr>`).join("")
+  }</tbody></table></div>`;
+}
+const blk = (title, html, cls = "") => `<div class="blk ${cls}">${title ? `<h3>${title}</h3>` : ""}${html}</div>`;
+const tool = (title, html) => blk(title, html, "ns noprint tool");
+const list = (items, ordered) => `<${ordered ? "ol" : "ul"} class="facts">${items.map(t => `<li class="r">${t}</li>`).join("")}</${ordered ? "ol" : "ul"}>`;
+
+/* A command cell: each "·"-separated piece is its own copy button. In IOS, " / " means "next line". */
+function cmdCell(raw, ios) {
+  return raw.split(/\s+·\s+/).map(piece => {
+    const [cmd, prompt] = piece.split(/\s+→\s+/);
+    const copy = ios ? cmd.replace(/\s\/\s/g, "\n") : cmd;
+    return `<button class="cmd" type="button" data-copy="${esc(copy)}" title="Copy"><code>${esc(cmd)}</code></button>${prompt ? `<span class="prompt">→ <code>${esc(prompt)}</code></span>` : ""}`;
+  }).join(" ");
+}
+function cmdSheet(sections, ios) {
+  return sections.map(([title, items]) => blk(title, table(["Command", "What it does"], items.map(([c, d]) => [cmdCell(c, ios), esc(d)]), { cls: "cmds" }))).join("");
+}
+const links = ids => `<p class="more ns noprint">Go deeper: ${ids.map(id => `<a href="../${id}/">${GUIDE[id]} guide</a>`).join(" · ")}</p>`;
+
+/* ---------- Sheets ---------- */
+const SHEETS = [
+  { id: "ports", nav: "Ports", glyph: "PORT", title: "Ports and protocols", lead: "The port numbers that show up on every IT exam and every firewall rule. Learn the clear-text protocol and its secure replacement as a pair.", guides: ["netplus", "aplus", "securityplus", "ccna"], render() {
+    const P = rows(PORTS);
+    return tool("Filter by exam", `<div class="chips" role="group" aria-label="Filter ports by exam"><button type="button" class="chip on" data-ex="">All</button>${Object.entries(EXAMS).map(([k, [n]]) => `<button type="button" class="chip" data-ex="${k}">${n}</button>`).join("")}</div>`)
+      + blk("", table(["Port", "Transport", "Protocol", "What it does", "Secure alternative", "Exams"], P.map(([port, tr, name, what, sec, ex]) => [
+        `<b class="port">${esc(port)}</b>`, `<span class="tr">${esc(tr)}</span>`, `<b>${esc(name)}</b>`, esc(what), sec === "—" ? `<span class="dim">—</span>` : esc(sec),
+        ex === "—" ? `<span class="dim">General</span>` : [...ex].map(k => `<span class="ex ex-${k}">${EXAMS[k][0]}</span>`).join("")
+      ]), { cls: "ports", attr: (r, i) => `data-ex="${P[i][5]}"` }))
+      + `<p class="note">Security+ and CCNA don't publish a fixed port list. Their tags mark ports their objectives cover. Network+ N10-009 and A+ 220-1201 list ports directly.</p>`
+      + tool("Port drill", `<div class="drill" id="drill"></div>`)
+      + blk("No port: IP protocol numbers", table(["Number", "Protocol", "Use"], rows(PROTO_NUMS).map(([n, p, u]) => [`<b class="port">${n}</b>`, `<b>${p}</b>`, esc(u)])))
+      + blk("TCP vs UDP", table(["", "TCP", "UDP"], rows(TCP_UDP).map(([a, b, c]) => [`<b>${a}</b>`, esc(b), esc(c)])))
+      + blk("Port ranges", table(["Range", "Name", "Meaning"], [["0 – 1023", "Well-known", "System services (needs admin rights to listen on most OSes)"], ["1024 – 49151", "Registered", "Assigned to specific applications"], ["49152 – 65535", "Dynamic / ephemeral", "Temporary client-side ports"]].map(([a, b, c]) => [`<b class="port">${a}</b>`, `<b>${b}</b>`, c])));
+  } },
+  { id: "subnetting", nav: "Subnetting", glyph: "/24", title: "Subnetting", lead: "Masks, host counts and the shortcut method. Hosts = 2^(host bits) − 2, because the network and broadcast addresses aren't usable.", guides: ["netplus", "ccna", "aplus"], render() {
+    const cidr = [];
+    for (let n = 8; n <= 32; n++) {
+      const m = n ? (0xffffffff << (32 - n)) >>> 0 : 0, oct = [24, 16, 8, 0].map(s => (m >>> s) & 255);
+      const blockSz = 256 - oct[Math.min(3, Math.floor((n - 1) / 8))];
+      const hosts = n === 32 ? "1" : n === 31 ? "2 (point-to-point)" : (2 ** (32 - n) - 2).toLocaleString("en-US");
+      cidr.push([`<b class="port">/${n}</b>`, `<code>${oct.join(".")}</code>`, `<code>${oct.map(o => 255 - o).join(".")}</code>`, `${blockSz} <span class="dim">(octet ${Math.floor((n - 1) / 8) + 1})</span>`, (2 ** (32 - n)).toLocaleString("en-US"), hosts]);
+    }
+    return tool("Subnet calculator", `<form class="calc" id="subcalc" onsubmit="return false"><label>IP address <input id="sc-ip" value="192.168.10.77" inputmode="decimal" autocomplete="off" spellcheck="false"></label><label>Prefix <span class="pfx">/<input id="sc-n" type="number" min="0" max="32" value="26"></span></label><input id="sc-r" type="range" min="0" max="32" value="26" aria-label="Prefix length"></form><div id="sc-out" class="calc-out" aria-live="polite"></div>`)
+      + blk("CIDR reference", table(["CIDR", "Subnet mask", "Wildcard", "Block size", "Addresses", "Usable hosts"], cidr, { cls: "cidr", attr: r => `data-n="${r[0].replace(/\D/g, "")}"` }))
+      + blk("The magic number method", list(MAGIC.map(([t, d]) => `<b>${t}.</b> ${d}`), true))
+      + blk("Powers of 2", `<div class="pow">${Array.from({ length: 17 }, (_, i) => `<span class="r"><b>2<sup>${i}</sup></b>${(2 ** i).toLocaleString("en-US")}</span>`).join("")}</div><p class="note">Need N hosts? Find the smallest 2^h with 2^h − 2 ≥ N, then the prefix is /(32 − h). Need N subnets? Borrow b bits where 2^b ≥ N.</p>`)
+      + blk("Special IPv4 ranges", table(["Range", "Purpose", "Addresses"], rows(RANGES).map(([a, b, c]) => [`<code>${esc(a)}</code>`, `<b>${esc(b)}</b>`, esc(c)])))
+      + blk("Classful addressing (legacy, still tested)", table(["Class", "First octet", "Default mask", "Leading bits"], rows(CLASSES).map(([a, b, c, d]) => [`<b>${a}</b>`, b, esc(c), `<code>${d}</code>`])) + `<p class="note">127 is reserved for loopback, so Class A stops at 126.</p>`)
+      + blk("IPv6 address types", table(["Prefix", "Type", "Notes"], rows(IPV6).map(([a, b, c]) => [`<code>${esc(a)}</code>`, `<b>${b}</b>`, esc(c)])))
+      + blk("IPv6 rules of thumb", list(IPV6_FACTS.map(esc)));
+  } },
+  { id: "osi", nav: "OSI model", glyph: "L1–7", title: "OSI and TCP/IP models", lead: "Top down: All People Seem To Need Data Processing. Bottom up: Please Do Not Throw Sausage Pizza Away.", guides: ["netplus", "aplus", "ccna"], render() {
+    return blk("", `<div class="stack">${rows(OSI).map(([n, name, pdu, job, protos, dev]) => `<div class="layer r l${n}"><div class="ln">${n}</div><div class="lbody"><div class="lt"><b>${name}</b><span class="pdu">${esc(pdu)}</span></div><p>${esc(job)}</p><dl><dt>Protocols</dt><dd>${esc(protos)}</dd><dt>Devices</dt><dd>${esc(dev)}</dd></dl></div></div>`).join("")}</div>`)
+      + blk("TCP/IP (4-layer) model", table(["TCP/IP layer", "OSI layers", "Examples"], rows(TCPIP).map(([a, b, c]) => [`<b>${a}</b>`, b, esc(c)])) + `<p class="note">*ARP is often placed between layers 2 and 3. It resolves IP addresses to MAC addresses on the local network.</p>`)
+      + blk("Encapsulation", `<div class="encap r"><span class="e-data">Data</span><span>→</span><span class="e-seg">+ TCP/UDP header = Segment</span><span>→</span><span class="e-pkt">+ IP header = Packet</span><span>→</span><span class="e-frm">+ MAC header &amp; FCS trailer = Frame</span><span>→</span><span class="e-bit">Bits on the wire</span></div><p class="note">The receiver reverses it (de-encapsulation). Switches read up to layer 2, routers to layer 3.</p>`)
+      + blk("Troubleshoot by layer", list([
+        "<b>Layer 1:</b> cable unplugged or damaged, bad port, no link light, interference, attenuation",
+        "<b>Layer 2:</b> wrong VLAN, duplex mismatch, STP blocking, MAC table issues, port security shutdown",
+        "<b>Layer 3:</b> wrong IP, mask or gateway, missing route, APIPA address (DHCP failed)",
+        "<b>Layer 4:</b> port blocked by a firewall or ACL, service not listening",
+        "<b>Layer 7:</b> DNS failure, expired certificate, application misconfiguration"
+      ]));
+  } },
+  { id: "windows", nav: "Windows", glyph: "WIN", title: "Windows commands", lead: "Command Prompt and PowerShell tools for support work. Click any command to copy it. Most repair tools need an elevated (Run as administrator) prompt.", guides: ["aplus"], render() { return cmdSheet(WINDOWS); } },
+  { id: "linux", nav: "Linux", glyph: "$_", title: "Linux commands", lead: "Shell essentials for support and admin work. Click any command to copy it. Prefix with sudo when you need root.", guides: ["aplus", "securityplus"], render() {
+    return tool("chmod calculator", `<div class="chmod" id="chmod">${["Owner", "Group", "Others"].map((w, i) => `<fieldset><legend>${w}</legend>${["Read", "Write", "Execute"].map((p, j) => `<label><input type="checkbox" data-i="${i}" data-b="${4 >> j}"${[7, 5, 5][i] & (4 >> j) ? " checked" : ""}> ${p}</label>`).join("")}</fieldset>`).join("")}<div class="chmod-out"><label>Octal <input id="ch-oct" value="755" maxlength="3" inputmode="numeric"></label><code id="ch-sym">rwxr-xr-x</code><button class="cmd" type="button" id="ch-copy" data-copy="chmod 755 file"><code>chmod 755 file</code></button></div></div><p class="note">Read = 4, write = 2, execute = 1. Add them per group: 7 = rwx, 6 = rw-, 5 = r-x, 4 = r--. Common: 644 files, 755 scripts and folders, 600 private keys.</p>`)
+      + cmdSheet(LINUX);
+  } },
+  { id: "ios", nav: "Cisco IOS", glyph: "IOS", title: "Cisco IOS commands", lead: "Router and switch CLI for CCNA labs. Click a command to copy it. Steps joined with / are separate lines.", guides: ["ccna", "netplus"], render() { return cmdSheet(IOS, true) + blk("Administrative distance", table(["Source", "AD"], [["Connected", "0"], ["Static", "1"], ["eBGP", "20"], ["EIGRP (internal)", "90"], ["OSPF", "110"], ["IS-IS", "115"], ["RIP", "120"], ["EIGRP (external)", "170"], ["iBGP", "200"], ["Unusable", "255"]].map(([a, b]) => [a, `<b class="port">${b}</b>`]))) + `<p class="note">Lower AD wins between routing sources. Within one source, the longest prefix match wins first.</p>`; } },
+  { id: "acronyms", nav: "Acronyms", glyph: "A–Z", title: "Acronyms", lead: "The acronyms that come up across A+, Network+, Security+, CCNA and AZ-900. Type in the search box at the top to jump to one.", guides: ["aplus", "netplus", "securityplus", "ccna", "az900"], render() {
+    const A = rows(ACRONYMS), area = { N: "Networking", S: "Security", H: "Hardware", C: "Cloud", O: "Operations" };
+    return tool("Filter by area", `<div class="chips" role="group" aria-label="Filter acronyms by area"><button type="button" class="chip on" data-ar="">All ${A.length}</button>${Object.entries(area).map(([k, n]) => `<button type="button" class="chip" data-ar="${k}">${n}</button>`).join("")}</div>`)
+      + blk("", `<dl class="acr">${A.map(([a, m, t]) => `<div class="r a-${t}" data-ar="${t}"><dt>${esc(a)}</dt><dd>${esc(m)}</dd></div>`).join("")}</dl>`);
+  } },
+  { id: "troubleshoot", nav: "Troubleshooting", glyph: "1→7", title: "Troubleshooting method", lead: "The CompTIA methodology. Network+ uses these 7 steps. A+ uses 6, combining steps 4 and 5 into one.", guides: ["aplus", "netplus"], render() {
+    return blk("", `<ol class="steps">${TROUBLE.map(([t, d], i) => `<li class="r"><span class="sn">${i + 1}</span><div><b>${t}</b><p>${esc(d)}</p></div></li>`).join("")}</ol>`)
+      + blk("Quick checks before you dig in", list(["Is it plugged in, powered on and connected?", "Can you reproduce it? Does it happen for one user, many, or everyone?", "What changed recently: updates, new hardware, new software, config changes?", "Check the logs: Event Viewer, syslog, journalctl, the device log", "Reboot only after you've captured the error and any evidence you need"]));
+  } },
+  { id: "wifi", nav: "Wi-Fi", glyph: "Wi-Fi", title: "Wi-Fi standards", lead: "Speeds are theoretical maximums. Real throughput is often half or less.", guides: ["netplus", "aplus"], render() {
+    return blk("802.11 standards", table(["Standard", "Name", "Bands", "Max rate", "Notes"], rows(WIFI).map(([a, b, c, d, e]) => [`<b class="port">${a}</b>`, b === "—" ? `<span class="dim">—</span>` : `<b>${b}</b>`, esc(c), esc(d), esc(e)])))
+      + blk("Wireless security", table(["Protocol", "Encryption", "Notes"], rows(WIFI_SEC).map(([a, b, c]) => [`<b>${a}</b>`, esc(b), esc(c)])))
+      + blk("Placement and channels", list(WIFI_FACTS.map(esc)));
+  } },
+  { id: "cables", nav: "Cables", glyph: "RJ45", title: "Cables and connectors", lead: "Copper runs top out at 100 m (328 ft). Use plenum-rated cable in air-handling spaces above ceilings and below floors.", guides: ["aplus", "netplus"], render() {
+    const pins = (p, name) => `<div class="pinout r"><b>${name}</b><ol>${p.map((c, i) => { const [a, b] = c.toLowerCase().split("/"); const base = b || a; return `<li><span class="wire w-${base}${b ? " striped" : ""}" aria-hidden="true"></span><span class="pn">${i + 1}</span>${c}</li>`; }).join("")}</ol></div>`;
+    return blk("Twisted pair categories", table(["Category", "Max speed", "Max length", "Notes"], rows(CABLES).map(([a, b, c, d]) => [`<b>${a}</b>`, esc(b), c, esc(d)])))
+      + blk("T568A and T568B wiring", `<div class="pins">${pins(PINOUT_B, "T568B (most common)")}${pins(PINOUT_A, "T568A")}</div><p class="note">Same standard on both ends = straight-through (PC to switch). T568A on one end and T568B on the other = crossover (like devices, though Auto-MDIX makes this mostly unneeded). Pins 1, 2, 3 and 6 carry 10/100 traffic; gigabit uses all 8.</p>`)
+      + blk("Fiber", table(["Type", "Light source", "Distance", "Notes"], rows(FIBER).map(([a, b, c, d]) => [`<b>${a}</b>`, esc(b), esc(c), esc(d)])))
+      + blk("Connectors", table(["Connector", "Use"], rows(CONNECTORS).map(([a, b]) => [`<b>${esc(a)}</b>`, esc(b)])))
+      + blk("Ethernet standards", table(["Standard", "Speed", "Media"], rows(ETH_STD).map(([a, b, c]) => [`<b class="port">${a}</b>`, b, esc(c)])))
+      + blk("Coax", list(["<b>RG-6:</b> cable internet and TV, F-type connector", "<b>RG-59:</b> older and thinner, CCTV and short video runs"]));
+  } },
+  { id: "raid", nav: "RAID", glyph: "RAID", title: "RAID levels", lead: "RAID protects against drive failure, not deletion, ransomware or fire. It is not a backup.", guides: ["aplus", "securityplus"], render() {
+    return blk("", table(["Level", "Method", "Min drives", "Survives", "Usable capacity", "Notes"], rows(RAID).map(([a, b, c, d, e, f]) => [`<b class="port">RAID ${a}</b>`, `<b>${b}</b>`, c, esc(d), esc(e), esc(f)])))
+      + tool("RAID capacity calculator", `<form class="calc" id="raidcalc" onsubmit="return false"><label>Level <select id="rc-l"><option value="0">RAID 0</option><option value="1">RAID 1</option><option value="5" selected>RAID 5</option><option value="6">RAID 6</option><option value="10">RAID 10</option></select></label><label>Drives <input id="rc-n" type="number" min="2" max="24" value="4"></label><label>Size each (TB) <input id="rc-s" type="number" min="0.1" step="0.1" value="4"></label></form><div id="rc-out" class="calc-out" aria-live="polite"></div>`)
+      + blk("Backup types", table(["Type", "Backs up", "Clears archive bit", "Restore needs"], [["Full", "Everything", "Yes", "The last full"], ["Incremental", "Changes since the last backup of any kind", "Yes", "Last full + every incremental since"], ["Differential", "Changes since the last full", "No", "Last full + the latest differential"], ["Snapshot", "Point-in-time state of a VM or volume", "—", "The snapshot"]].map(([a, b, c, d]) => [`<b>${a}</b>`, b, c, d])) + `<p class="note">3-2-1 rule: 3 copies of your data, on 2 different media, with 1 off-site (and ideally one offline or immutable).</p>`);
+  } },
+  { id: "attacks", nav: "Attacks", glyph: "ATK", title: "Attacks and defenses", lead: "Match each attack to the control that stops it. That pairing is how most Security+ questions are written.", guides: ["securityplus", "netplus", "ccna"], render() {
+    const A = rows(ATTACKS), cats = [...new Set(A.map(r => r[3]))];
+    return cats.map(c => blk(c, table(["Attack", "What it is", "Defenses"], A.filter(r => r[3] === c).map(([a, b, d]) => [`<b>${esc(a)}</b>`, esc(b), `<span class="def">${esc(d)}</span>`]), { cls: "atk" }))).join("");
+  } }
+];
+
+/* ---------- Build the page ---------- */
+function build() {
+  $("#nav").innerHTML = SHEETS.map(s => `<a href="#${s.id}" data-id="${s.id}"><span class="gl">${s.glyph}</span>${s.nav}</a>`).join("");
+  $("#sheets").innerHTML = SHEETS.map(s => `<section class="sheet" id="s-${s.id}" data-id="${s.id}" aria-labelledby="h-${s.id}">
+    <div class="sheet-head"><div><div class="eyebrow">IT quick reference</div><h2 id="h-${s.id}">${s.title}</h2></div><button type="button" class="btn ghost noprint" data-print="one">Print this sheet</button></div>
+    <p class="lead ns">${s.lead}</p>${s.render()}${links(s.guides)}</section>`).join("");
+}
+
+/* ---------- Routing ---------- */
+let current = "ports";
+function route() {
+  const id = location.hash.slice(1);
+  current = SHEETS.some(s => s.id === id) ? id : "ports";
+  $$(".sheet").forEach(s => s.classList.toggle("on", s.dataset.id === current));
+  $$("#nav a").forEach(a => a.setAttribute("aria-current", a.dataset.id === current ? "page" : "false"));
+  const a = $(`#nav a[data-id="${current}"]`); if (a) a.scrollIntoView({ block: "nearest", inline: "nearest" });
+  document.title = `${SHEETS.find(s => s.id === current).title} · IT Quick Reference`;
+}
+
+/* ---------- Search across every sheet ---------- */
+function search(q) {
+  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  document.body.classList.toggle("searching", terms.length > 0);
+  let total = 0;
+  $$(".sheet").forEach(sh => {
+    let n = 0;
+    $$(".r", sh).forEach(r => {
+      const t = r.dataset.t || (r.dataset.t = (r.children.length ? [...r.children].map(c => c.textContent).join(" ") : r.textContent).toLowerCase());
+      const hit = !terms.length || terms.every(w => t.includes(w));
+      r.classList.toggle("qhide", !hit);
+      if (hit && terms.length && !r.classList.contains("fhide")) n++;
+    });
+    $$(".blk", sh).forEach(b => b.classList.toggle("qempty", terms.length > 0 && !$$(".r", b).some(r => !r.classList.contains("qhide") && !r.classList.contains("fhide"))));
+    sh.classList.toggle("has", n > 0);
+    total += n;
+  });
+  const out = $("#qcount");
+  out.textContent = terms.length ? (total ? `${total} match${total === 1 ? "" : "es"} across ${$$(".sheet.has").length} sheet${$$(".sheet.has").length === 1 ? "" : "s"}` : "No matches. Try a shorter word.") : "";
+}
+
+/* ---------- Copy ---------- */
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 1600); }
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.append(ta); ta.select();
+    try { document.execCommand("copy"); toast("Copied"); } catch (e2) { toast("Couldn't copy. Select the text instead."); }
+    ta.remove();
+  }
+}
+
+/* ---------- Print ---------- */
+function print(all) {
+  document.body.classList.toggle("print-all", all);
+  window.print();
+}
+window.addEventListener("afterprint", () => document.body.classList.remove("print-all"));
+
+/* ---------- Tools ---------- */
+const ip2n = s => { const p = s.trim().split("."); if (p.length !== 4 || p.some(x => !/^\d{1,3}$/.test(x) || +x > 255)) return null; return p.reduce((a, x) => a * 256 + +x, 0); };
+const n2ip = n => [24, 16, 8, 0].map(s => Math.floor(n / 2 ** s) % 256).join(".");
+function subnetCalc() {
+  const ip = ip2n($("#sc-ip").value), n = Math.max(0, Math.min(32, parseInt($("#sc-n").value, 10) || 0)), out = $("#sc-out");
+  $("#sc-r").value = n;
+  $$(".cidr tr.r").forEach(r => r.classList.toggle("hl", +r.dataset.n === n));
+  if (ip === null) { out.innerHTML = `<p class="bad">Enter an IPv4 address like 192.168.10.77</p>`; return; }
+  const size = 2 ** (32 - n), net = Math.floor(ip / size) * size, bc = net + size - 1, mask = 2 ** 32 - size;
+  const first = n >= 31 ? net : net + 1, last = n >= 31 ? bc : bc - 1, hosts = n === 32 ? 1 : n === 31 ? 2 : size - 2;
+  const o1 = Math.floor(ip / 2 ** 24), cls = o1 < 128 ? "A" : o1 < 192 ? "B" : o1 < 224 ? "C" : o1 < 240 ? "D (multicast)" : "E (reserved)";
+  const inR = (b, p) => Math.floor(ip / 2 ** (32 - p)) === Math.floor(ip2n(b) / 2 ** (32 - p));
+  const kind = inR("10.0.0.0", 8) || inR("172.16.0.0", 12) || inR("192.168.0.0", 16) ? "Private (RFC 1918)" : inR("127.0.0.0", 8) ? "Loopback" : inR("169.254.0.0", 16) ? "APIPA / link-local" : inR("100.64.0.0", 10) ? "Carrier-grade NAT" : o1 >= 224 ? "Multicast / reserved" : "Public";
+  const bin = n2ip(ip).split(".").map(o => (+o).toString(2).padStart(8, "0")).join("").split("").map((b, i) => `<span class="${i < n ? "nb" : "hb"}">${b}</span>${i % 8 === 7 && i < 31 ? "." : ""}`).join("");
+  const cells = [["Network", n2ip(net) + "/" + n], ["Subnet mask", n2ip(mask)], ["Wildcard", n2ip(2 ** 32 - 1 - mask)], ["Broadcast", n === 32 ? "—" : n2ip(bc)], ["Usable range", `${n2ip(first)} – ${n2ip(last)}`], ["Usable hosts", hosts.toLocaleString("en-US")], ["Class", cls], ["Type", kind]];
+  out.innerHTML = `<div class="kv">${cells.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("")}</div><div class="bin" aria-label="Address in binary"><span class="leg"><i class="nb">network bits</i> <i class="hb">host bits</i></span><code>${bin}</code></div>`;
+}
+
+function chmodFromBoxes() {
+  const v = [0, 0, 0]; $$("#chmod input[type=checkbox]").forEach(c => { if (c.checked) v[+c.dataset.i] += +c.dataset.b; });
+  setChmod(v.join(""), true);
+}
+function setChmod(oct, fromBoxes) {
+  if (!/^[0-7]{3}$/.test(oct)) return;
+  if (!fromBoxes) $$("#chmod input[type=checkbox]").forEach(c => (c.checked = !!(+oct[+c.dataset.i] & +c.dataset.b)));
+  else $("#ch-oct").value = oct;
+  $("#ch-sym").textContent = [...oct].map(d => (d & 4 ? "r" : "-") + (d & 2 ? "w" : "-") + (d & 1 ? "x" : "-")).join("");
+  const b = $("#ch-copy"); b.dataset.copy = `chmod ${oct} file`; b.firstChild.textContent = `chmod ${oct} file`;
+}
+
+function raidCalc() {
+  const l = $("#rc-l").value, n = Math.max(1, parseInt($("#rc-n").value, 10) || 0), s = Math.max(0, parseFloat($("#rc-s").value) || 0), out = $("#rc-out");
+  const min = { 0: 2, 1: 2, 5: 3, 6: 4, 10: 4 }[l];
+  if (n < min) { out.innerHTML = `<p class="bad">RAID ${l} needs at least ${min} drives.</p>`; return; }
+  if (l === "10" && n % 2) { out.innerHTML = `<p class="bad">RAID 10 needs an even number of drives.</p>`; return; }
+  const usable = { 0: n * s, 1: s, 5: (n - 1) * s, 6: (n - 2) * s, 10: (n / 2) * s }[l];
+  const fail = { 0: "None", 1: `${n - 1} (all but one; most RAID 1 sets are 2 drives)`, 5: "1 drive", 6: "2 drives", 10: `1 per mirror pair (up to ${n / 2} if each is in a different pair)` }[l];
+  const f = x => (+x.toFixed(2)).toLocaleString("en-US");
+  out.innerHTML = `<div class="kv"><div><span>Raw</span><b>${f(n * s)} TB</b></div><div><span>Usable</span><b>${f(usable)} TB</b></div><div><span>Efficiency</span><b>${Math.round(usable / (n * s || 1) * 100)}%</b></div><div><span>Can lose</span><b>${fail}</b></div></div>`;
+}
+
+/* Port drill: name a protocol, pick its port */
+let drill = { q: null, score: 0, seen: 0 };
+function drillNext() {
+  const P = rows(PORTS).filter(r => r[5] !== "—");
+  const q = P[Math.floor(Math.random() * P.length)];
+  const opts = new Set([q[0]]);
+  while (opts.size < 4) opts.add(P[Math.floor(Math.random() * P.length)][0]);
+  drill.q = q;
+  $("#drill").innerHTML = `<p class="dq">Which port does <b>${esc(q[2])}</b> use?</p><div class="dopts">${[...opts].sort(() => Math.random() - .5).map(o => `<button type="button" class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div><p class="dres" aria-live="polite">Score ${drill.score} / ${drill.seen}</p>`;
+}
+function drillAnswer(btn) {
+  if ($("#drill .opt[disabled]")) return;
+  const ok = btn.dataset.o === drill.q[0];
+  drill.seen++; if (ok) drill.score++;
+  $$("#drill .opt").forEach(b => { b.disabled = true; if (b.dataset.o === drill.q[0]) b.classList.add("good"); });
+  if (!ok) btn.classList.add("bad");
+  $("#drill .dres").innerHTML = `${ok ? "Correct." : `Not quite. ${esc(drill.q[2])} is ${esc(drill.q[0])}/${esc(drill.q[1])}.`} Score ${drill.score} / ${drill.seen} <button type="button" class="btn" id="dnext">Next</button>`;
+  $("#dnext").focus();
+}
+
+function filterRows(scope, attr, val, btn) {
+  $$(`.chip[data-${attr}]`, scope).forEach(c => c.classList.toggle("on", c === btn));
+  $$(`.r[data-${attr}]`, scope).forEach(r => r.classList.toggle("fhide", !!val && !r.dataset[attr].includes(val)));
+  search($("#q").value);
+}
+
+/* ---------- Events ---------- */
+function boot() {
+  build(); route();
+  addEventListener("hashchange", () => { route(); scrollTo(0, 0); });
+  const q = $("#q");
+  q.addEventListener("input", () => search(q.value));
+  q.addEventListener("keydown", e => { if (e.key === "Escape") { q.value = ""; search(""); } });
+  addEventListener("keydown", e => { if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") { e.preventDefault(); q.focus(); } });
+  $("#nav").addEventListener("click", () => { if (q.value) { q.value = ""; search(""); } });
+  document.addEventListener("click", e => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.copy !== undefined) copy(t.dataset.copy);
+    else if (t.dataset.print) print(t.dataset.print === "all");
+    else if (t.dataset.ex !== undefined) filterRows($("#s-ports"), "ex", t.dataset.ex, t);
+    else if (t.dataset.ar !== undefined) filterRows($("#s-acronyms"), "ar", t.dataset.ar, t);
+    else if (t.classList.contains("opt")) drillAnswer(t);
+    else if (t.id === "dnext") drillNext();
+  });
+  ["#sc-ip", "#sc-n"].forEach(s => $(s).addEventListener("input", subnetCalc));
+  $("#sc-r").addEventListener("input", e => { $("#sc-n").value = e.target.value; subnetCalc(); });
+  $("#chmod").addEventListener("change", e => { if (e.target.type === "checkbox") chmodFromBoxes(); });
+  $("#ch-oct").addEventListener("input", e => setChmod(e.target.value));
+  $$("#raidcalc input, #raidcalc select").forEach(i => i.addEventListener("input", raidCalc));
+  subnetCalc(); raidCalc(); drillNext();
+}
+
+</script>
+<script>boot();</script>
+
