@@ -7,6 +7,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA A+ (Core 1 220-1201, Core 2 220-1202) | https://mikeriveira.github.io/study-guides/aplus/ |
 | CompTIA Network+ (N10-009) | https://mikeriveira.github.io/study-guides/netplus/ |
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
+| Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 
 ## CompTIA A+ study guide
 
@@ -88,6 +89,24 @@ The page is built from `securityplus/src/` in the same way as the other guides. 
 python3 securityplus/build.py
 ```
 
+## Microsoft Azure Fundamentals (AZ-900) study guide
+
+Three modules, one for each AZ-900 exam domain (skills measured as of July 20, 2026):
+
+| Module | Exam weight |
+|---|---|
+| 1. Cloud Concepts | 25–30% |
+| 2. Azure Architecture and Services | 35–40% |
+| 3. Azure Management and Governance | 30–35% |
+
+It has 36 lessons with 63 interactive diagrams (such as a shared responsibility explorer, a CapEx vs OpEx chart, an SLA calculator, a region pair map, an availability zone failure simulator, a hybrid network builder, a storage redundancy outage simulator, a Conditional Access evaluator, an Azure Policy lab, a resource lock tester and a Cloud Shell lab), 16 hands-on simulations, 306 spaced-repetition flashcards, 228 quiz questions, and a timed practice exam (50 questions in 45 minutes, or a 25-question half exam) weighted by domain and scored against the 700 passing score. It uses the same level-up system as the other guides, with cloud career ranks from Cloud Trainee to Azure Fundamentals Master and 69 badges. Progress is kept separately from the other guides.
+
+The page is built from `az900/src/` in the same way as the other guides. After editing, run:
+
+```
+python3 az900/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA or Microsoft. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies.
