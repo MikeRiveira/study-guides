@@ -219,7 +219,7 @@ function openModule(m,tab){
   CUR=m;S.last=m.slug;save();
   const o=OUTLINE.find(x=>x.slug===m.slug);
   tab=tab||S.tabs[m.id]||"lessons";
-  $("#head").innerHTML=`<div class="crumbs"><a href="#home">All modules</a><span>/</span>Core ${o.core} (${o.core===1?"220-1201":"220-1202"}) · Domain ${o.domain} · ${o.weight}% of the exam</div>
+  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span>Core ${o.core} (${o.core===1?"220-1201":"220-1202"}) · Domain ${o.domain} · ${o.weight}% of the exam</div>
     <h1>Module ${modNum(o)}: ${o.title}</h1>`;
   $("#nav").innerHTML=TABS.map(([k,l])=>`<button role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join("");
   $("#nav").hidden=false;
@@ -354,7 +354,7 @@ function renderQuiz(m){
 function ring(p){const r=26,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${r}" class="ring-bg"/><circle cx="32" cy="32" r="${r}" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle">${p}%</text></svg>`}
 function renderHome(){
   CUR=null;
-  $("#head").innerHTML=`<div class="eyebrow">CompTIA A+ · Core 1 (220-1201) and Core 2 (220-1202)</div><h1>A+ Study Guide</h1>`;
+  $("#head").innerHTML=`<div class="eyebrow"><a href="../" class="to-roadmap">IT career roadmap</a><span aria-hidden="true"> / </span>CompTIA A+ · Core 1 (220-1201) and Core 2 (220-1202)</div><h1>A+ Study Guide</h1>`;
   $("#nav").hidden=true;$("#stats").hidden=true;
   const last=modBySlug(S.last);
   const card=o=>{const m=modBySlug(o.slug),p=m?completion(m):0;
@@ -375,7 +375,7 @@ function renderHome(){
 }
 function renderRanks(){
   CUR=null;
-  $("#head").innerHTML=`<div class="crumbs"><a href="#home">All modules</a><span>/</span>Progress</div><h1>Rank and badges</h1>`;
+  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span>Progress</div><h1>Rank and badges</h1>`;
   $("#nav").hidden=true;$("#stats").hidden=true;
   const xp=xpTotal(),lv=levelOf(xp),B=allBadges(),got=B.filter(b=>S.badges[b.id]).length;
   $("#view").innerHTML=`
@@ -416,7 +416,7 @@ function renderExam(c){
   $("#nav").hidden=true;$("#stats").hidden=true;
   if(r&&examLeft(r)===0)return finishExam(c,true);
   if(r)return examQuestion(c);
-  $("#head").innerHTML=`<div class="crumbs"><a href="#home">All modules</a><span>/</span>Practice exam</div><h1>Core ${c} practice exam <span class="mono h-code">${EXAM[c].code}</span></h1>`;
+  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span>Practice exam</div><h1>Core ${c} practice exam <span class="mono h-code">${EXAM[c].code}</span></h1>`;
   const last=ex.attempts.slice(-5).reverse();
   $("#view").innerHTML=`
   <p class="intro">Questions are drawn from all ${c===1?"five":"four"} Core ${c} modules, weighted like the real exam's domains. There's no feedback until you submit, and the clock keeps running if you leave the page.</p>
@@ -483,7 +483,7 @@ function showExamResult(c){
   const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
-  $("#head").innerHTML=`<div class="crumbs"><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Core ${c} practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
+  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Core ${c} practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-100)/8));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
     <div class="eyebrow">${L.timeUp?"Time's up · ":""}Core ${c} · ${EXAM[c].code}</div>

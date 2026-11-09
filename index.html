@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IT Career Roadmap</title>
+<meta name="description" content="Free IT career roadmap: find which certification to take first (A+, Network+, Security+, AZ-900 or CCNA), see where each one leads, and jump into free interactive study guides.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* IT career roadmap: the front door to every study guide in this repo.
+   Same single dark "holographic console" theme as the guides: ice-cyan and violet light on ink, gold reserved for XP.
+   Track colors: support green, networking cyan, security ember, cloud violet. */
+:root{
+  color-scheme:dark;
+  --bg:#060a14; --surface:rgba(17,25,46,.62); --surface-solid:#0f172b; --fg:#e9eefb; --muted:#8f9bbb; --line:rgba(150,175,255,.15);
+  --accent:#56e0ff; --accent-soft:rgba(86,224,255,.10); --blue:#a495ff; --blue-soft:rgba(164,149,255,.12);
+  --good:#5fe3a1; --good-soft:rgba(95,227,161,.11); --bad:#ff7393;
+  --gold:#ffd27a; --gold-soft:rgba(255,210,122,.12); --threat:#ff9a5c; --threat-soft:rgba(255,154,92,.12); --on-accent:#03141c;
+  --glow:0 0 0 1px rgba(86,224,255,.22),0 10px 34px -12px rgba(86,224,255,.45);
+  --t-support:#5fe3a1; --t-network:#56e0ff; --t-security:#ff9a5c; --t-cloud:#a495ff;
+  --display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --body:"Sora","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+@media (max-width:640px){html{scroll-padding-top:100px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.65;margin:0;font-weight:300;
+  background:
+    radial-gradient(1100px 560px at 85% -10%,rgba(164,149,255,.18),transparent 60%),
+    radial-gradient(900px 520px at -10% 5%,rgba(86,224,255,.13),transparent 60%),
+    linear-gradient(rgba(150,175,255,.035) 1px,transparent 1px) 0 0/44px 44px,
+    linear-gradient(90deg,rgba(150,175,255,.035) 1px,transparent 1px) 0 0/44px 44px,
+    var(--bg);
+  background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+b,strong{font-weight:600}
+a{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
+.mono{font-family:var(--mono);font-size:.88em}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* Header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(6,10,20,.74);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:16px;min-height:58px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);font-family:var(--display);font-weight:700;font-size:16px;white-space:nowrap}
+.brand svg{width:26px;height:28px;flex:none}
+header nav{display:flex;gap:2px;overflow-x:auto;margin-left:auto;scrollbar-width:none}
+header nav::-webkit-scrollbar{display:none}
+header nav a{color:var(--muted);text-decoration:none;font-family:var(--display);font-weight:600;font-size:14.5px;padding:8px 10px;border-radius:8px;white-space:nowrap}
+header nav a:hover{color:var(--accent);background:var(--accent-soft)}
+@media (max-width:640px){header .wrap{flex-direction:column;align-items:stretch;gap:0;padding-top:10px}header nav{margin:0 -10px}.brand{font-size:15px}}
+
+/* Hero */
+.hero{padding:56px 0 24px;display:grid;gap:16px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(32px,7vw,54px);font-weight:700;letter-spacing:.01em;background:linear-gradient(90deg,var(--fg) 35%,var(--accent) 75%,var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(16px,2.2vw,19px);color:var(--muted);max-width:62ch;margin:0}
+.lede b{color:var(--fg)}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--fg);border-radius:8px;padding:9px 16px;font-weight:700;text-decoration:none;font-size:15px;transition:border-color .2s,box-shadow .2s,transform .1s}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(120deg,var(--accent),var(--blue));border-color:transparent;color:var(--on-accent);box-shadow:var(--glow)}
+.btn.small{padding:6px 12px;font-size:13.5px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:10px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--fg);font-family:var(--mono);font-weight:600}
+
+/* Sections */
+section{padding:48px 0 8px}
+.sec-head{display:grid;gap:6px;margin-bottom:20px}
+h2{font-size:clamp(24px,4vw,30px);font-weight:700}
+h2 .num{font-family:var(--mono);font-size:14px;color:var(--accent);margin-right:10px;vertical-align:middle;letter-spacing:.06em}
+.sec-head p{color:var(--muted);margin:0;max-width:66ch}
+.panel{border:1px solid var(--line);border-radius:16px;background:var(--surface);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+/* Picker */
+.picker{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}
+@media (max-width:820px){.picker{grid-template-columns:minmax(0,1fr)}}
+.qs{padding:18px;display:grid;gap:18px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+legend{font-family:var(--display);font-weight:600;font-size:16.5px;padding:0;margin-bottom:8px}
+legend .mono{color:var(--accent);margin-right:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.chip span{display:block;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14.5px;background:rgba(255,255,255,.02);transition:border-color .15s,background .15s,color .15s}
+.chip input:hover+span{border-color:var(--accent)}
+.chip input:checked+span{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:0 0 18px -6px rgba(86,224,255,.6)}
+.chip input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.result{padding:20px;display:grid;gap:14px;align-content:start;position:relative;overflow:hidden}
+.result::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 220px at 100% 0,var(--tc,var(--accent)),transparent 70%);opacity:.10;pointer-events:none}
+.result .s-small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.result h3{font-size:24px}
+.result h3 em{font-style:normal;color:var(--tc,var(--accent))}
+.result p{margin:0;color:var(--muted)}
+.result p b{color:var(--fg)}
+.path{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:step}
+.path li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;counter-increment:step;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.02)}
+.path li::before{content:counter(step);font-family:var(--mono);font-weight:600;font-size:13px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--c);color:var(--c)}
+.path li.future{border-style:dashed}
+.path li b{font-family:var(--display);font-size:15.5px}
+.path li .sub{display:block;font-size:12.5px;color:var(--muted)}
+.path li .wk{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.path li a{color:var(--fg);text-decoration:none}
+.path li a:hover b{color:var(--accent)}
+.total{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.total b{color:var(--gold);font-family:var(--mono)}
+
+/* Roadmap map */
+.map-wrap{padding:10px 10px 4px;position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:8px 10px 0;font-size:13px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend .dash{width:18px;height:0;border-top:2px dashed var(--muted);border-radius:0}
+.legend button{margin-left:auto}
+#map-svg{display:block;width:100%;height:auto;touch-action:manipulation}
+#map-svg .stage{font-family:var(--mono);font-size:12px;letter-spacing:.14em;fill:var(--muted)}
+#map-svg .edge{fill:none;stroke:rgba(150,175,255,.28);stroke-width:2;transition:stroke .25s,opacity .25s}
+#map-svg .edge.future{stroke-dasharray:5 6}
+#map-svg .edge.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 8;animation:flow 1.1s linear infinite;filter:drop-shadow(0 0 4px rgba(86,224,255,.8))}
+#map-svg.dim .edge:not(.on){opacity:.22}
+@keyframes flow{to{stroke-dashoffset:-16}}
+#map-svg .node{cursor:pointer;transition:opacity .25s}
+#map-svg .node rect.box{fill:#0d1529;stroke:var(--c);stroke-width:1.6;transition:stroke-width .2s,filter .2s}
+#map-svg .node.future rect.box{stroke-dasharray:6 5;fill:#0a1020}
+#map-svg .node:hover rect.box,#map-svg .node:focus-visible rect.box{filter:drop-shadow(0 0 10px var(--c))}
+#map-svg .node:focus{outline:none}
+#map-svg .node:focus-visible rect.box{stroke-width:3}
+#map-svg .node.sel rect.box{stroke-width:3;filter:drop-shadow(0 0 14px var(--c))}
+#map-svg.dim .node:not(.on){opacity:.3}
+#map-svg .node .nm{font-family:var(--display);font-weight:700;fill:var(--fg)}
+#map-svg .node .cd{font-family:var(--mono);fill:var(--muted)}
+#map-svg .node.future .nm{fill:#c4cce3}
+#map-svg .node .trk{fill:var(--line)}
+#map-svg .node .prg{fill:var(--gold)}
+#map-svg .node .ok circle{fill:var(--good);filter:drop-shadow(0 0 5px rgba(95,227,161,.7))}
+
+.detail{margin-top:14px;padding:20px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px 28px;border-top:3px solid var(--c,var(--accent))}
+@media (max-width:760px){.detail{grid-template-columns:minmax(0,1fr)}}
+.detail .top{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-start;justify-content:space-between}
+.detail .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:2px 9px;margin-bottom:8px}
+.detail h3{font-size:26px}
+.detail h3 .mono{color:var(--muted);font-size:14px;font-weight:400;margin-left:8px}
+.detail .why{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.detail h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+.detail ul{margin:0;padding-left:20px}
+.detail li{margin:3px 0}
+.specs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;font-size:14.5px;margin:0}
+.specs dt{color:var(--muted);font-size:13px;padding-top:1px}
+.specs dd{margin:0}
+.meter{display:inline-flex;gap:3px;vertical-align:-1px}
+.meter i{width:16px;height:8px;border-radius:2px;background:var(--line)}
+.meter i.f{background:var(--c,var(--accent))}
+.roles{display:flex;flex-wrap:wrap;gap:6px}
+.roles span{font-size:13.5px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;background:rgba(255,255,255,.02)}
+.mine{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px;background:rgba(255,210,122,.04)}
+.mine .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;flex-wrap:wrap}
+.mine .row span:first-child{color:var(--muted)}
+.mine .row b{font-family:var(--mono)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffb347)}
+
+/* Tracks */
+.tracks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+.track{padding:18px;display:grid;gap:12px;align-content:start;border-top:3px solid var(--c)}
+.track .ico{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.track .ico svg{width:22px;height:22px}
+.track h3{font-size:19px}
+.track p{margin:0;color:var(--muted);font-size:14.5px}
+.track h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+.track ul{margin:0;padding-left:18px;font-size:14.5px}
+.track li{margin:2px 0}
+.order{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13.5px}
+.order a,.order span.f{border:1px solid var(--line);border-radius:6px;padding:2px 8px;text-decoration:none;color:var(--fg);font-family:var(--display);font-weight:600}
+.order a:hover{border-color:var(--c);color:var(--c)}
+.order span.f{border-style:dashed;color:var(--muted)}
+.order .ar{color:var(--muted)}
+.track .btn{justify-self:start}
+
+/* Progress */
+.prog{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:14px}
+.gcard{padding:16px;display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px 14px;align-items:center;text-decoration:none;color:var(--fg);transition:border-color .2s,transform .2s,box-shadow .2s}
+.gcard:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 12px 30px -16px var(--c)}
+.ring{grid-row:span 3;width:76px;height:76px;position:relative}
+.ring svg{width:76px;height:76px;transform:rotate(-90deg)}
+.ring .bg{fill:none;stroke:var(--line);stroke-width:7}
+.ring .fg{fill:none;stroke:var(--gold);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .8s}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:15px}
+.gcard h3{font-size:17px}
+.gcard .rk{font-size:13.5px;color:var(--c)}
+.gcard .meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 14px}
+.gcard .meta b{color:var(--fg);font-family:var(--mono);font-weight:600}
+.gcard .pass{color:var(--good)}
+.summary{display:flex;flex-wrap:wrap;gap:10px 28px;padding:14px 18px;margin-bottom:14px;font-size:14.5px;color:var(--muted);align-items:center}
+.summary b{font-family:var(--mono);color:var(--gold);font-size:18px;margin-right:6px}
+.note{font-size:13.5px;color:var(--muted);margin:12px 0 0}
+
+/* Cheat sheets */
+.sheets{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.sheet{padding:14px 16px;display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 12px;align-items:center;text-decoration:none;color:var(--fg);transition:border-color .2s,transform .2s}
+.sheet:hover{border-color:var(--accent);transform:translateY(-2px)}
+.sheet .gl{grid-row:span 2;font-family:var(--mono);font-weight:600;font-size:13px;color:var(--accent);width:38px;height:38px;border-radius:9px;border:1px solid rgba(86,224,255,.35);display:grid;place-items:center;background:var(--accent-soft)}
+.sheet b{font-family:var(--display);font-size:15.5px}
+.sheet span{font-size:13px;color:var(--muted);line-height:1.4}
+
+footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 48px;color:var(--muted);font-size:13.5px}
+footer .wrap{display:grid;gap:8px}
+footer p{margin:0;max-width:80ch}
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="IT career roadmap, top of page">
+      <svg viewBox="0 0 100 112" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#56e0ff"/><stop offset="1" stop-color="#a495ff"/></linearGradient></defs><polygon points="50,4 94,29 94,83 50,108 6,83 6,29" fill="none" stroke="url(#hg)" stroke-width="8"/><path d="M30 76 L50 40 L70 76" fill="none" stroke="url(#hg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      IT Study Guides
+    </a>
+    <nav aria-label="Sections">
+      <a href="#start">Start here</a><a href="#map">Roadmap</a><a href="#tracks">Career tracks</a><a href="#progress">My progress</a><a href="#cheatsheets">Cheat sheets</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Free interactive IT certification guides</div>
+      <h1>Your IT career roadmap</h1>
+      <p class="lede">Not sure where to start in IT? Answer three quick questions to get a <b>recommended first certification</b>, see <b>where each cert leads</b> on the roadmap, then study with a free interactive guide: lessons, simulations, flashcards and practice exams.</p>
+      <div class="cta"><a class="btn primary" href="#start">Find my starting point</a><a class="btn" href="#map">Explore the roadmap</a></div>
+      <div class="facts"><span><b>5</b> study guides</span><span><b>4</b> career tracks</span><span>No sign-up, no install</span><span>Progress stays in your browser</span></div>
+    </div>
+
+    <section id="start" aria-labelledby="h-start">
+      <div class="sec-head"><h2 id="h-start"><span class="num">01</span>Where should I start?</h2><p>Pick an answer for each question. Your recommended path updates as you go.</p></div>
+      <div class="picker">
+        <form class="panel qs" id="quiz" onsubmit="return false">
+          <fieldset><legend><span class="mono">Q1</span>How much IT experience do you have?</legend><div class="chips" data-q="exp"></div></fieldset>
+          <fieldset><legend><span class="mono">Q2</span>Which sounds most fun?</legend><div class="chips" data-q="interest"></div></fieldset>
+          <fieldset><legend><span class="mono">Q3</span>How many hours a week can you study?</legend><div class="chips" data-q="hours"></div></fieldset>
+        </form>
+        <div class="panel result" id="result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="map" aria-labelledby="h-map">
+      <div class="sec-head"><h2 id="h-map"><span class="num">02</span>The roadmap</h2><p>Certs flow from your first cert, through the core, to specialist ones. Select a cert to see what it covers, how hard it is and the jobs it leads to.</p></div>
+      <div class="panel map-wrap">
+        <div class="legend" id="legend"></div>
+        <svg id="map-svg" role="group" aria-label="Certification roadmap. Each cert is a button."></svg>
+      </div>
+      <div class="panel detail" id="detail" aria-live="polite"></div>
+    </section>
+
+    <section id="tracks" aria-labelledby="h-tracks">
+      <div class="sec-head"><h2 id="h-tracks"><span class="num">03</span>Career tracks</h2><p>Four common ways into IT. Most people start in support, then branch out. Every track builds on the same networking basics.</p></div>
+      <div class="tracks" id="track-list"></div>
+    </section>
+
+    <section id="progress" aria-labelledby="h-progress">
+      <div class="sec-head"><h2 id="h-progress"><span class="num">04</span>My progress</h2><p>Each guide saves your progress in this browser. Here it is in one place. The ring shows your XP toward that guide's top rank.</p></div>
+      <div class="panel summary" id="summary"></div>
+      <div class="prog" id="prog"></div>
+      <p class="note">Nothing is sent to a server. Progress is stored per browser and device, so it won't follow you to another device, and clearing your browser data erases it.</p>
+    </section>
+
+    <section id="cheatsheets" aria-labelledby="h-sheets">
+      <div class="sec-head"><h2 id="h-sheets"><span class="num">05</span>Quick-reference cheat sheets</h2><p>One-page references for the facts every exam expects you to know cold.</p></div>
+      <div class="sheets" id="sheets"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Exam details (question counts, time limits, passing scores) were checked in November 2026 and can change. Confirm on the CompTIA, Microsoft or Cisco site before you book. Cost is shown as relative voucher cost, since prices vary by country.</p>
+    <p>These guides are independent study aids and aren't affiliated with or endorsed by CompTIA, Microsoft or Cisco. <a href="https://github.com/MikeRiveira/study-guides">Source on GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- data ---------- */
+const TRACKS={
+  support:{name:"Help desk and IT support",short:"Support",color:"var(--t-support)",
+    blurb:"Fix computers, phones and printers, reset passwords and help people get back to work. The most common first IT job.",
+    entry:["Help Desk Technician","IT Support Specialist","Desktop Support Technician"],
+    next:["Systems Administrator","IT Support Lead","Linux Administrator"],
+    skills:["Windows and Microsoft 365 support","Ticketing and customer service","Imaging and setting up devices","Troubleshooting step by step"],
+    path:["aplus","netplus","az900","linux"],
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>'},
+  network:{name:"Networking",short:"Networking",color:"var(--t-network)",
+    blurb:"Build and run the switches, routers and Wi-Fi that connect everything. Hands-on, and in demand everywhere.",
+    entry:["NOC Technician","Network Support Technician","Junior Network Administrator"],
+    next:["Network Administrator","Network Engineer","Network Architect"],
+    skills:["Subnetting and IP addressing","Switching, VLANs and routing","Cisco IOS command line","Monitoring and troubleshooting"],
+    path:["aplus","netplus","ccna","ccnp"],
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-2.5h14V17"/></svg>'},
+  cloud:{name:"Cloud",short:"Cloud",color:"var(--t-cloud)",
+    blurb:"Run servers, storage and identity in Microsoft Azure instead of a server room. Pairs well with any other track.",
+    entry:["Cloud Support Associate","Junior Cloud Administrator","IT Support with cloud duties"],
+    next:["Azure Administrator","Cloud Engineer","DevOps Engineer"],
+    skills:["Cloud models (IaaS, PaaS, SaaS)","Azure compute, storage and networking","Identity with Microsoft Entra ID","Cost management and governance"],
+    path:["aplus","az900","netplus","az104"],
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H7a5 5 0 1 1 .9-9.9A6 6 0 0 1 19.5 11 4 4 0 0 1 17.5 19z"/></svg>'},
+  security:{name:"Cybersecurity",short:"Security",color:"var(--t-security)",
+    blurb:"Spot attacks, respond to incidents and harden systems. Most security pros start in support or networking first.",
+    entry:["SOC Analyst (Tier 1)","Security Operations Technician","Junior Security Analyst"],
+    next:["Incident Responder","Security Engineer","Penetration Tester"],
+    skills:["Reading logs and alerts (SIEM)","Threats, attacks and vulnerabilities","Identity and access management","Incident response"],
+    path:["aplus","netplus","secplus","cysa"],
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>'}
+};
+/* hours: typical total study hours used for the time estimate (beginner pace). */
+const CERTS={
+  aplus:{name:"CompTIA A+",short:"A+",code:"220-1201 + 220-1202",track:"support",stage:0,guide:"aplus/",hours:140,
+    why:"The standard first cert for IT support. Many help desk job posts ask for it by name, and it teaches the basics every other track assumes.",
+    format:"Two exams (Core 1 and Core 2), up to 90 questions and 90 minutes each",pass:"675 (Core 1) and 700 (Core 2), on a 100–900 scale",
+    diff:2,time:"2–4 months",cost:2,costNote:"two exam vouchers",valid:"3 years, renewable with continuing education",
+    covers:["PC hardware, mobile devices and printers","Networking basics, Wi-Fi and small office routers","Windows, macOS and Linux basics","Security basics and malware removal","A troubleshooting method for hardware, software and networks"],
+    roles:["Help Desk Technician","IT Support Specialist","Desktop Support Technician","Field Service Technician"],
+    store:{key:"aplus-guide-v2",mods:9,master:11000,exams:[["c1","Core 1",675],["c2","Core 2",700]],ranks:[[0,"Help Desk Trainee"],[150,"Help Desk Tech I"],[400,"Help Desk Tech II"],[800,"Desktop Support Tech"],[1400,"Field Technician"],[2200,"Network Technician"],[3400,"Systems Specialist"],[5000,"Senior Technician"],[7500,"IT Lead"],[11000,"A+ Master"]]}},
+  netplus:{name:"CompTIA Network+",short:"Network+",code:"N10-009",track:"network",stage:1,guide:"netplus/",hours:80,
+    why:"Proves you understand how networks work. Every track, from cloud to security, builds on this.",
+    format:"One exam, up to 90 questions in 90 minutes",pass:"720, on a 100–900 scale",
+    diff:3,time:"1–3 months",cost:2,valid:"3 years, renewable with continuing education",
+    covers:["The OSI model, ports and protocols","IP addressing and subnetting","Switching, routing, VLANs and Wi-Fi","Network operations, monitoring and documentation","Network security and troubleshooting"],
+    roles:["Network Support Technician","NOC Technician","Junior Network Administrator","Field Network Technician"],
+    store:{key:"netplus-guide-v1",mods:5,master:8500,exams:[["c1","Exam",720]],ranks:[[0,"NOC Trainee"],[150,"NOC Technician I"],[400,"NOC Technician II"],[800,"Network Support Tech"],[1400,"Field Network Tech"],[2200,"Network Administrator"],[3200,"Network Engineer"],[4500,"Senior Network Engineer"],[6200,"Network Architect"],[8500,"Network+ Master"]]}},
+  az900:{name:"Microsoft Azure Fundamentals",short:"AZ-900",code:"AZ-900",track:"cloud",stage:1,guide:"az900/",hours:22,
+    why:"A short, low-cost first step into cloud. It's a good add-on for any track, and you can take it at any point.",
+    format:"One exam, about 40–60 questions in 45 minutes",pass:"700, on a 1–1000 scale",
+    diff:1,time:"2–4 weeks",cost:1,valid:"Doesn't expire",
+    covers:["Cloud concepts: IaaS, PaaS, SaaS and shared responsibility","Azure regions, compute, networking and storage","Identity and access with Microsoft Entra ID","Pricing, cost management and SLAs","Governance with Azure Policy, RBAC and locks"],
+    roles:["Cloud Support Associate","Junior Cloud Administrator","IT Support with cloud duties"],
+    store:{key:"az900-guide-v1",mods:3,master:6400,exams:[["c1","Exam",700]],ranks:[[0,"Cloud Trainee"],[120,"Cloud Explorer"],[320,"Cloud Support Associate"],[650,"Cloud Administrator"],[1100,"Cloud Engineer"],[1700,"DevOps Engineer"],[2500,"Solutions Architect"],[3500,"Cloud Architect"],[4800,"Cloud Director"],[6400,"Azure Fundamentals Master"]]}},
+  secplus:{name:"CompTIA Security+",short:"Security+",code:"SY0-701",track:"security",stage:2,guide:"securityplus/",hours:80,
+    why:"The most common entry-level security cert, and it's approved for many US government security roles (DoD 8140).",
+    format:"One exam, up to 90 questions in 90 minutes",pass:"750, on a 100–900 scale",
+    diff:3,time:"1–3 months",cost:2,valid:"3 years, renewable with continuing education",
+    covers:["Threats, attacks and vulnerabilities","Security architecture, zero trust and cloud security","Identity and access management","Security operations and incident response","Governance, risk and compliance"],
+    roles:["SOC Analyst (Tier 1)","Security Operations Technician","Junior Security Analyst","IT Security Specialist"],
+    store:{key:"secplus-guide-v1",mods:5,master:8500,exams:[["c1","Exam",750]],ranks:[[0,"SOC Trainee"],[150,"SOC Analyst I"],[400,"SOC Analyst II"],[800,"Incident Responder"],[1400,"Threat Hunter"],[2200,"Security Engineer"],[3200,"Penetration Tester"],[4500,"Security Architect"],[6200,"CISO"],[8500,"Security+ Master"]]}},
+  ccna:{name:"Cisco CCNA",short:"CCNA",code:"200-301 v2.0",track:"network",stage:2,guide:"ccna/",hours:200,
+    why:"The best-known networking cert. It goes deeper than Network+ and is much more hands-on with the Cisco command line.",
+    format:"One exam, about 100–120 questions in 120 minutes",pass:"Not published by Cisco (the guide's practice exam aims for 825 of 1000)",
+    diff:4,time:"3–6 months",cost:3,valid:"3 years, renewable with continuing education or an exam",
+    covers:["Network infrastructure and connectivity","Switching, VLANs and spanning tree","IP routing and OSPF","Network services, security and wireless","AI, automation and network operations"],
+    roles:["Network Technician","Network Administrator","Junior Network Engineer"],
+    store:{key:"ccna-guide-v1",mods:5,master:8500,exams:[["c1","Exam",825]],ranks:[[0,"Network Apprentice"],[150,"Help Desk Technician"],[400,"Network Technician"],[800,"Junior Network Admin"],[1400,"Network Administrator"],[2200,"Network Engineer"],[3200,"Senior Network Engineer"],[4500,"Network Architect"],[6200,"Infrastructure Lead"],[8500,"CCNA Master"]]}},
+  linux:{name:"CompTIA Linux+",short:"Linux+",code:"Next step",track:"support",stage:2,future:true,hours:90,
+    why:"Run and script Linux, which powers most servers and cloud workloads. A natural step from support toward systems administration.",
+    diff:3,time:"2–3 months",roles:["Linux Administrator","Systems Administrator"]},
+  az104:{name:"Microsoft Azure Administrator",short:"AZ-104",code:"Next step",track:"cloud",stage:2,future:true,hours:70,
+    why:"The hands-on Azure admin cert: deploy and manage virtual machines, networks, storage and identity. The usual next step after AZ-900.",
+    diff:3,time:"1–3 months",roles:["Azure Administrator","Cloud Engineer"]},
+  ccnp:{name:"Cisco CCNP Enterprise",short:"CCNP",code:"Next step",track:"network",stage:3,future:true,hours:300,
+    why:"Professional-level Cisco networking: advanced routing, SD-WAN and enterprise design. Usually taken with a few years of networking work behind you.",
+    diff:5,time:"6–12 months",roles:["Network Engineer","Senior Network Engineer"]},
+  cysa:{name:"CompTIA CySA+",short:"CySA+",code:"Next step",track:"security",stage:3,future:true,hours:90,
+    why:"Security analytics: threat hunting, vulnerability management and incident response. The usual step after Security+ for SOC analysts.",
+    diff:4,time:"2–3 months",roles:["SOC Analyst (Tier 2)","Threat Hunter","Incident Responder"]},
+  az500:{name:"Microsoft Azure Security Engineer",short:"AZ-500",code:"Next step",track:"cloud",stage:3,future:true,hours:90,
+    why:"Where cloud and security meet: securing identity, networks, data and workloads in Azure.",
+    diff:4,time:"2–3 months",roles:["Cloud Security Engineer","Security Engineer"]}
+};
+const EDGES=[["aplus","netplus"],["aplus","az900"],["aplus","linux"],["netplus","ccna"],["netplus","secplus"],["netplus","az104"],["az900","az104"],["ccna","ccnp"],["secplus","cysa"],["secplus","az500"],["az104","az500"]];
+const STAGES=["START","CORE","SPECIALIZE","GO FURTHER"];
+const SHEETS=[["ports","PORT","Common ports","Port numbers and protocols to know cold"],["subnetting","/24","Subnetting","CIDR, masks and host counts at a glance"],["osi","L1–7","OSI model","Layers, devices and protocols"],["windows","WIN","Windows commands","CLI tools for support and troubleshooting"],["linux","$_","Linux commands","Files, permissions, processes and networking"],["ios","IOS","Cisco IOS commands","Show, config and troubleshooting commands"],["acronyms","A–Z","Acronyms","The acronyms across A+, Network+ and Security+"]];
+
+/* ---------- saved progress from each guide (same site, so we can read it) ---------- */
+function readGuide(id){
+  const st=CERTS[id].store;if(!st)return null;
+  let s=null;try{s=JSON.parse(localStorage.getItem(st.key)||"null")}catch(e){}
+  if(!s||typeof s!=="object"||Array.isArray(s))s={};
+  const num=v=>typeof v==="number"&&isFinite(v);
+  const earned=s.earned&&typeof s.earned==="object"?s.earned:{};
+  const xp=Object.values(earned).filter(num).reduce((a,b)=>a+b,0);
+  const mods=s.mods&&typeof s.mods==="object"?Object.values(s.mods).filter(m=>m&&typeof m==="object"):[];
+  const quiz80=Math.min(st.mods,mods.filter(m=>num(m.best)&&m.best>=80).length);
+  const exams=st.exams.map(([c,label,pass])=>{const b=s.exams&&s.exams[c]&&num(s.exams[c].best)?s.exams[c].best:null;return {label,pass,best:b}});
+  let rank=st.ranks[0][1];for(const [t,n] of st.ranks)if(xp>=t)rank=n;
+  const last=s.streak&&typeof s.streak.last==="string"?s.streak.last:null;
+  return {xp,started:xp>0,quiz80,exams,rank,pct:Math.min(100,Math.round(xp/st.master*100)),ready:exams.every(e=>e.best!==null&&e.best>=e.pass),last};
+}
+const P={};for(const id in CERTS)if(CERTS[id].store)P[id]=readGuide(id);
+
+/* ---------- picker ---------- */
+const QS={
+  exp:[["none","None yet"],["some","Some: I fix my own stuff"],["it","I already work in IT"]],
+  interest:[["support","Fixing computers and helping people"],["network","How networks and the internet work"],["cloud","Cloud and servers"],["security","Stopping hackers"],["unsure","Not sure yet"]],
+  hours:[["5","About 5"],["10","About 10"],["20","15 or more"]]
+};
+const MEM="it-roadmap-v1";
+let A={exp:"none",interest:"unsure",hours:"10"};
+try{const s=JSON.parse(localStorage.getItem(MEM)||"null");if(s&&typeof s==="object")for(const k in A)if(QS[k].some(o=>o[0]===s[k]))A[k]=s[k]}catch(e){}
+function buildQuiz(){
+  for(const q in QS){$(`[data-q="${q}"]`).innerHTML=QS[q].map(([v,l])=>`<label class="chip"><input type="radio" name="${q}" value="${v}"${A[q]===v?" checked":""}><span>${l}</span></label>`).join("")}
+  $("#quiz").addEventListener("change",e=>{if(e.target.name){A[e.target.name]=e.target.value;try{localStorage.setItem(MEM,JSON.stringify(A))}catch(_){}renderResult()}});
+}
+function planFor(){
+  const tk=A.interest==="unsure"?"support":A.interest;
+  let path=[...TRACKS[tk].path];
+  if(A.exp==="it")path=path.filter(c=>c!=="aplus");
+  return {tk,path};
+}
+const weeks=h=>Math.max(1,Math.round(h/Number(A.hours)));
+const span=w=>w<9?`${w} wk`:`${Math.round(w/4.3)} mo`;
+function renderResult(){
+  const {tk,path}=planFor(),T=TRACKS[tk],first=CERTS[path[0]];
+  const firstGuide=path.find(c=>CERTS[c].guide);
+  const scale={"5":1.15,"10":1,"20":.9}[A.hours];
+  const adj=id=>{const h=CERTS[id].hours*(A.exp==="none"?1:A.exp==="some"?.85:.7)*scale;return weeks(h)};
+  const tot=path.reduce((a,c)=>a+adj(c),0);
+  const why={
+    none:`Since you're new to IT, ${first.short} gives you the foundation that everything else builds on.`,
+    some:`You've got some hands-on experience, so you'll likely move faster through the basics in ${first.short}.`,
+    it:`You already work in IT, so you can skip A+ and start with ${first.short}.`
+  }[A.exp];
+  const unsure=A.interest==="unsure"?" Not sure yet is fine: the support track keeps every door open, and you can branch out after Network+.":"";
+  $("#result").style.setProperty("--tc",T.color);
+  $("#result").innerHTML=`<div class="s-small">Your recommended path · ${T.name}</div>
+    <h3>Start with <em>${first.name}</em></h3>
+    <p>${why}${unsure}</p>
+    <ol class="path">${path.map(id=>{const c=CERTS[id],col=TRACKS[c.track].color;
+      const inner=`<span><b>${c.short}</b><span class="sub">${c.future?"Next step (no guide yet)":c.name+" · "+c.code}</span></span>`;
+      return `<li class="${c.future?"future":""}" style="--c:${col}">${c.guide?`<a href="${c.guide}">${inner}</a>`:inner}<span class="wk">~${span(adj(id))}</span></li>`}).join("")}</ol>
+    <div class="total"><span>Study time at ${QS.hours.find(o=>o[0]===A.hours)[1].toLowerCase()} hours a week</span><span><b>~${span(tot)}</b> for the whole path</span></div>
+    <div class="cta">${firstGuide?`<a class="btn primary" href="${CERTS[firstGuide].guide}">Open the ${CERTS[firstGuide].short} guide</a>`:""}<button class="btn" type="button" id="show-path">Show on the roadmap</button></div>`;
+  $("#show-path").onclick=()=>{highlight(path,tk);select(path[0]);$("#map").scrollIntoView({behavior:REDUCED?"auto":"smooth"})};
+}
+
+/* ---------- roadmap map ---------- */
+let SEL="aplus",HL=null,LAYOUT=null;
+const LANES=["support","network","security","cloud"];
+function layout(){
+  const narrow=$("#map-svg").getBoundingClientRect().width<700;
+  if(!narrow){
+    const X=[100,350,610,860],Y={support:70,network:175,security:280,cloud:385};
+    const pos=id=>{const c=CERTS[id];if(id==="aplus")return [X[0],228];return [X[c.stage],Y[c.track]]};
+    return {narrow,w:960,h:440,nw:170,nh:62,pos,stageAt:i=>[X[i],22],fs:[19,12.5]};
+  }
+  const Y=[56,214,392,570],X={support:46,network:136,security:226,cloud:316};
+  const pos=id=>{const c=CERTS[id];if(id==="aplus")return [181,Y[0]+22];return [X[c.track],Y[c.stage]+22]};
+  return {narrow,w:362,h:630,nw:84,nh:54,pos,stageAt:i=>[181,Y[i]-24],fs:[14.5,9.5]};
+}
+function edgePath(a,b,L){
+  const [x1,y1]=L.pos(a),[x2,y2]=L.pos(b);
+  if(!L.narrow){const sx=x1+L.nw/2,ex=x2-L.nw/2,mx=(sx+ex)/2;return `M${sx},${y1} C${mx},${y1} ${mx},${y2} ${ex},${y2}`}
+  const sy=y1+L.nh/2,ey=y2-L.nh/2,my=(sy+ey)/2;return `M${x1},${sy} C${x1},${my} ${x2},${my} ${x2},${ey}`;
+}
+function renderMap(){
+  const L=LAYOUT=layout(),svg=$("#map-svg");
+  svg.setAttribute("viewBox",`0 0 ${L.w} ${L.h}`);
+  let h=STAGES.map((s,i)=>{const [x,y]=L.stageAt(i);return `<text class="stage" x="${x}" y="${y}" text-anchor="middle">${i+1} · ${s}</text>`}).join("");
+  h+=EDGES.map(([a,b])=>`<path class="edge${CERTS[b].future?" future":""}" data-a="${a}" data-b="${b}" d="${edgePath(a,b,L)}"/>`).join("");
+  for(const id in CERTS){
+    const c=CERTS[id],[x,y]=L.pos(id),w=L.nw,hh=L.nh,col=TRACKS[c.track].color,p=P[id];
+    const prog=p&&p.started?`<rect class="trk" x="${x-w/2+10}" y="${y+hh/2-9}" width="${w-20}" height="3" rx="1.5"/><rect class="prg" x="${x-w/2+10}" y="${y+hh/2-9}" width="${Math.max(3,(w-20)*p.pct/100)}" height="3" rx="1.5"/>`:"";
+    const ok=p&&p.ready?`<g class="ok"><circle cx="${x+w/2}" cy="${y-hh/2}" r="8"/><path d="M${x+w/2-3.5},${y-hh/2} l2.5,2.5 l4.5,-5" fill="none" stroke="#03141c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>`:"";
+    const label=`${c.name}${c.future?", next step":""}${p&&p.ready?", exam ready":""}`;
+    h+=`<g class="node${c.future?" future":""}" data-id="${id}" style="--c:${col}" tabindex="0" role="button" aria-label="${label}" aria-pressed="false">
+      <rect class="box" x="${x-w/2}" y="${y-hh/2}" width="${w}" height="${hh}" rx="10"/>
+      <text class="nm" x="${x}" y="${y-(L.narrow?3:4)}" text-anchor="middle" font-size="${L.fs[0]}">${c.short}</text>
+      <text class="cd" x="${x}" y="${y+(L.narrow?11:15)}" text-anchor="middle" font-size="${L.fs[1]}">${c.future?"next step":L.narrow?c.code.replace(" + 220-","/").split(" ")[0]:c.code}</text>${prog}${ok}</g>`;
+  }
+  svg.innerHTML=h;
+  svg.querySelectorAll(".node").forEach(g=>{
+    g.addEventListener("click",()=>select(g.dataset.id,true));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(g.dataset.id,true)}});
+  });
+  applyState();
+}
+function applyState(){
+  const svg=$("#map-svg");
+  svg.classList.toggle("dim",!!HL);
+  svg.querySelectorAll(".node").forEach(g=>{const on=g.dataset.id===SEL;g.classList.toggle("sel",on);g.setAttribute("aria-pressed",on);g.classList.toggle("on",!!HL&&HL.includes(g.dataset.id))});
+  svg.querySelectorAll(".edge").forEach(e=>e.classList.toggle("on",!!HL&&HL.includes(e.dataset.a)&&HL.includes(e.dataset.b)));
+  $("#legend").innerHTML=LANES.map(t=>`<span><i style="background:${TRACKS[t].color}"></i>${TRACKS[t].short}</span>`).join("")+`<span><i class="dash"></i>Next step, no guide yet</span>`+(HL?`<button class="btn small" type="button" id="clear-hl">Show all certs</button>`:"");
+  if(HL)$("#clear-hl").onclick=()=>{HL=null;applyState()};
+}
+function highlight(path){HL=path;applyState()}
+const meter=(n,max=5)=>`<span class="meter" aria-label="${n} of ${max}">${Array.from({length:max},(_,i)=>`<i class="${i<n?"f":""}"></i>`).join("")}</span>`;
+const DIFF=["","Beginner friendly","Moderate","Challenging","Hard","Expert"];
+function select(id,user){
+  SEL=id;applyState();
+  const c=CERTS[id],T=TRACKS[c.track],p=P[id],d=$("#detail");
+  d.style.setProperty("--c",T.color);
+  const leadsFrom=EDGES.filter(e=>e[0]===id).map(e=>CERTS[e[1]].short),after=EDGES.filter(e=>e[1]===id).map(e=>CERTS[e[0]].short);
+  const mine=p?(p.started?`<div class="mine"><h4>Your progress</h4>
+      <div class="row"><span>Rank</span><b>${p.rank}</b></div>
+      <div class="bar" aria-label="${p.pct}% of the way to the top rank"><span style="width:${p.pct}%"></span></div>
+      <div class="row"><span>XP</span><b>${p.xp.toLocaleString("en-US")}</b></div>
+      <div class="row"><span>Modules with an 80%+ quiz</span><b>${p.quiz80}/${c.store.mods}</b></div>
+      ${p.exams.map(e=>`<div class="row"><span>Best practice exam${p.exams.length>1?" ("+e.label+")":""}</span><b${e.best!==null&&e.best>=e.pass?' class="pass" style="color:var(--good)"':""}>${e.best??"—"} / target ${e.pass}</b></div>`).join("")}
+    </div>`:`<div class="mine"><h4>Your progress</h4><div class="row"><span>You haven't started this guide yet in this browser.</span></div></div>`):"";
+  d.innerHTML=`<div class="top"><div><span class="tag">${T.short} track${c.future?" · next step":""}</span><h3>${c.name}${c.future?"":`<span class="mono">${c.code}</span>`}</h3><p class="why">${c.why}</p></div>
+      ${c.guide?`<a class="btn primary" href="${c.guide}">Open the ${c.short} guide</a>`:`<span class="mono" style="color:var(--muted)">No guide yet</span>`}</div>
+    <div>${c.covers?`<h4>What it covers</h4><ul>${c.covers.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+      <h4 style="margin-top:${c.covers?18:0}px">Jobs it leads to</h4><div class="roles">${c.roles.map(r=>`<span>${r}</span>`).join("")}</div></div>
+    <div style="display:grid;gap:16px;align-content:start"><dl class="specs">
+      ${c.format?`<dt>Format</dt><dd>${c.format}</dd><dt>Passing score</dt><dd>${c.pass}</dd>`:""}
+      <dt>Difficulty</dt><dd>${meter(c.diff)} ${DIFF[c.diff]}</dd>
+      <dt>Study time</dt><dd>${c.time} for most beginners</dd>
+      ${c.cost?`<dt>Cost</dt><dd><span class="mono" style="color:var(--gold)">${"$".repeat(c.cost)}</span><span style="color:var(--muted)">${"$".repeat(3-c.cost)}</span> ${["","Low","Moderate","Higher"][c.cost]}${c.costNote?", "+c.costNote:""}</dd>`:""}
+      ${c.valid?`<dt>Valid for</dt><dd>${c.valid}</dd>`:""}
+      ${after.length?`<dt>Take after</dt><dd>${after.join(", ")}</dd>`:`<dt>Take after</dt><dd>Nothing, it's a starting point</dd>`}
+      ${leadsFrom.length?`<dt>Leads to</dt><dd>${leadsFrom.join(", ")}</dd>`:""}
+    </dl>${mine}</div>`;
+  if(user&&LAYOUT&&LAYOUT.narrow)d.scrollIntoView({behavior:REDUCED?"auto":"smooth",block:"nearest"});
+}
+
+/* ---------- tracks, progress, cheat sheets ---------- */
+function renderTracks(){
+  $("#track-list").innerHTML=Object.entries(TRACKS).map(([k,t])=>`<article class="panel track" style="--c:${t.color}">
+    <div class="ico">${t.icon}</div><h3>${t.name}</h3><p>${t.blurb}</p>
+    <div><h4>Cert order</h4><div class="order">${t.path.map(id=>{const c=CERTS[id];return c.guide?`<a href="${c.guide}">${c.short}</a>`:`<span class="f">${c.short}</span>`}).join('<span class="ar" aria-hidden="true">→</span>')}</div></div>
+    <div><h4>First jobs</h4><ul>${t.entry.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <div><h4>Where it goes next</h4><ul>${t.next.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <div><h4>Day-to-day skills</h4><ul>${t.skills.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <button class="btn small" type="button" data-track="${k}">Show on the roadmap</button></article>`).join("");
+  $("#track-list").addEventListener("click",e=>{const b=e.target.closest("[data-track]");if(!b)return;const t=TRACKS[b.dataset.track];highlight(t.path);select(t.path.find(id=>CERTS[id].guide&&id!=="aplus")||t.path[0]);$("#map").scrollIntoView({behavior:REDUCED?"auto":"smooth"})});
+}
+function renderProgress(){
+  const ids=Object.keys(P),C=2*Math.PI*30;
+  const totalXP=ids.reduce((a,id)=>a+P[id].xp,0),started=ids.filter(id=>P[id].started).length,ready=ids.filter(id=>P[id].ready).length;
+  $("#summary").innerHTML=`<span><b>${totalXP.toLocaleString("en-US")}</b>XP across all guides</span><span><b>${started}/${ids.length}</b>guides started</span><span><b>${ready}</b>at the exam target score</span>`;
+  $("#prog").innerHTML=ids.map(id=>{const c=CERTS[id],p=P[id],col=TRACKS[c.track].color;
+    const ex=p.exams.map(e=>`<span>${p.exams.length>1?e.label:"Exam"} best <b class="${e.best!==null&&e.best>=e.pass?"pass":""}">${e.best??"—"}</b></span>`).join("");
+    return `<a class="panel gcard" href="${c.guide}" style="--c:${col}">
+      <div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle class="bg" cx="38" cy="38" r="30"/><circle class="fg" cx="38" cy="38" r="30" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p.pct/100)}"/></svg><b>${p.pct}%</b></div>
+      <h3>${c.short} <span class="mono" style="color:var(--muted);font-weight:400;font-size:12px">${c.code}</span></h3>
+      <div class="rk">${p.started?p.rank:"Not started"}${p.ready?' · <span class="pass">exam ready ✓</span>':""}</div>
+      <div class="meta"><span>XP <b>${p.xp.toLocaleString("en-US")}</b></span><span>Quiz 80%+ <b>${p.quiz80}/${c.store.mods}</b></span>${ex}</div></a>`}).join("");
+}
+function renderSheets(){
+  $("#sheets").innerHTML=SHEETS.map(([h,g,t,d])=>`<a class="panel sheet" href="cheatsheets/#${h}"><span class="gl">${g}</span><b>${t}</b><span>${d}</span></a>`).join("");
+}
+
+/* ---------- boot ---------- */
+buildQuiz();renderResult();renderMap();select(SEL);renderTracks();renderProgress();renderSheets();
+let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{const n=$("#map-svg").getBoundingClientRect().width<700;if(!LAYOUT||n!==LAYOUT.narrow)renderMap()},120)});
+/* Progress may change in another tab; refresh when you come back. */
+addEventListener("pageshow",e=>{if(e.persisted){for(const id in P)P[id]=readGuide(id);renderProgress();renderMap();select(SEL)}});
+</script>

@@ -1048,3 +1048,4 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 @media (prefers-reduced-motion:reduce){.m-link.storm{animation:none}}
 .ml-t{margin-top:8px}
 @media(max-width:700px){.lesson table:not(.viz table){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+.eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}

@@ -1098,3 +1098,4 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .verdict.mfa{color:var(--gold);border-color:var(--gold);background:var(--gold-soft)}
 .verdict.block{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
 .viz>*,.sim>*,.panel>*{min-width:0}
+.eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}

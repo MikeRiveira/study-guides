@@ -2,6 +2,8 @@
 
 Free, interactive study guides that run in any browser. No sign-up, no install.
 
+**Start here: [IT career roadmap](https://mikeriveira.github.io/study-guides/).** Answer three questions to get a recommended first cert, see where each cert leads (help desk, networking, cloud, security), and track your progress across every guide. The roadmap is the root `index.html`, a single self-contained page with no build step.
+
 | Guide | Live site |
 |---|---|
 | CompTIA A+ (Core 1 220-1201, Core 2 220-1202) | https://mikeriveira.github.io/study-guides/aplus/ |
