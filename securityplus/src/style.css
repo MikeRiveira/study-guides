@@ -995,3 +995,4 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .tl .pt.dn.l{transform:translateX(-2px)}
 .tl .pt.dn.r{transform:translateX(-100%);text-align:right}
 .tl .pt.dn.r::before{margin-left:auto}
+.eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
