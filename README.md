@@ -6,6 +6,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 |---|---|
 | CompTIA A+ (Core 1 220-1201, Core 2 220-1202) | https://mikeriveira.github.io/study-guides/aplus/ |
 | CompTIA Network+ (N10-009) | https://mikeriveira.github.io/study-guides/netplus/ |
+| CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 
 ## CompTIA A+ study guide
 
@@ -67,6 +68,26 @@ The page is built from `netplus/src/` in the same way as the A+ guide. After edi
 python3 netplus/build.py
 ```
 
+## CompTIA Security+ study guide
+
+Five modules, one for each SY0-701 exam domain:
+
+| Module | Exam weight |
+|---|---|
+| 1. General Security Concepts | 12% |
+| 2. Threats, Vulnerabilities, and Mitigations | 22% |
+| 3. Security Architecture | 18% |
+| 4. Security Operations | 28% |
+| 5. Security Program Management and Oversight | 20% |
+
+It has 39 lessons with 59 interactive diagrams (such as a live SHA-256 avalanche demo, a SQL injection sandbox, a ransomware outbreak lab, a CVSS calculator, a SIEM triage console, an SPF/DKIM/DMARC checker and an ALE calculator), 20 hands-on simulations, 410 spaced-repetition flashcards, 284 quiz questions, and a timed practice exam (90 questions in 90 minutes, or a 45-question half exam) weighted by domain and scored against the 750 passing score. It uses the same level-up system as the other guides, with security career ranks from SOC Trainee to Security+ Master and 69 badges. Progress is kept separately from the A+ and Network+ guides.
+
+The page is built from `securityplus/src/` in the same way as the other guides. After editing, run:
+
+```
+python3 securityplus/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA. CompTIA, A+ and Network+ are trademarks of CompTIA, Inc.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc.
