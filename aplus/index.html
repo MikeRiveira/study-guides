@@ -738,7 +738,16 @@ const modBySlug=s=>MODULES.find(m=>m.slug===s);
 /* ---------- storage ---------- */
 const KEY="aplus-guide-v2";
 let S={earned:{},streak:{n:0,last:null},badges:{},mods:{},tabs:{},last:null};
-try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)S=Object.assign(S,s)}catch(e){}
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&typeof s==="object")S=Object.assign(S,s)}catch(e){}
+/* Repair any field that isn't the shape we expect (old, edited or damaged saves), so the page always loads. */
+(function(){const D={earned:{},streak:{n:0,last:null},badges:{},mods:{},tabs:{}};
+  for(const k in D)if(!S[k]||typeof S[k]!=="object"||Array.isArray(S[k]))S[k]=D[k];
+  if(typeof S.streak.n!=="number")S.streak={n:0,last:null};
+  for(const k in S.earned)if(typeof S.earned[k]!=="number")delete S.earned[k];
+  for(const id in S.mods){const m=S.mods[id];if(!m||typeof m!=="object"){delete S.mods[id];continue}["studied","box","due","sims"].forEach(f=>{if(!m[f]||typeof m[f]!=="object")m[f]={}});if(typeof m.best!=="number")m.best=null}
+  if(S.exams&&typeof S.exams!=="object")delete S.exams;
+  for(const c in S.exams||{}){const e=S.exams[c];if(!e||typeof e!=="object"){delete S.exams[c];continue}
+    e.attempts=Array.isArray(e.attempts)?e.attempts.filter(a=>a&&typeof a.score==="number"):[];if(typeof e.best!=="number")e.best=null}})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* One-time import of progress from the single-module prototype. */
 try{
@@ -1106,7 +1115,12 @@ function renderRanks(){
 const EXAM={1:{code:"220-1201",pass:675},2:{code:"220-1202",pass:700}};
 const EXAM_LEN={full:[90,90],half:[45,45]};/* [questions, minutes] */
 let examTimer=null;
-const EXS=c=>(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
+const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
+  if(!Array.isArray(e.attempts))e.attempts=[];
+  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
+  if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
+  return e};
 function examPool(c){
   return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
 }
