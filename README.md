@@ -11,6 +11,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
+| IT quick reference cheat sheets | https://mikeriveira.github.io/study-guides/cheatsheets/ |
 
 ## CompTIA A+ study guide
 
@@ -130,6 +131,16 @@ The page is built from `ccna/src/` in the same way as the other guides, plus `cc
 
 ```
 python3 ccna/build.py
+```
+
+## IT quick reference cheat sheets
+
+Twelve printable cheat sheets on one page: ports and protocols (filterable by exam, with a port drill), subnetting (CIDR table and a live subnet calculator), the OSI and TCP/IP models, Windows, Linux and Cisco IOS commands (click any command to copy it), nearly 250 acronyms, the CompTIA troubleshooting method, Wi-Fi standards, cables and connectors (with T568A/B pinouts), RAID levels (with a capacity calculator) and attacks matched to their defenses. A search box finds any port, command or acronym across every sheet. **Print this sheet** and **Print all** switch to a compact black-on-white layout, one sheet per page.
+
+Each sheet has its own link, such as `cheatsheets/#ports` or `cheatsheets/#ios`. The page is built from `cheatsheets/src/` (`data.js` holds all the content, `app.js` the page logic). After editing, run:
+
+```
+python3 cheatsheets/build.py
 ```
 
 ## Disclaimer
