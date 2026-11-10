@@ -204,8 +204,85 @@ legend .mono{color:var(--accent);margin-right:6px}
 .gcard .meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 14px}
 .gcard .meta b{color:var(--fg);font-family:var(--mono);font-weight:600}
 .gcard .pass{color:var(--good)}
-.summary{display:flex;flex-wrap:wrap;gap:10px 28px;padding:14px 18px;margin-bottom:14px;font-size:14.5px;color:var(--muted);align-items:center}
-.summary b{font-family:var(--mono);color:var(--gold);font-size:18px;margin-right:6px}
+.gcard .when{grid-column:2;font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.gcard .go{color:var(--c);font-weight:600}
+.gcard.idle{opacity:.72}
+.sub-h{font-size:18px;margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+.sub-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.hub-top{padding:20px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px 26px;align-items:center;position:relative;overflow:hidden}
+.hub-top::before{content:"";position:absolute;inset:0;background:radial-gradient(520px 240px at 0 0,rgba(255,210,122,.16),transparent 70%);pointer-events:none}
+@media (max-width:700px){.hub-top{grid-template-columns:minmax(0,1fr)}}
+.lvl{display:grid;grid-template-columns:104px minmax(0,1fr);gap:14px;align-items:center;min-width:0;max-width:340px}
+.lvl .ring,.lvl .ring svg{width:104px;height:104px}
+.lvl .ring .bg,.lvl .ring .fg{stroke-width:8}
+.lvl .ring b{display:grid;align-content:center;justify-items:center;font-size:24px;line-height:1.1}
+.lvl .ring b small{font-size:10px;letter-spacing:.14em;color:var(--muted);font-weight:400}
+.lvl .s-small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lvl h3{font-size:21px;color:var(--gold)}
+.lvl p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+.lvl p b{color:var(--fg);font-family:var(--mono)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:460px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.02);min-width:0}
+.tile b{display:block;font-family:var(--mono);font-size:20px;color:var(--fg);line-height:1.3}
+.tile b.g{color:var(--gold)}
+.tile b small{font-size:13px;color:var(--muted);font-weight:400}
+.tile span{font-size:12.5px;color:var(--muted)}
+.resume{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px;font-size:14.5px;color:var(--muted)}
+.resume b{color:var(--fg)}
+.board{padding:6px 0;overflow:hidden}
+.erow{display:grid;grid-template-columns:minmax(0,1.6fr) 70px 70px 64px minmax(0,1fr) 132px;gap:6px 12px;align-items:center;padding:10px 18px;border-top:1px solid var(--line);font-size:14px}
+.erow:first-child{border-top:0}
+.erow.head{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-top:8px;padding-bottom:8px}
+.erow .nm a{color:var(--fg);text-decoration:none;font-family:var(--display);font-weight:600}
+.erow .nm a:hover{color:var(--accent)}
+.erow .nm small{display:block;font-size:12px;color:var(--muted)}
+.erow .n{font-family:var(--mono)}
+.erow .n.pass{color:var(--good)}
+.erow .n.fail{color:var(--threat)}
+.erow.none{color:var(--muted)}
+.erow .lbl{display:none}
+.todo{margin:0;padding:12px 18px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.todo:first-child{border-top:0}
+.todo a{color:var(--fg);text-decoration:none;font-family:var(--display);font-weight:600}
+.todo a:hover{color:var(--accent)}
+.spark{width:132px;height:36px;display:block}
+.spark .pl{stroke:var(--good);stroke-dasharray:3 3;stroke-width:1;opacity:.7}
+.spark polyline{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.spark circle{fill:var(--accent)}
+.spark circle.ok{fill:var(--good)}
+.spark .none{fill:var(--muted);font-family:var(--mono);font-size:10px}
+@media (max-width:700px){
+  .erow{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;padding:12px 16px}
+  .erow.head{display:none}
+  .erow .nm{grid-column:1/-1}
+  .erow .lbl{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .erow .last{grid-column:1/3}
+  .erow .tr{grid-column:3;justify-self:end}
+}
+.badge-wall{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.badge-wall{grid-template-columns:minmax(0,1fr)}}
+.recent,.bcount{padding:16px}
+.recent h4,.bcount h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600}
+.recent ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px}
+.recent li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:0 10px;align-items:center;font-size:13px;color:var(--muted);line-height:1.35}
+.recent li svg{grid-row:span 2;width:34px;height:38px}
+.recent li svg polygon{fill:var(--gold-soft);stroke:var(--gold);stroke-width:5}
+.recent li svg text{fill:var(--gold);font-family:var(--mono);font-size:34px;font-weight:600}
+.recent li b{color:var(--fg);font-family:var(--display);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent .empty{color:var(--muted);font-size:14px;margin:0}
+.bcount ol{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.bcount li{display:grid;grid-template-columns:76px minmax(0,1fr) 56px;gap:10px;align-items:center;font-size:13px}
+.bcount li a{color:var(--fg);text-decoration:none;font-family:var(--display);font-weight:600}
+.bcount li a:hover{color:var(--accent)}
+.bcount li .mono{text-align:right;color:var(--muted)}
+.bcount .bar span{background:var(--c,var(--gold))}
+.backup{padding:16px 18px;display:grid;gap:10px}
+.backup p{margin:0;color:var(--muted);font-size:14.5px;max-width:70ch}
+.backup .cta{margin:0}
+.bk-msg:empty{display:none}
+.bk-msg.ok{color:var(--good)!important}
+.bk-msg.err{color:var(--bad)!important}
 .note{font-size:13.5px;color:var(--muted);margin:12px 0 0}
 
 /* Cheat sheets */
@@ -229,7 +306,7 @@ footer p{margin:0;max-width:80ch}
       IT Study Guides
     </a>
     <nav aria-label="Sections">
-      <a href="#start">Start here</a><a href="#map">Roadmap</a><a href="#tracks">Career tracks</a><a href="#progress">My progress</a><a href="#cheatsheets">Cheat sheets</a>
+      <a href="#start">Start here</a><a href="#map">Roadmap</a><a href="#tracks">Career tracks</a><a href="#progress">Progress hub</a><a href="#cheatsheets">Cheat sheets</a>
     </nav>
   </div>
 </header>
@@ -271,10 +348,21 @@ footer p{margin:0;max-width:80ch}
     </section>
 
     <section id="progress" aria-labelledby="h-progress">
-      <div class="sec-head"><h2 id="h-progress"><span class="num">04</span>My progress</h2><p>Each guide saves your progress in this browser. Here it is in one place. The ring shows your XP toward that guide's top rank.</p></div>
-      <div class="panel summary" id="summary"></div>
+      <div class="sec-head"><h2 id="h-progress"><span class="num">04</span>Progress hub</h2><p>Every guide saves your progress in this browser. Here it all is in one place: XP, badges, streaks and practice exam scores from every guide.</p></div>
+      <div class="panel hub-top" id="hub-top"></div>
+      <h3 class="sub-h">Guides</h3>
       <div class="prog" id="prog"></div>
-      <p class="note">Nothing is sent to a server. Progress is stored per browser and device, so it won't follow you to another device, and clearing your browser data erases it.</p>
+      <h3 class="sub-h">Exam scoreboard</h3>
+      <div class="panel board" id="board"></div>
+      <h3 class="sub-h">Badge wall</h3>
+      <div class="badge-wall" id="badge-wall"></div>
+      <h3 class="sub-h">Back up your progress</h3>
+      <div class="panel backup">
+        <p>Save all your progress to one file, then load it in another browser or on another device. Restoring replaces the progress saved in this browser for each guide in the file.</p>
+        <div class="cta"><button class="btn small" type="button" id="bk-save">Download backup</button><label class="btn small" for="bk-file">Restore from file</label><input type="file" id="bk-file" accept=".json,application/json" hidden></div>
+        <p class="bk-msg" id="bk-msg" role="status" aria-live="polite"></p>
+      </div>
+      <p class="note">Nothing is sent to a server. Progress is stored per browser and device, and clearing your browser data erases it, so download a backup now and then.</p>
     </section>
 
     <section id="cheatsheets" aria-labelledby="h-sheets">
@@ -404,6 +492,13 @@ const STAGES=["START","CORE","SPECIALIZE","GO FURTHER"];
 const SHEETS=[["ports","PORT","Common ports","Port numbers and protocols to know cold"],["subnetting","/24","Subnetting","CIDR, masks and host counts at a glance"],["osi","L1–7","OSI model","Layers, devices and protocols"],["windows","WIN","Windows commands","CLI tools for support and troubleshooting"],["linux","$_","Linux commands","Files, permissions, processes and networking"],["ios","IOS","Cisco IOS commands","Show, config and troubleshooting commands"],["acronyms","A–Z","Acronyms","The acronyms across A+, Network+ and Security+"]];
 
 /* ---------- saved progress from each guide (same site, so we can read it) ---------- */
+/* Keyed by guide folder. Practice exam scale per guide (CompTIA uses 100–900, Microsoft and Cisco 1000). */
+const SCALE={az900:1000,ccna:1000,sc500:1000,ccnp:1000,az104:1000};
+/* Badge names per guide, keyed by the badge id each guide stores. Taken from each guide's allBadges().
+   If a guide adds badges, regenerate this line with: node tools/hub-badges.js */
+const BADGES=/*BADGES*/{"aplus":{"first":"First Boot","streak3":"On a Roll","streak7":"Uptime: 7 Days","core1":"Core 1 Ready","core2":"Core 2 Ready","exam1":"Core 1 Exam Ready","exam2":"Core 2 Exam Ready","master":"A+ Master","mob:reader":"Road Warrior","mob:lab":"Screwdriver Certified","mob:ssd":"Swap Specialist","mob:corp":"Locked Down","mob:needs":"Connected","mob:perfect":"Full Bars","net:reader":"Fully Patched","net:lab":"Lab Rat","net:crimp":"Crimp Master","net:ports":"Port Authority","net:recall":"Total Recall","net:fw":"Firewall Architect","net:router":"Router Whisperer","net:perfect":"Perfect Packet","hw:reader":"Bench Tech","hw:lab":"Teardown","hw:build":"System Builder","hw:toner":"Toner Tamer","hw:raid":"Parity Pro","hw:cables":"Cable Connoisseur","hw:perfect":"Perfect POST","vc:reader":"Hypervisor","vc:lab":"Cloud Lab","vc:vmcfg":"Sandbox Builder","vc:pick":"Cloud Architect","vc:perfect":"Elastic","ts:reader":"Troubleshooter","ts:lab":"Diagnostician","ts:steps":"Six Steps","ts:triage":"Triage Master","ts:printfix":"Printer Whisperer","ts:perfect":"Root Cause","os:reader":"Sysadmin","os:lab":"Formatter","os:tools":"Snap-in Savvy","os:cmds":"Command Line","os:build":"Installer","os:perfect":"Root","sec:reader":"Guardian","sec:lab":"Shield Lab","sec:remove":"Malware Hunter","sec:attacks":"Social Engineer Spotter","sec:soho":"Locksmith","sec:perfect":"Zero Trust","sw:reader":"Debugger","sw:lab":"Task Killer","sw:fixes":"Rollback","sw:browser":"Browser Medic","sw:tickets":"Queue Zero","sw:perfect":"No More BSOD","ops:reader":"Professional","ops:lab":"Backup Boss","ops:restore":"Restorer","ops:evidence":"Chain of Custody","ops:docsmatch":"Documentarian","ops:perfect":"Change Approved"},"netplus":{"first":"First Boot","streak3":"On a Roll","streak7":"Uptime: 7 Days","streak14":"Two-Week Uptime","streak30":"Thirty-Day SLA","days10":"Regular on the NOC","weekend":"Maintenance Window","night":"Night Shift","five":"Five by Five","lessons":"Full Syllabus","viz":"Hands-On","sims":"Lab Certified","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Network Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Overclocked","linerate":"Line Rate","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"Network+ Master","island":"Island Network","overload":"Breaker Tripped","collector":"Command Collector","blackout":"Blackout","con:reader":"Layer Stacker","con:lab":"Packet Lab","con:drill":"Port Authority","con:ports":"Port Collector","con:sub":"Subnet Ninja","con:osi":"Seven Layers Deep","con:recall":"Total Recall","con:perfect":"Perfect Packet","imp:reader":"Route Reflector","imp:lab":"Implementation Lab","imp:vlan":"VLAN Architect","imp:rf":"RF Whisperer","imp:ad":"Distance Judge","imp:rack":"Rack and Stack","imp:recall":"Total Recall","imp:perfect":"Perfect Convergence","ops:reader":"Ops Ready","ops:lab":"NOC Console","ops:dns":"Zone Master","ops:dr":"Disaster Ready","ops:chg":"Change Controlled","ops:base":"Signal Not Noise","ops:recall":"Total Recall","ops:perfect":"Five Nines","sec:reader":"Security Cleared","sec:lab":"Red Team Lab","sec:l2":"Layer 2 Lockdown","sec:acl":"Rule Writer","sec:harden":"Hardened","sec:attack":"Incident Responder","sec:recall":"Total Recall","sec:perfect":"Zero Trust, Full Marks","ts:reader":"Root Cause","ts:lab":"Field Lab","ts:cli":"Command Line Hero","ts:tickets":"Queue Cleared","ts:method":"Seven Steps","ts:host":"Address Doctor","ts:recall":"Total Recall","ts:perfect":"Zero Packet Loss"},"az900":{"first":"First Login","streak3":"On a Roll","streak7":"Seven-Day Uptime","streak14":"Two-Week SLA","streak30":"Five Nines","days10":"Reserved Instance","weekend":"Weekend Deployment","night":"Maintenance Window","five":"Multi-Region","lessons":"Full Syllabus","viz":"Hands-On Admin","sims":"Production Ready","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Cloud Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Above the Clouds","linerate":"Zero Downtime","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"Azure Fundamentals Master","regiondown":"Region Down","lockedout":"Access Denied","collector":"Shell Collector","frozen":"Deep Freeze","cld:reader":"Cloud Curious","cld:lab":"Concept Lab","cld:shared":"Line Drawer","cld:capex":"OpEx Convert","cld:price":"Bargain Hunter","cld:sla":"Counting Nines","cld:fn":"Scale to Zero","cld:respsim":"Responsibility Line","cld:opexsim":"Finance Friendly","cld:modelsim":"Model Citizen","cld:svcsim":"Anything as a Service","cld:advise":"Trusted Advisor","cld:perfect":"Head in the Cloud","arc:reader":"Architect in Training","arc:lab":"Service Lab","arc:map":"Globetrotter","arc:az":"Zone Defender","arc:inherit":"Heir Apparent","arc:net":"Network Builder","arc:redund":"Copy That","arc:vmdeploy":"First Deployment","arc:netdesign":"Hybrid Designer","arc:redsim":"Geo-Redundant","arc:storsim":"Storage Savvy","arc:rbacsim":"Least Privilege","arc:idsim":"Zero Trust","arc:perfect":"Solution Architect","gov:reader":"Governor","gov:lab":"Operations Lab","gov:costdrv":"Cost Detective","gov:policy":"Policy Maker","gov:lock":"Lock Smith","gov:shell":"Shell Scripter","gov:arm":"Idempotent","gov:govsim":"Guardrails","gov:lockpol":"Compliance Pro","gov:toolsim":"Toolbox","gov:monsim":"On Call","gov:costsim":"Cost Optimizer","gov:perfect":"Fully Governed"},"securityplus":{"first":"First Login","streak3":"On a Roll","streak7":"Week on Watch","streak14":"Two-Week Patrol","streak30":"Thirty-Day Vigil","days10":"Regular in the SOC","weekend":"Weekend On-Call","night":"Graveyard Shift","five":"Five by Five","lessons":"Full Syllabus","viz":"Hands-On Defender","sims":"Range Ready","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Security Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Hardened Target","linerate":"Zero Defects","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"Security+ Master","cracked":"Hash Cracker","outbreak":"Patient Zero","collector":"Tool Collector","clicked":"Click Happy","gen:reader":"Grounded","gen:lab":"Concept Lab","gen:zt":"Never Trust","gen:root":"Root of Trust","gen:cipher":"Cipher Suite","gen:cab":"CAB Approved","gen:recall":"Key Recall","gen:perfect":"Avalanche","thr:reader":"Threat Intel","thr:lab":"Red Lab","thr:phish":"Phish Fryer","thr:sqli":"Little Bobby Tables","thr:contain":"Containment","thr:triage":"Inbox Zero","thr:patch":"Web Patcher","thr:perfect":"Apex Predator","arc:reader":"Architect","arc:lab":"Blueprint","arc:shared":"Shared Duty","arc:rpo":"Recovery Point","arc:place":"Defense in Depth","arc:ics":"Plant Protector","arc:dr":"Disaster Ready","arc:perfect":"Fortress","ops:reader":"Shift Lead","ops:lab":"Ops Center","ops:siem":"Queue Zero","ops:cvss":"Severity Scale","ops:mail":"p=reject","ops:ir":"First Responder","ops:coc":"Chain of Custody","ops:perfect":"Blue Team Ace","prg:reader":"Governor","prg:lab":"Program Manager","prg:ale":"Actuary","prg:heat":"Risk Accepted","prg:register":"Register Keeper","prg:vendor":"Due Diligence","prg:scope":"Rules of Engagement","prg:perfect":"CISO Material"},"ccna":{"first":"Link Up","streak3":"Keepalive","streak7":"Hello Interval","streak14":"Stable Adjacency","streak30":"Five Nines","days10":"Regular in the NOC","weekend":"Maintenance Window","night":"Graveyard Shift","five":"Full Mesh","lessons":"Full Syllabus","viz":"Hands-On Engineer","sims":"Rack Ready","cards100":"Century","cardsall":"Photographic Memory","sweep":"Converged","fullbank":"Full Bank","ready":"Network Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Wire Speed","linerate":"Zero Packet Loss","spare":"Time to Spare","comeback":"Reconverged","season":"Exam Season","master":"CCNA Master","reload":"Reload Regret","storm":"Broadcast Storm","leak":"Data Leak","dupip":"Duplicate Address","inf:reader":"Layer 1 Scholar","inf:lab":"Infrastructure Crew","inf:det":"Interface Detective","inf:drill":"Subnet Sprinter","inf:vlsm":"Address Architect","inf:addr":"Interfaces Up","inf:relay":"Helper Address","inf:perfect":"Access Point Perfect","sw:reader":"Layer 2 Scholar","sw:lab":"Wiring Closet","sw:vlan":"VLAN Architect","sw:ec":"Bundled","sw:stp":"Root Bridge","sw:fix":"Ticket Closed","sw:elect":"Election Night","sw:perfect":"Po1(SU)","rt:reader":"Layer 3 Scholar","rt:lab":"Route Reflector","rt:float":"Floating Static","rt:ospf":"Full Adjacency","rt:fix":"Neighbor Whisperer","rt:v6":"Dual Stack","rt:hsrp":"Always Active","rt:lpm":"Longest Match","svc:reader":"Services Scholar","svc:lab":"Security Operator","svc:ssh":"No More Telnet","svc:nat":"Overloaded","svc:acl":"Implicit Deny","svc:l2":"Trust No Port","svc:wild":"Wildcard","svc:perfect":"Locked Down","ops:reader":"Ops Scholar","ops:lab":"NOC Analyst","ops:mgmt":"authPriv","ops:review":"Human in the Loop","ops:prompt":"Prompt Engineer","ops:idem":"Idempotent","ops:sev":"Every Awesome Cisco Engineer","ops:perfect":"Fully Automated"},"linuxplus":{"first":"Hello, World","streak3":"Cron Job","streak7":"Daemonized","streak14":"Long-Running Process","streak30":"Uptime: 30 Days","days10":"Regular Login","weekend":"Maintenance Window","night":"On-Call","five":"Runlevel 5","lessons":"Read the Man Pages","viz":"Hands on the Keyboard","sims":"Root Access","cards100":"Century","cardsall":"Photographic Memory","sweep":"All Services Active","fullbank":"Full Bank","ready":"Production Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Kernel Panic Proof","linerate":"exit 0","spare":"Time to Spare","comeback":"Rebooted","season":"Exam Season","master":"Linux+ Master","rmrf":"rm -rf /","c777":"World Writable","fork":"Fork Bomb","cow":"Easter Egg","sys:reader":"Sysadmin Scholar","sys:lab":"Diagram Driver","sys:lvm":"Volume Manager","sys:grow":"Room to Grow","sys:net":"Static Assignment","sys:boot":"Bootloader","sys:pipe":"Pipe Dream","sys:perfect":"Kernel Mode","svc:reader":"Service Scholar","svc:lab":"Hands-On Admin","svc:onboard":"Onboarding Pro","svc:timer":"Timekeeper","svc:ctr":"Rootless","svc:perm":"chmod Master","svc:kill":"Graceful Exit","svc:perfect":"PID 1","sec:reader":"Security Scholar","sec:lab":"Defender in Training","sec:lock":"Locksmith","sec:luks":"Encrypted at Rest","sec:ssh":"Keymaster","sec:selinux":"Enforcing","sec:ir":"First Responder","sec:perfect":"Hardened","auto:reader":"Automation Scholar","auto:lab":"Script Kiddie No More","auto:provision":"Bulk Provisioner","auto:playbook":"Playbook Author","auto:merge":"Conflict Resolver","auto:regex":"Regex Wrangler","auto:ai":"Trust but Verify","auto:perfect":"Idempotent","ts:reader":"Troubleshooter","ts:lab":"Field Tested","ts:boot":"Back from Emergency","ts:web":"Site Restored","ts:disk":"Space Finder","ts:net":"It Was DNS","ts:login":"Let Me In","ts:perfect":"Root Cause"},"az104":{"first":"First Login","streak3":"On a Roll","streak7":"Seven-Day Uptime","streak14":"Two-Week SLA","streak30":"Five Nines","days10":"Reserved Instance","weekend":"Weekend Change Window","night":"Maintenance Window","five":"Multi-Region","lessons":"Full Syllabus","viz":"Hands-On Admin","sims":"Production Ready","labs":"Command Line Admin","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Admin Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Above the Clouds","linerate":"Zero Downtime","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"Azure Administrator Master","lockedout":"Scope Locked","denied":"Request Disallowed","frozen":"Deep Freeze","wipe":"Complete Mode","idg:reader":"Identity Architect","idg:lab":"Governance Lab","idg:scope":"Scope Master","idg:onboard":"Help Desk Hero","idg:governlab":"Guardrails","idg:customrole":"Role Crafter","idg:access":"Access Detective","idg:costs":"Cost Conscious","idg:perfect":"Least Privilege","sto:reader":"Storage Scholar","sto:lab":"Storage Lab","sto:sas":"Token Smith","sto:secure":"Firewall Builder","sto:protectlab":"Undelete","sto:shares":"Share Keeper","sto:redund":"Six Copies","sto:trouble":"Storage Help Desk","sto:perfect":"Perfect Tier","cmp:reader":"Compute Scholar","cmp:lab":"Compute Lab","cmp:bicep":"Infrastructure as Code","cmp:vmlab":"VM Wrangler","cmp:slots":"Zero Downtime","cmp:autoscale":"Elastic","cmp:swap":"Sticky Fingers","cmp:trouble":"Compute Medic","cmp:perfect":"Flawless Deploy","net:reader":"Network Scholar","net:lab":"Network Lab","net:hubspoke":"Hub and Spoke","net:nsglab":"Gatekeeper","net:routelab":"Traffic Cop","net:lblab":"Balancing Act","net:peer":"Not Transitive","net:trouble":"Packet Detective","net:perfect":"Zero Packet Loss","mon:reader":"Monitor Scholar","mon:lab":"Ops Lab","mon:kql":"Kusto Coder","mon:alertlab":"On Call","mon:backuplab":"Backup Hero","mon:softdel":"Second Chance","mon:alertsim":"Signal Tuner","mon:trouble":"Ops Hero","mon:perfect":"Five Nines"},"ccnp":{"first":"Link Up","streak3":"Keepalive","streak7":"Hello Interval","streak14":"Stable Adjacency","streak30":"Five Nines","days10":"Regular in the NOC","weekend":"Maintenance Window","night":"Graveyard Shift","five":"Full Mesh","lessons":"Full Syllabus","viz":"Hands-On Engineer","sims":"Rack Ready","cards100":"Century","cardsall":"Photographic Memory","sweep":"Converged","fullbank":"Full Bank","ready":"Enterprise Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Wire Speed","linerate":"Zero Packet Loss","spare":"Time to Spare","comeback":"Reconverged","season":"Exam Season","master":"CCNP Enterprise Master","reload":"Reload Regret","teapot":"I'm a Teapot","zen":"Zen of Python","loop":"Applet Inception","arch:reader":"Architect's Desk","arch:lab":"Blueprint Complete","arch:hsrp":"Active Duty","arch:qos":"Expedited Forwarding","arch:qosfix":"Policy Doctor","arch:sdwan":"Overlay Operator","arch:sda":"Fabric Weaver","arch:design":"Clos Encounters","arch:breaker":"Chaos Monkey","arch:perfect":"Domain One Down","virt:reader":"Virtually Certain","virt:lab":"Overlay Expert","virt:vrf":"Route Distinguished","virt:gre":"Tunnel Vision","virt:ipsec":"Encrypted Everywhere","virt:tunfix":"QM_IDLE","virt:lisp":"Who and Where","virt:vxlan":"Sixteen Million Segments","virt:perfect":"Domain Two Down","infra:reader":"Infrastructure Scholar","infra:lab":"Heavy Lifter","infra:trunk":"Negotiator","infra:lacp":"Bundle of Joy","infra:mst":"Instance Manager","infra:guard":"Root Guardian","infra:ospf":"Area Border Patrol","infra:ospffix":"EXSTART Escape","infra:bgp":"Established","infra:path":"Path Picker","infra:pbr":"Rule Bender","infra:nat":"Translator","infra:vrrp":"Master Gateway","infra:ntp":"Time Lord","infra:mcast":"Reverse Path","infra:perfect":"Domain Three Down","assure:reader":"Assurance Scholar","assure:lab":"Diagnostician","assure:snmp":"authPriv","assure:fnf":"Flow Master","assure:span":"Mirror Mirror","assure:sla":"Never Blackholed","assure:tool":"Right Tool","assure:yang":"Model Driven","assure:perfect":"Fully Assured","sec:reader":"Security Scholar","sec:lab":"Shield Wall","sec:ssh":"No More Telnet","sec:aaa":"Gatekeeper","sec:acl":"First Match Wins","sec:copp":"CPU Bodyguard","sec:design":"Policy Architect","sec:sgt":"Tagged","sec:perfect":"Locked Down","auto:reader":"Automation Scholar","auto:lab":"Integration Engineer","auto:api":"Status 200","auto:py":"Pythonista","auto:json":"Valid JSON","auto:eem":"Self-Healer","auto:codes":"Code Reader","auto:tool":"Orchestrator","auto:perfect":"Fully Automated"},"cysaplus":{"first":"First Login","streak3":"On a Roll","streak7":"Week on Watch","streak14":"Two-Week Patrol","streak30":"Thirty-Day Vigil","days10":"Regular in the SOC","weekend":"Weekend On-Call","night":"Graveyard Shift","four":"Full Rotation","lessons":"Full Syllabus","viz":"Hands-On Defender","sims":"Range Ready","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Analyst Ready","marathon":"Marathon","exam1":"Exam Ready","exam2":"Sharp Analyst","linerate":"Zero Defects","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"CySA+ Master","pipe":"Pipe Dream","injected":"Prompt Injected","wiped":"Evidence Wiped","fatigue":"Alert Fatigue","ops:reader":"Watch Floor","ops:lab":"Ops Console","ops:shell":"Shell Sleuth","ops:pcap":"Packet Whisperer","ops:proc":"Tree Surgeon","ops:beacon":"Clockwork","ops:triage":"Queue Commander","ops:hunt":"Beacon Hunter","ops:ai":"Trust but Verify","ops:sims":"Ops Ready","ops:perfect":"Sharp Eyes","vul:reader":"Patch Tuesday","vul:lab":"Scanner Room","vul:term":"Output Reader","vul:cvss":"Severity Scale","vul:ctx":"Risk-Based","vul:fp":"False Alarm","vul:waf":"Request Decoder","vul:score":"Nine Point Eight","vul:sims":"Remediation Ready","vul:perfect":"Zero Vulns","ir:reader":"On Call","ir:lab":"War Room","ir:kc":"Chain Breaker","ir:mem":"Memory Lane","ir:hash":"Integrity Proven","ir:ransom":"Night Shift Hero","ir:bec":"Wire Stopper","ir:coc":"Chain of Custody","ir:sims":"Incident Commander","ir:perfect":"Flawless Response","rpt:reader":"Briefing Room","rpt:lab":"Dashboard Pro","rpt:exec":"Bottom Line Up Front","rpt:notify":"Seventy-Two Hours","rpt:mtt":"Clock Watcher","rpt:sims":"Communicator","rpt:perfect":"Report Perfect"},"sc500":{"first":"First Login","streak3":"On a Roll","streak7":"Seven-Day Watch","streak14":"Two-Week Rotation","streak30":"Zero Trust, Full Trust","days10":"Retention Policy","weekend":"Weekend On-Call","night":"Night Shift SOC","five":"Defense in Depth","lessons":"Full Syllabus","viz":"Hands-On Defender","sims":"Hardened","cards100":"Century","cardsall":"Photographic Memory","sweep":"Clean Sweep","fullbank":"Full Bank","ready":"Secure by Default","marathon":"Marathon","exam1":"Exam Ready","exam2":"Least Privilege, Most Points","linerate":"Zero Findings","spare":"Time to Spare","comeback":"Comeback","season":"Exam Season","master":"SC-500 Master","lockedout":"Access Denied","purge":"Point of No Return","jailbreak":"Nice Try","hunter":"Query Master","idn:reader":"Identity Scholar","idn:lab":"Identity Lab","idn:ca":"Policy Architect","idn:purge":"Key Guardian","idn:casim":"Safe Rollout","idn:pimsim":"Just in Time","idn:appsim":"Workload Wrangler","idn:kvsim":"Vault Locksmith","idn:govsim":"Governor","idn:perfect":"Zero Trust Hero","dat:reader":"Data Defender","dat:lab":"Network Lab","dat:sas":"Token Smith","dat:nsg":"Rule Reader","dat:fw":"Firewall Tracer","dat:stsim":"Locked Blob","dat:sqlsim":"Query Guard","dat:nsgsim":"Packet Path","dat:pesim":"Gone Private","dat:fwsim":"Network Controller","dat:perfect":"Perimeter Perfect","cmp:reader":"Workload Scholar","cmp:lab":"Workload Lab","cmp:guard":"Guardrail Engineer","cmp:jit":"Port Closer","cmp:waf":"WAF Tuner","cmp:aisim":"AI Safety Officer","cmp:vmsim":"Hardened Host","cmp:aksim":"Cluster Keeper","cmp:wafsim2":"Prevention Mode","cmp:appsim":"API Gatekeeper","cmp:perfect":"Compute Champion","pos:reader":"Posture Pro","pos:lab":"SOC Lab","pos:score":"Score Climber","pos:kql":"Hunter","pos:postsim":"Audit Ready","pos:collsim":"Data Connector","pos:socsim":"SOAR Builder","pos:rolesim":"Least Privilege SOC","pos:retsim":"Retention Planner","pos:perfect":"Posture Perfect"}};
+/* Overall level from combined XP across every guide. */
+const LEVELS=[[0,"Recruit"],[300,"Apprentice"],[1000,"Technician"],[2500,"Specialist"],[5000,"Administrator"],[9000,"Engineer"],[15000,"Senior Engineer"],[24000,"Architect"],[36000,"Principal Architect"],[52000,"Distinguished Engineer"],[72000,"IT Legend"]];
 function readGuide(id){
   const st=CERTS[id].store;if(!st)return null;
   let s=null;try{s=JSON.parse(localStorage.getItem(st.key)||"null")}catch(e){}
@@ -416,7 +511,19 @@ function readGuide(id){
   const exams=st.exams.map(([c,label,pass])=>{const b=s.exams&&s.exams[c]&&num(s.exams[c].best)?s.exams[c].best:null;return {label,pass,best:b}});
   let rank=st.ranks[0][1];for(const [t,n] of st.ranks)if(xp>=t)rank=n;
   const last=s.streak&&typeof s.streak.last==="string"?s.streak.last:null;
-  return {xp,started:xp>0,quiz80,exams,rank,pct:Math.min(100,Math.round(xp/st.master*100)),ready:exams.every(e=>e.best!==null&&e.best>=e.pass),last};
+  /* hub extras: attempts, badges, streak and last activity */
+  const dir=CERTS[id].guide.replace(/\/$/,""),BN=BADGES[dir]||{},max=SCALE[dir]||900;
+  exams.forEach((e,i)=>{const r=s.exams&&s.exams[st.exams[i][0]];e.code=st.exams[i][0];e.max=max;
+    e.attempts=r&&Array.isArray(r.attempts)?r.attempts.filter(a=>a&&num(a.score)).map(a=>({score:a.score,at:num(a.at)?a.at:null})):[];});
+  const bmap=s.badges&&typeof s.badges==="object"&&!Array.isArray(s.badges)?s.badges:{};
+  const badges=Object.keys(bmap).filter(k=>bmap[k]).map(k=>({id:k,guide:id,name:BN[k]||"Badge",at:num(bmap[k])&&bmap[k]>1e12?bmap[k]:null}));
+  const badgeTotal=Math.max(Object.keys(BN).length,badges.length);
+  const day=d=>{const t=d?Date.parse(d):NaN;return isFinite(t)?t:null};
+  const lastDay=day(last),today=new Date().toDateString(),yday=new Date(Date.now()-864e5).toDateString();
+  const streak=s.streak&&num(s.streak.n)&&(last===today||last===yday)?s.streak.n:0;
+  const stamps=[lastDay,...badges.map(b=>b.at),...exams.flatMap(e=>e.attempts.map(a=>a.at))].filter(num);
+  const lastAt=stamps.length?Math.max(...stamps):null;
+  return {xp,started:xp>0,quiz80,exams,rank,pct:Math.min(100,Math.round(xp/st.master*100)),ready:exams.every(e=>e.best!==null&&e.best>=e.pass),last,badges,badgeTotal,streak,lastAt};
 }
 const P={};for(const id in CERTS)if(CERTS[id].store)P[id]=readGuide(id);
 
@@ -556,25 +663,94 @@ function renderTracks(){
     <button class="btn small" type="button" data-track="${k}">Show on the roadmap</button></article>`).join("");
   $("#track-list").addEventListener("click",e=>{const b=e.target.closest("[data-track]");if(!b)return;const t=TRACKS[b.dataset.track];highlight(t.path);select(t.path.find(id=>CERTS[id].guide&&id!=="aplus")||t.path[0]);$("#map").scrollIntoView({behavior:REDUCED?"auto":"smooth"})});
 }
+const fmtN=n=>n.toLocaleString("en-US");
+const lc=s=>/^(Today|Yesterday|\d)/.test(s)?s.toLowerCase():s;
+function ago(t){if(!t)return "Never";const d0=new Date();d0.setHours(0,0,0,0);const d1=new Date(t);d1.setHours(0,0,0,0);const n=Math.round((d0-d1)/864e5);
+  return n<=0?"Today":n===1?"Yesterday":n<7?n+" days ago":new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric",year:new Date(t).getFullYear()===d0.getFullYear()?undefined:"numeric"})}
+const HEXP="50,4 94,29 94,83 50,108 6,83 6,29";
+function spark(e){const W=132,H=36,a=e.attempts.slice(-10);
+  if(!a.length)return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><text class="none" x="0" y="22">no attempts yet</text></svg>`;
+  const vs=[...a.map(o=>o.score),e.pass],lo=Math.max(100,Math.min(...vs)-60),hi=Math.min(e.max,Math.max(...vs)+60);
+  const y=v=>H-4-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(H-8),x=i=>a.length===1?W/2:6+i*(W-12)/(a.length-1);
+  const pts=a.map((o,i)=>`${x(i).toFixed(1)},${y(o.score).toFixed(1)}`);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Last ${a.length} scores: ${a.map(o=>o.score).join(", ")}"><line class="pl" x1="0" x2="${W}" y1="${y(e.pass).toFixed(1)}" y2="${y(e.pass).toFixed(1)}"/>${a.length>1?`<polyline points="${pts.join(" ")}"/>`:""}${a.map((o,i)=>`<circle class="${o.score>=e.pass?"ok":""}" cx="${x(i).toFixed(1)}" cy="${y(o.score).toFixed(1)}" r="2.6"/>`).join("")}</svg>`}
 function renderProgress(){
   const ids=Object.keys(P),C=2*Math.PI*30;
-  const totalXP=ids.reduce((a,id)=>a+P[id].xp,0),started=ids.filter(id=>P[id].started).length,ready=ids.filter(id=>P[id].ready).length;
-  $("#summary").innerHTML=`<span><b>${totalXP.toLocaleString("en-US")}</b>XP across all guides</span><span><b>${started}/${ids.length}</b>guides started</span><span><b>${ready}</b>at the exam target score</span>`;
-  $("#prog").innerHTML=ids.map(id=>{const c=CERTS[id],p=P[id],col=TRACKS[c.track].color;
+  const totalXP=ids.reduce((a,id)=>a+P[id].xp,0),started=ids.filter(id=>P[id].started).length;
+  const allEx=ids.flatMap(id=>P[id].exams.map(e=>({...e,id}))),passed=allEx.filter(e=>e.best!==null&&e.best>=e.pass).length,taken=allEx.reduce((a,e)=>a+e.attempts.length,0);
+  const bGot=ids.reduce((a,id)=>a+P[id].badges.length,0),bAll=ids.reduce((a,id)=>a+P[id].badgeTotal,0);
+  const streak=Math.max(0,...ids.map(id=>P[id].streak));
+  let li=0;LEVELS.forEach(([t],i)=>{if(totalXP>=t)li=i});const nx=LEVELS[li+1],cur=LEVELS[li][0];
+  const lp=nx?Math.round((totalXP-cur)/(nx[0]-cur)*100):100,R=2*Math.PI*44;
+  const recent=ids.filter(id=>P[id].lastAt).sort((a,b)=>P[b].lastAt-P[a].lastAt);
+  const top=recent[0];
+  $("#hub-top").innerHTML=`<div class="lvl"><div class="ring"><svg viewBox="0 0 104 104" aria-hidden="true"><circle class="bg" cx="52" cy="52" r="44"/><circle class="fg" cx="52" cy="52" r="44" stroke-dasharray="${R}" stroke-dashoffset="${R*(1-lp/100)}"/></svg><b><small>LEVEL</small>${li+1}</b></div>
+    <div><span class="s-small">IT career level</span><h3>${LEVELS[li][1]}</h3><p>${nx?`<b>${fmtN(nx[0]-totalXP)}</b> XP to ${nx[1]}`:"Top level reached"}</p></div></div>
+    <div class="tiles">
+      <div class="tile"><b class="g">${fmtN(totalXP)}</b><span>total XP</span></div>
+      <div class="tile"><b>${bGot}<small>/${bAll}</small></b><span>badges earned</span></div>
+      <div class="tile"><b>${streak}</b><span>day streak${streak?"":" (study today)"}</span></div>
+      <div class="tile"><b>${started}<small>/${ids.length}</small></b><span>guides started</span></div>
+      <div class="tile"><b>${passed}<small>/${allEx.length}</small></b><span>exams at passing score</span></div>
+      <div class="tile"><b>${taken}</b><span>practice exams taken</span></div>
+    </div>
+    <div class="resume">${top?`<span>Last studied: <b>${CERTS[top].short}</b>, ${lc(ago(P[top].lastAt))}</span><a class="btn small primary" href="${CERTS[top].guide}">Continue ${CERTS[top].short}</a>`:`<span>Start any guide and your progress shows up here.</span><a class="btn small primary" href="#start">Find your first cert</a>`}</div>`;
+  /* guide cards: most recently studied first, then the rest in roadmap order */
+  const order=[...recent,...ids.filter(id=>!P[id].lastAt)];
+  $("#prog").innerHTML=order.map(id=>{const c=CERTS[id],p=P[id],col=TRACKS[c.track].color;
     const ex=p.exams.map(e=>`<span>${p.exams.length>1?e.label:"Exam"} best <b class="${e.best!==null&&e.best>=e.pass?"pass":""}">${e.best??"—"}</b></span>`).join("");
-    return `<a class="panel gcard" href="${c.guide}" style="--c:${col}">
+    return `<a class="panel gcard${p.started?"":" idle"}" href="${c.guide}" style="--c:${col}">
       <div class="ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle class="bg" cx="38" cy="38" r="30"/><circle class="fg" cx="38" cy="38" r="30" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p.pct/100)}"/></svg><b>${p.pct}%</b></div>
       <h3>${c.short} <span class="mono" style="color:var(--muted);font-weight:400;font-size:12px">${c.code}</span></h3>
       <div class="rk">${p.started?p.rank:"Not started"}${p.ready?' · <span class="pass">exam ready ✓</span>':""}</div>
-      <div class="meta"><span>XP <b>${p.xp.toLocaleString("en-US")}</b></span><span>Quiz 80%+ <b>${p.quiz80}/${c.store.mods}</b></span>${ex}</div></a>`}).join("");
+      <div class="meta"><span>XP <b>${fmtN(p.xp)}</b></span><span>Badges <b>${p.badges.length}/${p.badgeTotal}</b></span><span>Quiz 80%+ <b>${p.quiz80}/${c.store.mods}</b></span>${ex}${p.streak?`<span>Streak <b>${p.streak}</b></span>`:""}</div>
+      <div class="when"><span>${p.lastAt?"Last studied "+lc(ago(p.lastAt)):"Not opened yet"}</span><span class="go">${p.started?"Continue":"Start"} →</span></div></a>`}).join("");
+  /* exam scoreboard: taken exams first, best result first */
+  const isT=e=>e.attempts.length||e.best!==null,todo=allEx.filter(e=>!isT(e));
+  const rows=allEx.filter(isT).sort((a,b)=>(b.attempts.length?1:0)-(a.attempts.length?1:0)||((b.best??0)/b.max)-((a.best??0)/a.max));
+  $("#board").innerHTML=(rows.length?`<div class="erow head"><span>Exam</span><span>Best</span><span>Pass</span><span>Tries</span><span>Last attempt</span><span>Last 10 scores</span></div>`:"")+rows.map(e=>{const c=CERTS[e.id],has=e.attempts.length>0,lastA=e.attempts[e.attempts.length-1];
+    const cls=e.best===null?"":e.best>=e.pass?"pass":"fail";
+    return `<div class="erow${has||e.best!==null?"":" none"}"><span class="nm"><a href="${c.guide}">${c.short}${e.label!=="Exam"?" "+e.label:""}</a><small>${c.code===c.short?"Practice exam":c.code}${e.best!==null&&e.best>=e.pass?" · at passing score ✓":""}</small></span>
+      <span><span class="lbl">Best</span><span class="n ${cls}">${e.best??"—"}</span></span>
+      <span><span class="lbl">Pass</span><span class="n">${e.pass}</span></span>
+      <span><span class="lbl">Tries</span><span class="n">${e.attempts.length}</span></span>
+      <span class="last"><span class="lbl">Last attempt</span>${lastA?`<span class="n">${lastA.score}</span> · ${ago(lastA.at)}`:"Not taken"}</span>
+      <span class="tr">${spark(e)}</span></div>`}).join("")+(todo.length?`<p class="todo">${rows.length?"Not taken yet":"No practice exams taken yet. Each guide has a full timed exam"}: ${todo.map(e=>`<a href="${CERTS[e.id].guide}">${CERTS[e.id].short}${e.label!=="Exam"?" "+e.label:""}</a>`).join(", ")}</p>`:"");
+  /* badge wall */
+  const latest=ids.flatMap(id=>P[id].badges).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,12);
+  const mono=n=>(n.replace(/[^A-Za-z0-9+ ]/g,"").split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2)||"★").toUpperCase();
+  $("#badge-wall").innerHTML=`<div class="panel recent"><h4>Latest unlocks</h4>${latest.length?`<ul>${latest.map(b=>`<li><svg viewBox="0 0 100 112" aria-hidden="true"><polygon points="${HEXP}"/><text x="50" y="68" text-anchor="middle">${mono(b.name)}</text></svg><b title="${b.name}">${b.name}</b><span>${CERTS[b.guide].short}${b.at?" · "+ago(b.at):""}</span></li>`).join("")}</ul>`:`<p class="empty">No badges yet. Finish a lesson in any guide to earn your first one.</p>`}</div>
+    <div class="panel bcount"><h4>Badges by guide</h4><ol>${ids.map(id=>{const p=P[id],pc=p.badgeTotal?Math.round(p.badges.length/p.badgeTotal*100):0;return `<li style="--c:${TRACKS[CERTS[id].track].color}"><a href="${CERTS[id].guide}">${CERTS[id].short}</a><div class="bar" role="img" aria-label="${p.badges.length} of ${p.badgeTotal} badges"><span style="width:${pc}%"></span></div><span class="mono">${p.badges.length}/${p.badgeTotal}</span></li>`}).join("")}</ol></div>`;
+}
+/* ---------- backup and restore (all guides plus the roadmap answers) ---------- */
+const BK_KEYS=()=>[...Object.values(CERTS).filter(c=>c.store).map(c=>c.store.key),MEM];
+function refreshAll(){for(const id in P)P[id]=readGuide(id);renderProgress();renderMap();select(SEL)}
+function bkMsg(t,k){const m=$("#bk-msg");m.textContent=t;m.className="bk-msg "+(k||"")}
+function initBackup(){
+  $("#bk-save").addEventListener("click",()=>{const data={};
+    try{for(const k of BK_KEYS()){const v=localStorage.getItem(k);if(v!==null)data[k]=v}}catch(e){bkMsg("This browser is blocking saved data, so there's nothing to back up.","err");return}
+    if(!Object.keys(data).length){bkMsg("There's no saved progress in this browser yet.","err");return}
+    const blob=new Blob([JSON.stringify({app:"it-study-guides",v:1,saved:new Date().toISOString(),data},null,1)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`study-guides-progress-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    bkMsg(`Backup downloaded with progress from ${Object.keys(data).filter(k=>k!==MEM).length} guide(s).`,"ok")});
+  $("#bk-file").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+    let j;try{j=JSON.parse(await f.text())}catch(_){bkMsg("That file isn't a progress backup.","err");return}
+    const ok=BK_KEYS(),d=j&&j.app==="it-study-guides"&&j.data&&typeof j.data==="object"?j.data:null;
+    const keys=d?Object.keys(d).filter(k=>ok.includes(k)&&typeof d[k]==="string"&&(()=>{try{const v=JSON.parse(d[k]);return v&&typeof v==="object"&&!Array.isArray(v)}catch(_){return false}})()):[];
+    if(!keys.length){bkMsg("That file isn't a progress backup, or it has no progress in it.","err");return}
+    const names=keys.filter(k=>k!==MEM).map(k=>Object.values(CERTS).find(c=>c.store&&c.store.key===k).short);
+    if(!confirm(`Restore progress for ${names.join(", ")||"the roadmap"}${j.saved?` from the backup made ${new Date(j.saved).toLocaleDateString("en-US")}`:""}?\n\nThis replaces the progress saved in this browser for those guides.`))return;
+    try{keys.forEach(k=>localStorage.setItem(k,d[k]))}catch(_){bkMsg("This browser wouldn't save the restored progress.","err");return}
+    refreshAll();bkMsg(`Restored progress for ${names.length} guide(s).`,"ok")});
 }
 function renderSheets(){
   $("#sheets").innerHTML=SHEETS.map(([h,g,t,d])=>`<a class="panel sheet" href="cheatsheets/#${h}"><span class="gl">${g}</span><b>${t}</b><span>${d}</span></a>`).join("");
 }
 
 /* ---------- boot ---------- */
-buildQuiz();renderResult();renderMap();select(SEL);renderTracks();renderProgress();renderSheets();
+buildQuiz();renderResult();renderMap();select(SEL);renderTracks();renderProgress();renderSheets();initBackup();
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{const n=$("#map-svg").getBoundingClientRect().width<700;if(!LAYOUT||n!==LAYOUT.narrow)renderMap()},120)});
 /* Progress may change in another tab; refresh when you come back. */
-addEventListener("pageshow",e=>{if(e.persisted){for(const id in P)P[id]=readGuide(id);renderProgress();renderMap();select(SEL)}});
+addEventListener("pageshow",e=>{if(e.persisted)refreshAll()});
+addEventListener("storage",e=>{if(e.key===null||BK_KEYS().includes(e.key))refreshAll()});
 </script>
