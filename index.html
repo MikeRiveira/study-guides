@@ -369,11 +369,15 @@ const CERTS={
     covers:["Security operations, log analysis and threat hunting","AI in security operations","Vulnerability scanning and prioritization","Incident response and forensics","Reporting and communication"],
     roles:["SOC Analyst (Tier 2)","Threat Hunter","Incident Responder","Vulnerability Analyst"],
     store:{key:"cysaplus-guide-v1",mods:4,master:8500,exams:[["c1","Exam",750]],ranks:[[0,"SOC Trainee"],[200,"Tier 1 Analyst"],[600,"Tier 2 Analyst"],[1300,"Threat Hunter"],[2300,"Vulnerability Analyst"],[3600,"Incident Responder"],[5500,"SOC Lead"],[8500,"CySA+ Master"]]}},
-  az500:{name:"Microsoft Azure Security Engineer",short:"AZ-500",code:"Next step",track:"cloud",stage:3,future:true,hours:90,
-    why:"Where cloud and security meet: securing identity, networks, data and workloads in Azure.",
-    diff:4,time:"2–3 months",roles:["Cloud Security Engineer","Security Engineer"]}
+  sc500:{name:"Microsoft Cloud and AI Security Engineer",short:"SC-500",code:"SC-500",track:"cloud",stage:3,guide:"sc500/",hours:90,
+    why:"Where cloud and security meet: securing identity, networks, data, workloads and AI apps in Azure, then monitoring them with Defender for Cloud and Sentinel. It covers the ground of the retired AZ-500.",
+    format:"One exam; Microsoft associate exams usually have 40–60 questions in about 100 minutes",pass:"700, on a 1–1000 scale",
+    diff:4,time:"2–3 months",cost:2,valid:"1 year, renewable with a free online assessment",
+    covers:["Identity, access and governance: Entra ID, Conditional Access, PIM, Key Vault, RBAC and Azure Policy","Storage, database and network security: private endpoints, NSGs, Azure Firewall","Compute and AI security: VMs, containers, App Service, WAF and AI guardrails","Security posture with Defender for Cloud","Monitoring and response with Microsoft Sentinel and Security Copilot"],
+    roles:["Cloud Security Engineer","Security Engineer","Azure Security Administrator"],
+    store:{key:"sc500-guide-v1",mods:4,master:14000,exams:[["c1","Exam",700]],ranks:[[0,"Security Trainee"],[200,"Identity Guard"],[600,"Key Keeper"],[1200,"Network Defender"],[2200,"Workload Protector"],[3500,"Threat Hunter"],[5200,"SOC Analyst"],[7500,"Cloud Security Engineer"],[10500,"AI Security Engineer"],[14000,"SC-500 Master"]]}}
 };
-const EDGES=[["aplus","netplus"],["aplus","az900"],["aplus","linux"],["netplus","ccna"],["netplus","secplus"],["netplus","az104"],["az900","az104"],["ccna","ccnp"],["secplus","cysa"],["secplus","az500"],["az104","az500"]];
+const EDGES=[["aplus","netplus"],["aplus","az900"],["aplus","linux"],["netplus","ccna"],["netplus","secplus"],["netplus","az104"],["az900","az104"],["ccna","ccnp"],["secplus","cysa"],["secplus","sc500"],["az104","sc500"]];
 const STAGES=["START","CORE","SPECIALIZE","GO FURTHER"];
 const SHEETS=[["ports","PORT","Common ports","Port numbers and protocols to know cold"],["subnetting","/24","Subnetting","CIDR, masks and host counts at a glance"],["osi","L1–7","OSI model","Layers, devices and protocols"],["windows","WIN","Windows commands","CLI tools for support and troubleshooting"],["linux","$_","Linux commands","Files, permissions, processes and networking"],["ios","IOS","Cisco IOS commands","Show, config and troubleshooting commands"],["acronyms","A–Z","Acronyms","The acronyms across A+, Network+ and Security+"]];
 
