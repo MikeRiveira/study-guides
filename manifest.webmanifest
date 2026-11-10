@@ -1,0 +1,25 @@
+{
+  "name": "IT Study Guides",
+  "short_name": "IT Study",
+  "description": "Free interactive IT certification study guides that work offline: lessons, simulations, flashcards, practice exams and cheat sheets.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#060a14",
+  "theme_color": "#060a14",
+  "categories": ["education"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ],
+  "shortcuts": [
+    {"name": "Cheat sheets", "url": "cheatsheets/", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "A+ study guide", "url": "aplus/", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Network+ study guide", "url": "netplus/", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Security+ study guide", "url": "securityplus/", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]}
+  ]
+}
