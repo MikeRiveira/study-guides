@@ -12,6 +12,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
 | CompTIA CySA+ (CS0-004) | https://mikeriveira.github.io/study-guides/cysaplus/ |
+| Microsoft Cloud and AI Security Engineer (SC-500) | https://mikeriveira.github.io/study-guides/sc500/ |
 | IT quick reference cheat sheets | https://mikeriveira.github.io/study-guides/cheatsheets/ |
 
 ## CompTIA A+ study guide
@@ -132,6 +133,25 @@ The page is built from `ccna/src/` in the same way as the other guides, plus `cc
 
 ```
 python3 ccna/build.py
+```
+
+## Microsoft Cloud and AI Security Engineer (SC-500) study guide
+
+SC-500 (Implementing End-to-End Security Controls for Cloud and AI Workloads) is the current Microsoft security engineer exam; AZ-500 was retired on August 31, 2026. Four modules, one for each exam domain:
+
+| Module | Exam weight |
+|---|---|
+| 1. Identity, Access and Governance | 20–25% |
+| 2. Storage, Databases and Networking | 25–30% |
+| 3. Compute and AI Workloads | 20–25% |
+| 4. Security Posture and Monitoring | 20–25% |
+
+It has 40 lessons with 81 interactive diagrams (such as a Conditional Access policy builder, a key vault purge protection lab, a SAS token builder, an NSG rule evaluator, a security admin rule explorer, an Azure Firewall packet tracer, a Foundry guardrails tester, a just-in-time access cycle, a WAF tuning lab, a secure score calculator and a KQL hunting lab), 20 hands-on simulations, 486 spaced-repetition flashcards, 248 quiz questions, and a timed practice exam (50 questions in 100 minutes, or a 25-question half exam) weighted by domain and scored against the 700 passing score. It uses the same level-up system as the other guides, with security engineering ranks from Security Trainee to SC-500 Master and 71 badges. Progress is kept separately from the other guides.
+
+The page is built from `sc500/src/` in the same way as the other guides. After editing, run:
+
+```
+python3 sc500/build.py
 ```
 
 ## IT quick reference cheat sheets
