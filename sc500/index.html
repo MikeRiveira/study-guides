@@ -1110,6 +1110,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .viz>*,.sim>*,.panel>*{min-width:0}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1635,23 +1644,54 @@ function renderRanks(){
 const EXAM={1:{code:"SC-500",pass:700}};
 const EXAM_LEN={full:[50,100],half:[25,50]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(10*pct);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1670,16 +1710,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">50 questions · 100 minutes</span><em>About the real exam length (Microsoft associate exams run 40–60 questions in about 100 minutes).</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">25 questions · 50 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also uses drag-and-drop, yes/no and hot-area items. Practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">SC-500 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">SC-500 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1702,6 +1744,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1719,24 +1762,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,L.score/10));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}Cloud and AI Security · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}Cloud and AI Security · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 1000</span></div>
     <div class="ex-gauge"><i style="left:${EXAM[c].pass/10}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>Domain ${d.o.domain}: ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 1–1000 score is an estimate: Microsoft doesn't publish how it scales raw scores.</p>
@@ -1746,6 +1790,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -3530,6 +3575,88 @@ quizViz($("#viz-sccq"),{title:"Security Copilot scenarios",done:"Solved every Se
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1. Identity, Access and Governance (14) ---------- */
+registerExamBank("idn",[
+ {q:"Admins must activate the Global Administrator role only when needed, with approval and MFA, for a maximum of 4 hours. What should you configure?",o:["Microsoft Entra Privileged Identity Management role settings","A Conditional Access named location","An Azure Policy initiative","A resource lock"],a:0,e:"PIM gives just-in-time, time-bound, approval-based activation of privileged roles."},
+ {q:"You need to require compliant devices for access to the Azure portal for all users except break-glass accounts. What should you create?",o:["An Azure RBAC deny assignment","A Conditional Access policy targeting Windows Azure Service Management API, excluding the emergency accounts","A network security group","A Key Vault access policy"],a:1,e:"Conditional Access can require device compliance for management apps. Always exclude emergency access accounts."},
+ {q:"Which authentication method is phishing-resistant and works without a password?",o:["SMS one-time codes","Voice call","FIDO2 security keys or passkeys","Security questions"],a:2,e:"FIDO2 and passkeys, Windows Hello for Business and certificate-based authentication are phishing-resistant."},
+ {q:"An Azure Function must read secrets from Key Vault without storing any credentials in code. What should you use?",o:["A storage account key in app settings","A shared admin password","An anonymous access policy","A managed identity with an appropriate Key Vault RBAC role"],a:3,e:"Managed identities get tokens from Entra ID automatically. Grant the identity a role such as Key Vault Secrets User."},
+ {q:"Several apps need the same identity, with a lifecycle independent of any one resource. Which identity type fits?",o:["User-assigned managed identity","System-assigned managed identity","Service principal with a client secret in code","Guest user"],a:0,e:"User-assigned identities exist on their own and can be attached to many resources."},
+ {q:"Users keep granting risky third-party apps access to company mail. Which control reduces this?",o:["Disable MFA","Restrict user consent to verified publishers and low-risk permissions, and enable the admin consent workflow","Allow all user consent","Remove Conditional Access"],a:1,e:"Consent settings and the admin consent workflow stop illicit consent grants."},
+ {q:"Which Key Vault permission model is recommended for new vaults?",o:["Vault access policies only","Shared keys","Azure RBAC","Anonymous"],a:2,e:"Azure RBAC gives fine-grained, centrally managed data-plane permissions and PIM support."},
+ {q:"You must ensure deleted Key Vault secrets can be recovered and can't be purged early. What should be enabled?",o:["Firewall only","Private endpoint only","Diagnostic settings only","Soft delete and purge protection"],a:3,e:"Soft delete keeps deleted objects for the retention period. Purge protection stops permanent deletion before it ends."},
+ {q:"A custom role must let operators restart VMs but not delete them. What should the role definition include?",o:["Microsoft.Compute/virtualMachines/restart/action in Actions, with no delete action","The Owner role","Microsoft.Compute/* in Actions","NotActions for read"],a:0,e:"Custom roles list the exact allowed operations. Leave out delete."},
+ {q:"What is the effect of assigning the Reader role at the management group scope?",o:["It applies only to the management group object","Read access is inherited by all subscriptions and resources beneath it","It grants write access","It has no effect"],a:1,e:"RBAC assignments inherit down the hierarchy."},
+ {q:"You must block creation of storage accounts that allow public blob access across all subscriptions. What should you use?",o:["A resource lock","An RBAC Reader assignment","An Azure Policy with a Deny effect assigned at a management group","A Sentinel analytics rule"],a:2,e:"Azure Policy can deny non-compliant configurations at creation."},
+ {q:"Which Azure Policy effect deploys a missing configuration, such as diagnostic settings, automatically?",o:["Audit","Deny","Disabled","DeployIfNotExists"],a:3,e:"DeployIfNotExists remediates by deploying a template. It needs a managed identity on the assignment."},
+ {q:"Sign-ins from a user are flagged as risky because of leaked credentials. Which feature can require a secure password change automatically?",o:["Microsoft Entra ID Protection user risk policy (via Conditional Access)","Azure Advisor","Network Watcher","Defender for Storage"],a:0,e:"User risk policies can force a secure password change with MFA when credentials are leaked."},
+ {q:"Which principle should guide permanent role assignments?",o:["Grant Owner to everyone for convenience","Least privilege, with eligible rather than permanent assignments for privileged roles","Use shared accounts","Avoid MFA for admins"],a:1,e:"Give only what's needed and make privileged access eligible through PIM."}
+]);
+
+/* ---------- 2. Storage, Databases and Networking (18) ---------- */
+registerExamBank("dat",[
+ {q:"A storage account must only accept requests authorized with Microsoft Entra ID, not account keys. What should you configure?",o:["Enable anonymous blob access","Create an account SAS","Disable shared key authorization (allowSharedKeyAccess = false)","Enable the hierarchical namespace only"],a:2,e:"Turning off shared key forces Entra ID authorization, which is auditable and supports RBAC."},
+ {q:"A partner needs time-limited write access to one container without an Entra account. Which option is most secure?",o:["An account key","An account SAS with all permissions for a year","Making the container public","A user delegation SAS scoped to that container with a short expiry"],a:3,e:"A user delegation SAS is signed with Entra credentials, can be scoped tightly and expires."},
+ {q:"How do you revoke many service SAS tokens at once without rotating account keys?",o:["Tie them to a stored access policy and then change or delete the policy","Delete the container","Disable HTTPS","Change the storage tier"],a:0,e:"A stored access policy lets you change or revoke the SAS tokens linked to it."},
+ {q:"Which feature encrypts storage data with keys you control in Key Vault?",o:["Microsoft-managed keys only","Customer-managed keys","TLS 1.2","Soft delete"],a:1,e:"CMK uses keys in Key Vault or Managed HSM, which you can rotate or revoke."},
+ {q:"Which storage feature protects blobs from ransomware by preventing modification for a set period?",o:["Hot tier","Lifecycle management to cool","Immutable storage (time-based retention or legal hold)","Static website"],a:2,e:"WORM policies block overwrites and deletes during the retention period."},
+ {q:"Defender for Storage should scan uploaded blobs for malware. Which capability provides this?",o:["Azure Firewall","NSG flow logs","Azure Policy audit","Malware scanning in Defender for Storage"],a:3,e:"Defender for Storage includes on-upload malware scanning and activity monitoring."},
+ {q:"Azure SQL Database must allow only Entra ID authentication. What should be configured?",o:["Microsoft Entra-only authentication on the logical server","SQL authentication with a strong password","A public endpoint","Firewall rule 0.0.0.0"],a:0,e:"Entra-only authentication disables SQL logins and centralizes identity."},
+ {q:"Which Azure SQL feature encrypts data at rest by default and can use customer-managed keys?",o:["Always Encrypted only","Transparent Data Encryption (TDE)","Dynamic data masking","Row-level security"],a:1,e:"TDE encrypts database files at rest. Bring-your-own-key is supported."},
+ {q:"Database admins must not be able to see credit card numbers in plain text, even with full database access. What should you use?",o:["Dynamic data masking","TDE","Always Encrypted","Auditing"],a:2,e:"Always Encrypted keeps data encrypted on the client side. The keys never reach the database engine."},
+ {q:"Which feature hides part of a column such as email from non-privileged users in query results without changing stored data?",o:["Always Encrypted","TDE","Ledger","Dynamic data masking"],a:3,e:"Dynamic data masking obfuscates query results for unprivileged users."},
+ {q:"SQL auditing logs must go to a central workspace for Sentinel analysis. Which destination should be selected?",o:["Log Analytics workspace","A local file on the server","A Recovery Services vault","Azure DNS"],a:0,e:"Sending audit logs to Log Analytics makes them queryable by Sentinel."},
+ {q:"Web VMs and database VMs are in the same subnet. You need NSG rules that refer to the role of the VM, not its IP. What should you use?",o:["Service tags","Application security groups","Route tables","Private DNS zones"],a:1,e:"ASGs group NICs logically so NSG rules can target, for example, WebServers to DbServers on 1433."},
+ {q:"Which NSG rule property determines evaluation order?",o:["Name alphabetical","Creation time","Priority (lower number first)","Destination port"],a:2,e:"Rules run from priority 100 to 4096, with the lowest number first. The first match wins."},
+ {q:"You need to centrally enforce admin security rules across many VNets that local NSGs can't override. Which service fits?",o:["Azure Front Door","Network Watcher","Application Gateway","Azure Virtual Network Manager security admin rules"],a:3,e:"Security admin rules in AVNM are evaluated before NSGs and can always-allow or deny."},
+ {q:"A PaaS SQL server must be reachable only from a VNet through a private IP, with public access disabled. What should you deploy?",o:["A private endpoint with a privatelink private DNS zone","A service endpoint only","An NSG on the PaaS service","A public IP"],a:0,e:"A private endpoint maps the service to a private IP. Private DNS makes the name resolve to it."},
+ {q:"How does a service endpoint differ from a private endpoint?",o:["They are identical","A service endpoint keeps the service's public IP but limits access to selected subnets; a private endpoint gives it a private IP in your VNet","A service endpoint uses a private IP","A private endpoint requires a public IP"],a:1,e:"Service endpoints optimize routing and allow-listing. Private endpoints bring the service into your address space."},
+ {q:"Which Azure Firewall feature inspects encrypted outbound traffic and filters by URL path?",o:["Basic SKU DNAT","NSG flow logs","TLS inspection in Azure Firewall Premium","Network Watcher IP flow verify"],a:2,e:"Premium adds TLS inspection, IDPS and URL filtering."},
+ {q:"A VM can't reach a storage account and you suspect an NSG rule. Which Network Watcher tool tells you which rule blocks the traffic?",o:["Packet capture only","Connection monitor","Topology","IP flow verify"],a:3,e:"IP flow verify tests a 5-tuple and returns the allowing or denying rule."}
+]);
+
+/* ---------- 3. Compute and AI Workloads (14) ---------- */
+registerExamBank("cmp",[
+ {q:"Copilot might surface sensitive files that are overshared across SharePoint. Which Microsoft Purview capability helps you find and reduce this risk for AI?",o:["Data Security Posture Management (DSPM) for AI with oversharing assessments","Azure Bastion","Defender for DNS","An NSG"],a:0,e:"DSPM for AI shows AI interactions and oversharing risks and recommends policies."},
+ {q:"Which control reduces oversharing to AI assistants most directly?",o:["Disable logging","Fix permissions and apply sensitivity labels so AI respects existing access","Grant Everyone access to SharePoint","Remove MFA"],a:1,e:"AI assistants honor user permissions. Fixing overshared content and labeling it limits what AI can surface."},
+ {q:"An AI agent built in Copilot Studio needs its own identity so its access can be governed and audited. Which capability provides this?",o:["A shared user account","A storage account key","Microsoft Entra Agent ID","An anonymous connector"],a:2,e:"Agent identities let you apply governance, Conditional Access and lifecycle to agents like any other identity."},
+ {q:"Which protection detects prompt injection attempts against an AI app built on Azure AI Foundry?",o:["An NSG rule","TDE","Soft delete","Content safety guardrails such as Prompt Shields, plus Defender for AI threat protection"],a:3,e:"Prompt Shields filter jailbreak and indirect prompt injection. Defender for AI alerts on attacks against AI workloads."},
+ {q:"Admins need RDP access to VMs without public IPs and without exposing port 3389 to the internet. What should you deploy?",o:["Azure Bastion","A public load balancer","A NAT gateway","An open NSG rule from Any"],a:0,e:"Bastion provides browser-based RDP and SSH over TLS to private IPs."},
+ {q:"Management ports must open only when an approved admin requests access, for a limited time and from their IP. Which feature fits?",o:["Azure Policy audit","Just-in-time VM access in Defender for Servers","Accelerated networking","An availability set"],a:1,e:"JIT access edits NSG or Firewall rules temporarily for approved requests."},
+ {q:"VM disks must be encrypted including temp disks and caches at the host level. Which option fits?",o:["Azure Disk Encryption only for data disks","TLS","Encryption at host","Soft delete"],a:2,e:"Encryption at host encrypts temp disks and disk caches on the VM host."},
+ {q:"Which VM security feature protects against boot kits and rootkits using Secure Boot and a vTPM?",o:["Spot VMs","Proximity placement groups","Reserved instances","Trusted launch"],a:3,e:"Trusted launch enables Secure Boot, vTPM and boot integrity monitoring."},
+ {q:"On-premises servers must be protected by Defender for Servers. What must be done first?",o:["Onboard them to Azure Arc","Move them to Azure","Install Azure Bastion","Create an NSG"],a:0,e:"Arc-enabled servers can be covered by Defender for Cloud plans."},
+ {q:"AKS clusters need runtime threat detection and image vulnerability assessment. Which plan should be enabled?",o:["Defender for Storage","Defender for Containers","Defender for DNS","Defender for Key Vault"],a:1,e:"Defender for Containers covers cluster hardening, runtime protection and registry image scanning."},
+ {q:"Which ACR setting prevents pulling images anonymously?",o:["Enable admin user for everyone","Make the registry public","Disable anonymous pull access (default) and use Entra-based RBAC","Disable firewall"],a:2,e:"Keep anonymous pull off and authenticate with Entra identities and roles such as AcrPull."},
+ {q:"An App Service app must only accept traffic from Azure Front Door. What should be configured?",o:["A public IP only","A storage firewall","An SQL firewall rule","Access restrictions using the AzureFrontDoor.Backend service tag and checking the X-Azure-FDID header"],a:3,e:"Access restrictions limit inbound traffic to Front Door, and the FDID header check pins it to your profile."},
+ {q:"A Logic App connects to Key Vault. How should it authenticate?",o:["Use its managed identity","Embed a client secret in the workflow","Use a shared account password","Use anonymous access"],a:0,e:"Managed identities avoid storing secrets in workflow definitions."},
+ {q:"Which service protects a public web app from SQL injection and XSS at the edge?",o:["Azure Bastion","A Web Application Firewall policy on Front Door or Application Gateway","Network Watcher","PIM"],a:1,e:"WAF uses managed OWASP rule sets and custom rules."}
+]);
+
+/* ---------- 4. Security Posture and Monitoring (14) ---------- */
+registerExamBank("pos",[
+ {q:"Leadership wants attack path analysis and a cloud security graph showing how an exposed VM could reach sensitive data. Which plan provides this?",o:["Foundational CSPM (free) only","Defender for DNS","Defender CSPM","Azure Advisor"],a:2,e:"Defender CSPM adds attack paths, the security explorer, agentless scanning and data-aware posture."},
+ {q:"What does the secure score in Defender for Cloud represent?",o:["The number of alerts","The cost of security tools","Uptime percentage","How well resources meet security recommendations; higher is better"],a:3,e:"Remediating recommendations raises the secure score."},
+ {q:"Compliance must be tracked against PCI DSS in Defender for Cloud. What should you do?",o:["Add the PCI DSS standard in the regulatory compliance dashboard","Create an NSG","Enable soft delete","Deploy Bastion"],a:0,e:"Regulatory compliance maps recommendations to standards you assign."},
+ {q:"You need to monitor AWS and GCP accounts in Defender for Cloud. What should you create?",o:["A VPN to each cloud","Multicloud connectors for AWS and GCP","An Azure Policy only","A storage account"],a:1,e:"Native connectors bring AWS and GCP resources into posture management and workload protection."},
+ {q:"Which capability discovers your organization's unknown internet-facing assets?",o:["Network Watcher","Azure Monitor metrics","Microsoft Defender External Attack Surface Management (EASM)","Key Vault"],a:2,e:"Defender EASM maps exposed domains, IPs and services."},
+ {q:"Sentinel must ingest firewall logs in CEF format from appliances. What is required?",o:["A Windows event forwarding GPO","A storage account","A WAF policy","A Linux log forwarder with the Azure Monitor Agent and a CEF data collection rule"],a:3,e:"CEF and syslog arrive through a Linux forwarder running AMA with a DCR."},
+ {q:"Windows security events must go to Sentinel from on-premises servers. Which approach fits?",o:["Arc-enable the servers and use the Windows Security Events via AMA connector with a DCR","Copy logs manually","Use an NSG","Enable JIT"],a:0,e:"AMA and DCRs collect selected Windows events from Azure or Arc-enabled machines."},
+ {q:"Which Sentinel role lets an analyst manage incidents but not create analytics rules?",o:["Microsoft Sentinel Contributor","Microsoft Sentinel Responder","Microsoft Sentinel Reader","Owner"],a:1,e:"Reader views, Responder manages incidents and Contributor manages content such as rules."},
+ {q:"Which KQL operator filters rows by a condition?",o:["project","summarize","where","extend"],a:2,e:"where filters, project selects columns, summarize aggregates and extend adds computed columns."},
+ {q:"An analytics rule must create an incident when one user fails sign-in more than 20 times in 10 minutes. Which rule type fits?",o:["Microsoft security rule","Fusion only","Anomaly display","Scheduled query rule"],a:3,e:"Scheduled rules run KQL at intervals with thresholds."},
+ {q:"When a high-severity incident is created, Sentinel must automatically disable the user and post to Teams. What should you use?",o:["An automation rule that runs a Logic Apps playbook","A workbook","A watchlist","A hunting bookmark"],a:0,e:"Automation rules trigger playbooks for response actions."},
+ {q:"Log data must be kept two years cheaply but rarely queried. Which option fits?",o:["Keep everything in interactive retention forever","Long-term retention (archive) or a data lake tier for the table","Delete after 30 days","Store in Key Vault"],a:1,e:"Archive or long-term retention keeps data at low cost, and you restore or search it when needed."},
+ {q:"Investigators need to search Microsoft 365 audit events from the Defender portal. Which tool provides this?",o:["Network Watcher","Azure Advisor","Microsoft Purview Audit","App Service logs"],a:2,e:"Purview Audit records user and admin activity across Microsoft 365 and is searchable."},
+ {q:"What is the safest way to use Microsoft Security Copilot during an investigation?",o:["Let it close incidents automatically without review","Paste secrets into prompts","Disable logging so prompts are private","Use it to summarize and suggest, then verify findings against source data and follow RBAC limits"],a:3,e:"Security Copilot works within the user's permissions. Analysts must validate its output."}
+]);
 
 </script>
 <script>

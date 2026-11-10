@@ -1110,6 +1110,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .viz>*,.sim>*,.panel>*{min-width:0}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1634,23 +1643,54 @@ function renderRanks(){
 const EXAM={1:{code:"AZ-900",pass:700}};
 const EXAM_LEN={full:[50,45],half:[25,23]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(10*pct);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1669,16 +1709,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">50 questions · 45 minutes</span><em>About the real exam length (40–60 questions in 45 minutes).</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">25 questions · 23 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also uses drag-and-drop, yes/no and hot-area items. Practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">AZ-900 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">AZ-900 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1701,6 +1743,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1718,24 +1761,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,L.score/10));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}Azure Fundamentals · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}Azure Fundamentals · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 1000</span></div>
     <div class="ex-gauge"><i style="left:${EXAM[c].pass/10}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>Domain ${d.o.domain}: ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 1–1000 score is an estimate: Microsoft doesn't publish how it scales raw scores.</p>
@@ -1745,6 +1789,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -3294,6 +3339,84 @@ sortViz($("#viz-monsort"),{title:"Which monitoring tool?",bins:{mon:"Azure Monit
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1. Cloud Concepts (17) ---------- */
+registerExamBank("cld",[
+ {q:"A startup wants to avoid buying servers up front and pay only for what it uses each month. Which cloud benefit is this?",o:["Consumption-based (OpEx) pricing","Capital expenditure","Data sovereignty","Vertical scaling only"],a:0,e:"Cloud shifts spending from up-front CapEx to pay-as-you-go OpEx."},
+ {q:"An app needs more memory, so an admin resizes its VM to a larger SKU. What type of scaling is this?",o:["Horizontal scaling (scale out)","Vertical scaling (scale up)","Geo-replication","Load balancing"],a:1,e:"Vertical scaling adds CPU or RAM to an existing instance. Horizontal scaling adds more instances."},
+ {q:"A web tier adds two more VM instances automatically during peak traffic. What is this?",o:["Vertical scaling","Disaster recovery","Horizontal scaling based on demand (elasticity)","Fault tolerance only"],a:2,e:"Adding instances is scaling out. Doing it automatically with demand is elasticity."},
+ {q:"In the shared responsibility model, which item is always the customer's responsibility, regardless of service type?",o:["Physical datacenter security","Physical network","Hypervisor patching","Information and data, devices, and accounts and identities"],a:3,e:"Customers always own their data, endpoints, accounts and identities. Microsoft always owns the physical layers."},
+ {q:"Which cloud model gives the customer the most control over the operating system?",o:["IaaS","PaaS","SaaS","Serverless"],a:0,e:"IaaS hands the customer the OS and everything above it."},
+ {q:"A company runs workloads in its own datacenter and in Azure, with connectivity between them. Which model is this?",o:["Public cloud","Hybrid cloud","Private cloud","Multicloud only"],a:1,e:"Hybrid cloud combines on-premises (private) infrastructure with a public cloud."},
+ {q:"A company uses both Azure and another public cloud provider for different workloads. What is this called?",o:["Hybrid cloud","Private cloud","Multicloud","Community cloud"],a:2,e:"Multicloud means using more than one public cloud provider. Azure Arc can help manage it."},
+ {q:"What does 'high availability' in the cloud refer to?",o:["Encrypting all data","Paying only for usage","Running only in one datacenter","Keeping services up with minimal downtime, often backed by an SLA such as 99.99%"],a:3,e:"High availability means designing for continuous uptime, measured by SLA percentages."},
+ {q:"Which cloud benefit ensures a company can recover from a regional outage by replicating to another region?",o:["Reliability through disaster recovery and geo-distribution","Elasticity","Manageability","Predictability"],a:0,e:"Reliability includes recovering from failures, for example with region pairs and replication."},
+ {q:"Which benefit lets IT forecast costs using tools such as the pricing calculator and TCO calculator?",o:["Elasticity","Predictability (cost)","Agility","Security"],a:1,e:"Cost predictability comes from known pricing and forecasting tools."},
+ {q:"Which pricing benefit applies to serverless services such as Azure Functions on the Consumption plan?",o:["A fixed monthly server fee","You buy hardware up front","You pay only when code runs, per execution and resource use","Unlimited free compute"],a:2,e:"Serverless bills per execution and duration, and you pay nothing when idle."},
+ {q:"A developer wants to build an app without managing VMs, OS patches or runtime updates. Which model fits?",o:["IaaS","On-premises","Colocation","PaaS"],a:3,e:"PaaS (for example App Service) manages the OS and runtime for you."},
+ {q:"Which is an example of SaaS?",o:["Microsoft 365","Azure Virtual Machines","Azure Virtual Network","Azure Disk Storage"],a:0,e:"Microsoft 365 is a finished app delivered as a service."},
+ {q:"Which cloud characteristic means Azure manages security patching of the physical hosts and datacenter?",o:["Customer responsibility","Shared responsibility (provider's part)","Data classification","Tagging"],a:1,e:"Physical hosts, network and datacenter are always Microsoft's responsibility."},
+ {q:"What is an advantage of the cloud for global reach?",o:["All data must stay in one country","Requires shipping servers","Deploy apps in regions close to users worldwide within minutes","No latency at all"],a:2,e:"Azure regions worldwide let you place workloads near users quickly."},
+ {q:"Which cloud benefit describes using templates and policies to deploy and govern resources consistently?",o:["Elasticity","Durability","CapEx","Manageability / governance"],a:3,e:"Manageability of the cloud includes templates, automation and policy-based governance."},
+ {q:"A company wants to stop maintaining physical servers but keep its existing app unchanged. Which migration approach and model fit?",o:["Lift and shift to IaaS VMs","Rewrite as SaaS","Buy more on-premises hardware","Move to a cold site"],a:0,e:"Rehosting (lift and shift) moves the app as-is onto IaaS virtual machines."}
+]);
+
+/* ---------- 2. Azure Architecture and Services (23) ---------- */
+registerExamBank("arc",[
+ {q:"An app must survive the failure of a single datacenter within a region. What should be used?",o:["A single availability set in one rack","Availability zones","A resource group","A management group"],a:1,e:"Availability zones are physically separate datacenters within a region, each with its own power, cooling and network."},
+ {q:"What is a region pair in Azure?",o:["Two availability zones","Two subscriptions","Two regions in the same geography paired for disaster recovery and staggered updates","Two resource groups"],a:2,e:"Paired regions are at least 300 miles apart where possible and receive updates one at a time."},
+ {q:"Which Azure construct is a logical container that holds related resources for an app and shares a lifecycle?",o:["Management group","Region","Tenant","Resource group"],a:3,e:"Resource groups group resources that you deploy, manage and delete together."},
+ {q:"Which hierarchy order is correct, from broadest to narrowest?",o:["Management groups, subscriptions, resource groups, resources","Subscriptions, management groups, resources, resource groups","Resource groups, subscriptions, resources, management groups","Resources, resource groups, subscriptions, management groups"],a:0,e:"Management groups contain subscriptions, which contain resource groups, which contain resources."},
+ {q:"Which Azure compute service runs containers without managing any VMs or orchestrator, ideal for simple tasks?",o:["Azure Kubernetes Service","Azure Container Instances","Azure Virtual Machine Scale Sets","Azure Batch"],a:1,e:"ACI runs individual containers on demand with no infrastructure to manage."},
+ {q:"Which service provides managed Kubernetes for orchestrating many containers?",o:["Azure Functions","Azure App Service","Azure Kubernetes Service (AKS)","Azure Container Instances"],a:2,e:"AKS manages the Kubernetes control plane for you."},
+ {q:"Which service lets a company deliver full Windows desktops and apps from Azure to users on any device?",o:["Azure Bastion","Azure Arc","Azure Monitor","Azure Virtual Desktop"],a:3,e:"Azure Virtual Desktop provides virtualized desktops and apps, including multi-session Windows."},
+ {q:"Which service hosts web apps and APIs as PaaS with built-in autoscale and deployment slots?",o:["Azure App Service","Azure Virtual Machines","Azure Files","Azure DNS"],a:0,e:"App Service runs web apps on managed infrastructure."},
+ {q:"Which service lets VMs in two different VNets communicate privately over the Microsoft backbone?",o:["VPN Gateway to the internet","VNet peering","Azure DNS","Public IP addresses"],a:1,e:"VNet peering connects VNets with low latency through Microsoft's network."},
+ {q:"Which connection type gives a private, dedicated link from on-premises to Azure that doesn't go over the public internet?",o:["Site-to-site VPN","Point-to-site VPN","ExpressRoute","Azure Front Door"],a:2,e:"ExpressRoute uses a private circuit through a connectivity provider."},
+ {q:"A remote developer needs to connect a single laptop securely to an Azure VNet. Which option fits?",o:["ExpressRoute","Site-to-site VPN","VNet peering","Point-to-site VPN"],a:3,e:"Point-to-site VPN connects individual client devices to a VNet."},
+ {q:"Which feature lets resources in a VNet reach an Azure PaaS service through a private IP address in the VNet?",o:["Private endpoint (Azure Private Link)","Public endpoint","Service tag","Network Watcher"],a:0,e:"A private endpoint gives the PaaS resource a private IP in your VNet."},
+ {q:"Which Azure Storage redundancy option copies data three times within one datacenter only?",o:["ZRS","LRS","GRS","GZRS"],a:1,e:"Locally redundant storage keeps three copies in one datacenter. ZRS spreads them across zones."},
+ {q:"Which redundancy option replicates across availability zones in the primary region and also to a secondary region?",o:["LRS","ZRS","GZRS","GRS"],a:2,e:"Geo-zone-redundant storage combines ZRS in the primary region with geo-replication to the paired region."},
+ {q:"Which blob access tier is cheapest to store but has hours of rehydration latency?",o:["Hot","Cool","Cold","Archive"],a:3,e:"Archive is offline storage with the lowest cost and the highest retrieval time."},
+ {q:"Which Azure Storage service provides SMB file shares that can be mounted by Windows and Linux?",o:["Azure Files","Azure Blob Storage","Azure Queue Storage","Azure Table Storage"],a:0,e:"Azure Files offers managed SMB and NFS shares."},
+ {q:"Which tool moves large amounts of data offline to Azure by shipping a physical device?",o:["AzCopy","Azure Data Box","Azure Storage Explorer","Azure File Sync"],a:1,e:"Data Box is a rugged appliance for transferring terabytes when the network is too slow."},
+ {q:"Which command-line tool copies blobs and files to and from Azure Storage?",o:["Azure Data Box","Azure Migrate","AzCopy","Azure Advisor"],a:2,e:"AzCopy is a command-line utility for high-speed storage copies."},
+ {q:"Which service syncs on-premises Windows file servers with Azure Files and caches hot files locally?",o:["Azure Data Box","Azure Backup","Azure Site Recovery","Azure File Sync"],a:3,e:"Azure File Sync tiers files between on-premises servers and Azure Files."},
+ {q:"Which identity service gives users single sign-on to Microsoft 365, Azure and thousands of SaaS apps?",o:["Microsoft Entra ID","Azure Key Vault","Azure Policy","Microsoft Defender for Cloud"],a:0,e:"Microsoft Entra ID (formerly Azure AD) is the cloud identity provider."},
+ {q:"A company wants external partner users to access a shared app using their own identities. Which feature fits?",o:["Creating local VM accounts","Microsoft Entra External ID (B2B collaboration)","Sharing one admin password","Azure Bastion"],a:1,e:"B2B collaboration invites guest users who sign in with their own organization's credentials."},
+ {q:"Which feature requires MFA only when users sign in from outside the corporate network?",o:["Azure RBAC","Resource locks","Conditional Access","Azure Policy"],a:2,e:"Conditional Access applies if-then policies based on signals such as location and device."},
+ {q:"Which security model assumes breach and verifies every request explicitly?",o:["Perimeter trust","Implicit trust","Open access","Zero Trust"],a:3,e:"Zero Trust's principles are verify explicitly, use least privilege and assume breach."}
+]);
+
+/* ---------- 3. Azure Management and Governance (20) ---------- */
+registerExamBank("gov",[
+ {q:"A finance team wants an email when monthly Azure spending reaches 80% of a set amount. What should be configured?",o:["A budget with alerts in Microsoft Cost Management","Azure Policy","A resource lock","Azure Advisor score"],a:0,e:"Cost Management budgets send alerts at thresholds you set."},
+ {q:"Which factor most affects the cost of an Azure VM?",o:["The resource group name","VM size, region and how long it runs","The number of tags","The subscription's display name"],a:1,e:"Size (SKU), region, OS license and runtime drive compute cost."},
+ {q:"Which tool estimates the cost of Azure services before deployment?",o:["TCO calculator","Azure Advisor","Pricing calculator","Service Health"],a:2,e:"The pricing calculator estimates costs for a planned set of services. The TCO calculator compares on-premises with Azure."},
+ {q:"Which tool compares the cost of running workloads on-premises versus in Azure?",o:["Pricing calculator","Cost Management","Azure Monitor","TCO calculator"],a:3,e:"The total cost of ownership calculator models on-premises costs against Azure."},
+ {q:"Which feature labels resources with name/value pairs such as CostCenter=Finance for reporting?",o:["Tags","Locks","Blueprints","Management groups"],a:0,e:"Tags organize resources and appear in cost reports."},
+ {q:"An admin must prevent anyone from deleting a production database, even owners, without first removing a setting. What should be used?",o:["Azure Policy audit","A CanNotDelete (Delete) resource lock","A tag","RBAC Reader role"],a:1,e:"Resource locks override permissions. A delete lock blocks deletion until it's removed."},
+ {q:"Which service enforces rules such as 'only allow VMs in East US and West Europe'?",o:["Azure RBAC","Resource locks","Azure Policy","Azure Advisor"],a:2,e:"Azure Policy evaluates and enforces resource properties, such as allowed locations."},
+ {q:"What does Azure RBAC control?",o:["Which regions resources can be deployed to","The cost of resources","The availability of resources","Who can perform which actions on which resources"],a:3,e:"RBAC assigns roles (sets of permissions) to security principals at a scope."},
+ {q:"Which built-in role lets a user manage everything except granting access to others?",o:["Contributor","Owner","Reader","User Access Administrator"],a:0,e:"Contributor can create and manage resources but can't assign roles. Owner can."},
+ {q:"Which service provides a unified view of data governance, classification and lineage across on-premises and cloud?",o:["Azure Arc","Microsoft Purview","Azure Monitor","Azure Bastion"],a:1,e:"Microsoft Purview discovers, classifies and governs data across environments."},
+ {q:"Which service extends Azure management, policy and RBAC to servers running in other clouds or on-premises?",o:["Azure Migrate","ExpressRoute","Azure Arc","Azure Lighthouse only"],a:2,e:"Azure Arc projects non-Azure resources into Azure Resource Manager."},
+ {q:"Which tool lets an admin run Azure CLI or PowerShell commands from a browser without installing anything?",o:["Azure Storage Explorer","Azure Advisor","Azure Data Box","Azure Cloud Shell"],a:3,e:"Cloud Shell is a browser-based shell with the tools preinstalled."},
+ {q:"Which format do ARM templates use to define infrastructure declaratively?",o:["JSON","YAML only","CSV","XML"],a:0,e:"ARM templates are JSON. Bicep is a simpler language that compiles to ARM JSON."},
+ {q:"What is a benefit of infrastructure as code with ARM templates or Bicep?",o:["Lower VM prices","Repeatable, consistent deployments that can be versioned","Automatic data backups","Removing the need for identity"],a:1,e:"Declarative templates deploy the same way every time and can be source-controlled."},
+ {q:"Which service gives personalized recommendations to improve cost, security, reliability and performance?",o:["Azure Service Health","Azure Policy","Azure Advisor","Azure Arc"],a:2,e:"Advisor analyzes your resources and suggests improvements across the Well-Architected pillars."},
+ {q:"Which service notifies you about Azure outages and planned maintenance affecting your resources?",o:["Azure Advisor","Log Analytics","Microsoft Purview","Azure Service Health"],a:3,e:"Service Health shows service issues, planned maintenance and health advisories for your regions and services."},
+ {q:"Which service collects metrics and logs and supports alerts and dashboards across Azure resources?",o:["Azure Monitor","Azure Policy","Azure DNS","Microsoft Entra ID"],a:0,e:"Azure Monitor is the platform for metrics, logs (Log Analytics), alerts and Application Insights."},
+ {q:"Which Azure Monitor feature monitors live web application performance, failures and usage?",o:["Service Health","Application Insights","Cost Management","Azure Arc"],a:1,e:"Application Insights is the application performance monitoring feature of Azure Monitor."},
+ {q:"Which document describes Microsoft's uptime commitment and service credits for an Azure service?",o:["Azure Policy","Terms of the free account","Service Level Agreement (SLA)","Microsoft Purview report"],a:2,e:"Each service's SLA defines the uptime commitment and the credits if it's missed."},
+ {q:"How can an organization apply the same policies and RBAC to many subscriptions at once?",o:["Assign them at each resource","Use tags only","Use resource locks only","Assign them at a management group above those subscriptions"],a:3,e:"Assignments at a management group are inherited by all subscriptions beneath it."}
+]);
 
 </script>
 <script>

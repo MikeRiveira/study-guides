@@ -695,6 +695,15 @@ a.btn{text-decoration:none}
 .ex-res{margin-bottom:26px}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1115,23 +1124,54 @@ function renderRanks(){
 const EXAM={1:{code:"220-1201",pass:675},2:{code:"220-1202",pass:700}};
 const EXAM_LEN={full:[90,90],half:[45,45]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(100+800*pct/100);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1150,16 +1190,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">90 questions · 90 minutes</span><em>The real exam length.</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">45 questions · 45 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also has performance-based questions. Practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">Core ${c} · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">Core ${c} · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1182,6 +1224,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1199,24 +1242,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now()});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now()});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,`Completed a Core ${c} practice exam`);if(pass)awardRaw(`exam:c${c}:pass`,250,`Passed a Core ${c} practice exam`);
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Core ${c} practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-100)/8));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}Core ${c} · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}Core ${c} · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 900</span></div>
     <div class="ex-gauge"><i style="left:${(EXAM[c].pass-100)/8}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>${d.o.domain}.0 ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 100–900 score is an estimate: CompTIA doesn't publish how it scales raw scores.</p>
@@ -1226,6 +1270,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -4325,6 +4370,228 @@ registerModule({
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- Core 1 · 1.0 Mobile Devices (12) ---------- */
+registerExamBank("mob",[
+ {q:"A user's new smartphone connects to the office Wi-Fi but can't reach the company's internal web apps, while personal phones on the guest network work fine. What should the technician check first?",o:["Whether the phone has been enrolled in the company's MDM and received its Wi-Fi and VPN profiles","Whether the phone's screen rotation is locked","Whether NFC is turned on","Whether the phone's battery saver is enabled"],a:0,e:"Corporate access is usually pushed by mobile device management. Without enrollment the phone lacks the certificates, VPN or Wi-Fi profiles that internal apps need."},
+ {q:"A laptop's touchpad stopped working right after the user pressed a function key combination. What is the most likely fix?",o:["Replace the touchpad ribbon cable","Press the touchpad toggle Fn key again","Reinstall the operating system","Update the BIOS"],a:1,e:"Most laptops have an Fn shortcut that disables the touchpad. Pressing it again is the quickest and least invasive fix."},
+ {q:"Which laptop component should a technician disconnect first before replacing an internal M.2 SSD?",o:["The display cable","The keyboard ribbon","The internal battery connector","The Wi-Fi antenna leads"],a:2,e:"Disconnect power first. Unplug the AC adapter and the internal battery connector before touching other components to avoid shorts."},
+ {q:"A user wants their phone's contacts, calendar and email to stay in sync with their Microsoft 365 account. Which setting do they configure?",o:["A Bluetooth pairing with their PC","A mobile hotspot","An IMAP-only email account","A Microsoft Exchange ActiveSync (Microsoft 365) account in the mail settings"],a:3,e:"Exchange ActiveSync, which Microsoft 365 accounts use, synchronizes mail, contacts and calendars. IMAP only syncs mail."},
+ {q:"Which wireless technology lets a user pay at a point-of-sale terminal by holding a phone a few centimeters away?",o:["NFC","Bluetooth Low Energy","Infrared","802.11ax"],a:0,e:"Near-field communication works at a range of about 4 cm and is used for contactless payments and tap-to-pair."},
+ {q:"A technician must replace a laptop screen that shows an image only when a flashlight is shined on it. Which part has most likely failed?",o:["The digitizer","The backlight or its inverter","The GPU","The webcam"],a:1,e:"A faint image visible under a flashlight means the LCD panel is drawing pixels but the backlight (or inverter on older CCFL panels) isn't lighting them."},
+ {q:"A sales team needs laptops to connect to cellular data without a phone hotspot. Which option should the technician recommend?",o:["A docking station","A USB-to-Ethernet adapter","Laptops with a WWAN card or eSIM cellular modem","An 802.11ac access point"],a:2,e:"A WWAN (cellular) adapter or built-in eSIM modem lets a laptop connect to mobile broadband directly."},
+ {q:"A user's smartphone gets very hot and the battery drains quickly. The case looks slightly swollen. What should the technician do?",o:["Recharge the phone overnight to recalibrate the battery","Install a battery-saver app","Put the phone in a freezer to cool it","Stop using the device and replace the battery, handling it as a hazardous component"],a:3,e:"A swollen lithium-ion battery is a fire risk. Power the device off, stop using it, and replace and dispose of the battery properly."},
+ {q:"Which connector type is reversible and used by most current Android phones and many laptops for charging and data?",o:["USB-C","Micro-USB","Lightning","Mini-USB"],a:0,e:"USB-C is reversible and supports charging, data, video and USB Power Delivery. Lightning is Apple's proprietary connector on older iPhones."},
+ {q:"A user docks a laptop each morning and wants an external monitor, keyboard, wired network and charging through one cable. What should the technician provide?",o:["A KVM switch","A port replicator using a USB-C or Thunderbolt dock","A Bluetooth keyboard","An HDMI splitter"],a:1,e:"A USB-C or Thunderbolt docking station carries video, USB, Ethernet and power delivery over a single cable."},
+ {q:"A lost company phone contains sensitive email. Which MDM capability protects the data fastest?",o:["Geofencing","App whitelisting","Remote wipe","Screen-time limits"],a:2,e:"Remote wipe erases the device, or the corporate container on BYOD phones, so data can't be recovered by whoever finds it."},
+ {q:"After replacing a laptop keyboard, several keys don't respond. What is the most likely cause?",o:["The keyboard driver is corrupt","The CMOS battery is dead","The BIOS is set to the wrong language","The ribbon cable isn't fully seated or its locking tab is open"],a:3,e:"Partial key failure right after a swap almost always means the flat ribbon cable is misaligned or the ZIF latch isn't closed."}
+]);
+
+/* ---------- Core 1 · 2.0 Networking (21) ---------- */
+registerExamBank("net",[
+ {q:"A user can ping 8.8.8.8 but can't open any websites by name. Which service is most likely failing?",o:["DNS","DHCP","NAT","SMTP"],a:0,e:"Reaching an IP address proves routing works. Failing on names points to DNS resolution."},
+ {q:"A PC shows the address 169.254.12.7. What does this tell the technician?",o:["The PC has a static IP","The PC couldn't reach a DHCP server and assigned itself an APIPA address","The PC is on a public network","The DNS server is down"],a:1,e:"169.254.0.0/16 is APIPA. Windows assigns it when no DHCP server answers, so look at the cable, VLAN or DHCP server."},
+ {q:"Which port must be open on a firewall for staff to use Remote Desktop to reach a Windows server?",o:["22","443","3389","445"],a:2,e:"RDP uses TCP 3389. Port 22 is SSH, 443 is HTTPS and 445 is SMB."},
+ {q:"A small office wants every printer to always get the same IP address without configuring each printer by hand. What should the technician set up?",o:["APIPA","A DNS MX record","Port forwarding","DHCP reservations based on each printer's MAC address"],a:3,e:"A DHCP reservation ties a MAC address to a fixed IP, giving a consistent address while still managing it centrally."},
+ {q:"Which DNS record type points a domain to the mail server that accepts its email?",o:["MX","A","AAAA","CNAME"],a:0,e:"MX (mail exchanger) records name the servers that receive email for a domain."},
+ {q:"A technician needs to cover a large warehouse with Wi-Fi so that devices roam seamlessly. What should they deploy?",o:["One high-power consumer router","Several access points on the same SSID with overlapping coverage, ideally managed by a controller","A wireless repeater per aisle with different SSIDs","An ad hoc network"],a:1,e:"Multiple APs sharing one SSID, managed centrally, let clients roam between cells without reconfiguring."},
+ {q:"Which wireless standard can operate in the 6 GHz band?",o:["802.11n","802.11ac","802.11ax (Wi-Fi 6E)","802.11g"],a:2,e:"Wi-Fi 6E extends 802.11ax into the 6 GHz band. 802.11ac is 5 GHz only and 802.11n/g use 2.4 GHz (n also 5 GHz)."},
+ {q:"Which protocol encrypts web traffic and uses TCP 443?",o:["HTTP","FTP","Telnet","HTTPS"],a:3,e:"HTTPS is HTTP over TLS and listens on TCP 443."},
+ {q:"A user must send files to a server securely using the same port as SSH. Which protocol fits?",o:["SFTP","FTP","TFTP","SMB"],a:0,e:"SFTP runs inside SSH on TCP 22, so it's encrypted and needs only one port."},
+ {q:"What is the main difference between a hub and a switch?",o:["A hub forwards frames only to the destination port; a switch floods every port","A switch learns MAC addresses and forwards frames only to the correct port; a hub repeats to every port","A hub routes between subnets","A switch only works with fiber"],a:1,e:"Switches build a MAC address table and forward selectively. Hubs are Layer 1 repeaters that send everything everywhere."},
+ {q:"Which device lets a phone, a camera and a VoIP handset all get power over their network cable?",o:["A patch panel","A cable modem","A PoE switch or PoE injector","A Wi-Fi extender"],a:2,e:"Power over Ethernet (802.3af/at/bt) delivers power on the data cable from a PoE switch or injector."},
+ {q:"A home user wants to host a game server so friends on the internet can connect to it. What must be configured on the router?",o:["MAC filtering","A guest SSID","DHCP lease time","Port forwarding to the server's internal IP"],a:3,e:"Port forwarding maps an external port on the router's public IP to the server's private address and port."},
+ {q:"Which IPv4 address is a private address that can't be routed on the public internet?",o:["172.20.5.10","8.8.4.4","64.233.160.1","198.51.100.300"],a:0,e:"172.16.0.0 through 172.31.255.255 is a private range. The last option isn't even valid, since octets stop at 255."},
+ {q:"Which tool would a technician use to find which wall jack connects to which patch panel port?",o:["Loopback plug","Toner and probe","Punchdown tool","Crimper"],a:1,e:"A tone generator on one end and an inductive probe at the panel identify the matching cable."},
+ {q:"Which cable type should be used for a run that passes through the air-handling space above a drop ceiling?",o:["PVC-jacketed Cat 6","Direct-burial cable","Plenum-rated cable","Coaxial RG-59"],a:2,e:"Plenum-rated cable has a fire-resistant jacket that gives off less toxic smoke, which fire codes require in air-handling spaces."},
+ {q:"A company wants employees at home to reach internal servers over an encrypted tunnel across the internet. What should be set up?",o:["A VLAN","A proxy server only","A DMZ","A VPN"],a:3,e:"A VPN builds an encrypted tunnel over the public internet into the private network."},
+ {q:"Which protocol lets a network monitoring system poll switches for interface statistics and receive traps?",o:["SNMP","SMTP","LDAP","RDP"],a:0,e:"SNMP uses UDP 161 for polling and UDP 162 for traps."},
+ {q:"A technician must connect two buildings 1.5 km apart with a wired link. Which medium works?",o:["Cat 6 UTP","Single-mode fiber","Cat 5e STP","RG-6 coax"],a:1,e:"Copper Ethernet is limited to 100 m. Single-mode fiber easily covers kilometers."},
+ {q:"Which feature of a SOHO router keeps devices on the guest Wi-Fi from reaching computers on the main network?",o:["WPS","UPnP","Guest network isolation","DHCP relay"],a:2,e:"A guest network places visitors on a separate segment with client isolation, so they reach only the internet."},
+ {q:"Which IPv6 address is the loopback address?",o:["fe80::1","2001:db8::1","ff02::1","::1"],a:3,e:"::1 is the IPv6 loopback, like 127.0.0.1 in IPv4. fe80:: addresses are link-local and ff02::1 is all-nodes multicast."},
+ {q:"Which server type checks usernames and passwords for Wi-Fi users when a network uses WPA2-Enterprise?",o:["RADIUS server","Syslog server","File server","Proxy server"],a:0,e:"WPA2/WPA3-Enterprise use 802.1X with a RADIUS server for authentication."}
+]);
+
+/* ---------- Core 1 · 3.0 Hardware (22) ---------- */
+registerExamBank("hw",[
+ {q:"A video editor needs the fastest internal storage their motherboard supports. The board has an M.2 slot with PCIe 4.0 x4 lanes. Which drive should they buy?",o:["A SATA III 2.5-inch SSD","An M.2 NVMe SSD","An M.2 SATA SSD","A 7200 RPM HDD"],a:1,e:"NVMe over PCIe 4.0 x4 reaches several GB/s. SATA, even in M.2 form, tops out around 600 MB/s."},
+ {q:"Which RAID level stripes data with distributed parity and survives the loss of one drive?",o:["RAID 0","RAID 1","RAID 5","RAID 10"],a:2,e:"RAID 5 needs at least three drives and stores parity across them, so it can rebuild after one drive fails."},
+ {q:"A workstation build calls for maximum read/write speed and survives one drive failure in each mirrored pair. Which RAID level fits?",o:["RAID 0","RAID 5","RAID 6","RAID 10"],a:3,e:"RAID 10 stripes across mirrored pairs, giving speed and redundancy. It needs at least four drives."},
+ {q:"A user installs two 16 GB DIMMs, but the system only uses dual-channel mode when the sticks are moved. Where should they go?",o:["In the slots the motherboard manual marks as matching channel pairs, often the same color","In any two adjacent slots","Only in slot 1","In slots with different speeds"],a:0,e:"Dual-channel requires the DIMMs to sit in matched slots on separate channels, as the motherboard manual shows."},
+ {q:"Which memory type is used in most current laptops?",o:["DIMM","SO-DIMM","RIMM","SIMM"],a:1,e:"Laptops use smaller SO-DIMM modules, or soldered memory. Desktops use full-size DIMMs."},
+ {q:"What does ECC RAM provide that standard RAM doesn't?",o:["Higher clock speed","Lower voltage","Detection and correction of single-bit memory errors","Compatibility with all motherboards"],a:2,e:"Error-correcting code memory fixes single-bit errors, which is why servers use it."},
+ {q:"A power supply label lists 80 PLUS Gold. What does that mean?",o:["It outputs 800 watts","It is modular","It supports dual voltage","It is at least 87–90% efficient at typical loads"],a:3,e:"80 PLUS ratings describe efficiency. Gold means roughly 87–90% efficient across typical loads."},
+ {q:"Which connector supplies power to a modern high-end PCIe graphics card?",o:["6+2-pin PCIe or 12V-2x6 (12VHPWR)","Molex","Berg","4-pin ATX12V"],a:0,e:"Graphics cards use 6/8-pin PCIe power or the newer 16-pin 12V-2x6 connector."},
+ {q:"A technician needs to enable hardware virtualization on a new PC. Where is this setting found?",o:["Windows Device Manager","UEFI/BIOS firmware settings (Intel VT-x or AMD-V)","Windows Update","The power supply switch"],a:1,e:"CPU virtualization extensions are turned on in UEFI/BIOS."},
+ {q:"Which firmware feature checks that the bootloader is signed and trusted before it runs?",o:["TPM","Fast Boot","Secure Boot","Wake-on-LAN"],a:2,e:"UEFI Secure Boot only runs bootloaders signed with trusted keys, blocking bootkits."},
+ {q:"What hardware chip stores encryption keys for BitLocker and supports measured boot?",o:["CMOS","HSM PCIe card","NIC","TPM"],a:3,e:"The Trusted Platform Module stores keys securely and records boot measurements. Windows 11 requires TPM 2.0."},
+ {q:"A laser printer's pages come out with toner that smears off when touched. Which component is failing?",o:["Fuser assembly","Pickup roller","Transfer belt","Laser scanner"],a:0,e:"The fuser uses heat and pressure to bond toner to paper. Loose, smearing toner means it isn't getting hot enough."},
+ {q:"What is the correct order of the laser printing process?",o:["Charging, processing, developing, exposing, fusing, transferring, cleaning","Processing, charging, exposing, developing, transferring, fusing, cleaning","Exposing, charging, transferring, developing, fusing, cleaning, processing","Cleaning, fusing, transferring, developing, exposing, charging, processing"],a:1,e:"The CompTIA order is processing, charging, exposing, developing, transferring, fusing and cleaning."},
+ {q:"An inkjet printer prints with missing lines across each page. What should the technician try first?",o:["Replace the fuser","Replace the drum","Run the printhead cleaning and nozzle check utility","Reinstall the driver"],a:2,e:"Missing lines on an inkjet usually mean clogged nozzles. The built-in cleaning cycle often clears them."},
+ {q:"Which printer type uses heat-sensitive paper and is common for receipts?",o:["Impact","Laser","Inkjet","Thermal"],a:3,e:"Direct thermal printers heat special paper to darken it. Receipt and label printers commonly use them."},
+ {q:"A multifunction printer must send scanned documents straight to users' email. What must be configured on the printer?",o:["SMTP server settings","SMB share only","A DHCP reservation only","Bluetooth"],a:0,e:"Scan-to-email needs the printer configured with an SMTP server, port and often credentials."},
+ {q:"A user wants to connect a 4K monitor at 144 Hz to a desktop GPU. Which connector is the best choice?",o:["VGA","DisplayPort 1.4 or HDMI 2.1","DVI-D single link","USB 2.0"],a:1,e:"DisplayPort 1.4 (with DSC) and HDMI 2.1 support 4K at high refresh rates. VGA and single-link DVI can't."},
+ {q:"Which expansion slot is used by modern graphics cards?",o:["PCI","AGP","PCIe x16","ISA"],a:2,e:"Graphics cards use PCIe x16 slots."},
+ {q:"A server needs drives that can be replaced without shutting it down. Which feature is required?",o:["A larger PSU","SO-DIMM slots","A CMOS battery","Hot-swappable drive bays"],a:3,e:"Hot-swap bays with a supporting controller let you pull and replace a failed drive while the system runs."},
+ {q:"The time and date on a desktop reset every time it's unplugged. What should the technician replace?",o:["The CMOS battery (CR2032)","The PSU","The RAM","The CPU fan"],a:0,e:"The coin-cell CMOS battery keeps the real-time clock and settings when the PC has no power."},
+ {q:"Which cable connects a SATA hard drive to the motherboard for data?",o:["15-pin SATA power cable","7-pin SATA data cable","40-pin IDE ribbon","Molex"],a:1,e:"SATA data uses a thin 7-pin cable. The 15-pin connector carries power."},
+ {q:"A gamer wants a single cable that supports 40 Gbps data, daisy-chained displays and charging. Which interface should the laptop have?",o:["USB 2.0","eSATA","Thunderbolt 4 or USB4","FireWire 800"],a:2,e:"Thunderbolt 4 and USB4 run at up to 40 Gbps over USB-C and support displays and power delivery."}
+]);
+
+/* ---------- Core 1 · 4.0 Virtualization and Cloud (10) ---------- */
+registerExamBank("vc",[
+ {q:"A developer needs to test software on Windows, Linux and an older Windows version on one laptop. What should they use?",o:["A KVM switch","Dual monitors","A thin client","A Type 2 hypervisor such as VirtualBox or Hyper-V on the desktop"],a:3,e:"A hosted (Type 2) hypervisor runs several guest operating systems side by side on a desktop OS."},
+ {q:"What distinguishes a Type 1 hypervisor from a Type 2 hypervisor?",o:["Type 1 runs directly on the hardware; Type 2 runs on top of a host operating system","Type 1 only runs Linux guests","Type 2 is faster","Type 1 needs no CPU virtualization support"],a:0,e:"Bare-metal Type 1 hypervisors such as ESXi and Hyper-V Server run directly on hardware. Type 2 runs as an app on a host OS."},
+ {q:"A company rents virtual servers and manages the operating systems itself, while the provider handles the hardware. Which cloud model is this?",o:["SaaS","IaaS","PaaS","DaaS"],a:1,e:"Infrastructure as a service gives you virtual machines, storage and networks. You manage the OS and everything above it."},
+ {q:"Which cloud model lets developers deploy code without managing servers or operating systems?",o:["IaaS","On-premises","PaaS","Colocation"],a:2,e:"Platform as a service provides the runtime and OS, so developers only deploy apps and data."},
+ {q:"Staff use web-based email and office apps managed entirely by the vendor. Which model is this?",o:["IaaS","PaaS","Private cloud","SaaS"],a:3,e:"Software as a service delivers a finished application. The vendor manages everything underneath."},
+ {q:"Which cloud characteristic lets a retailer automatically add servers during holiday traffic and remove them afterward?",o:["Rapid elasticity","Multitenancy","High availability","Metered utilization"],a:0,e:"Elasticity scales resources out and back in automatically as demand changes."},
+ {q:"A hospital keeps patient data in its own data center but bursts to a public cloud for analytics. What deployment model is this?",o:["Community cloud","Hybrid cloud","Public cloud","Private cloud only"],a:1,e:"Combining private infrastructure with a public cloud is a hybrid cloud."},
+ {q:"A VM can't get an IP address from the office DHCP server, but it can reach the host. Which virtual network setting is most likely in use?",o:["Bridged","External with VLAN tagging","Internal or host-only","Passthrough"],a:2,e:"Internal or host-only networks keep VMs off the physical LAN. Bridged mode places the VM directly on the office network."},
+ {q:"What does VDI provide?",o:["Users install apps locally on thin clients","A backup of each laptop","A hardware firewall","Users connect to desktops that run as VMs in a data center or cloud"],a:3,e:"Virtual desktop infrastructure hosts desktop VMs centrally. Users connect from any device."},
+ {q:"Which resource requirement is most important when planning to run four VMs on one desktop host?",o:["Enough RAM and CPU cores to cover every VM plus the host","An optical drive","A second NIC for each VM","A larger monitor"],a:0,e:"Each running VM reserves memory and CPU. Size the host for the sum of the guests plus host overhead."}
+]);
+
+/* ---------- Core 1 · 5.0 Hardware and Network Troubleshooting (25) ---------- */
+registerExamBank("ts",[
+ {q:"A PC powers on, the fans spin, but there is no display and it beeps in a repeating pattern. What should the technician do first?",o:["Replace the monitor","Look up the beep code in the motherboard manual","Reinstall Windows","Replace the hard drive"],a:1,e:"POST beep codes identify the failing component, often RAM or video. Look the pattern up before swapping parts."},
+ {q:"A desktop randomly reboots under heavy load. The CPU cooler is clogged with dust. What is the most likely cause?",o:["A bad RAM module","A failing hard drive","CPU overheating triggering thermal shutdown","An incorrect display driver"],a:2,e:"Clogged heatsinks cause overheating, and the system shuts down or reboots to protect itself. Clean the cooler and check the thermal paste."},
+ {q:"Following the CompTIA troubleshooting method, what comes immediately after establishing a theory of probable cause?",o:["Document findings","Implement the solution","Verify full system functionality","Test the theory to determine the cause"],a:3,e:"The steps are: identify, establish a theory, test it, plan and implement, verify, then document."},
+ {q:"After fixing a user's problem, what should the technician do before documenting?",o:["Verify full system functionality and implement preventive measures","Close the ticket immediately","Escalate the ticket","Reimage the PC"],a:0,e:"Step 5 is to verify the whole system works and put preventive measures in place. Documenting comes last."},
+ {q:"A hard drive makes a loud clicking sound and the PC can't boot. What should the technician do?",o:["Defragment the drive","Back up whatever data can be recovered and replace the drive","Run Disk Cleanup","Update the graphics driver"],a:1,e:"Clicking means mechanical failure. Recover the data if possible and replace the drive."},
+ {q:"A system shows 'S.M.A.R.T. failure predicted' at startup. What does this mean?",o:["The BIOS is outdated","The RAM is faulty","The drive's self-monitoring predicts it will fail soon","The network cable is unplugged"],a:2,e:"S.M.A.R.T. tracks drive health. A warning means back up now and plan to replace the drive."},
+ {q:"A monitor shows a few pixels that are always bright white, whatever is on screen. What is this called?",o:["Dead pixels","Burn-in","Dim display","Stuck (hot) pixels"],a:3,e:"Pixels stuck on a color are stuck pixels. Dead pixels stay black."},
+ {q:"A projector's image keeps shutting off after 20 minutes and the unit feels very hot. What should be checked?",o:["The lamp hours and the air filter and fans","The HDMI cable","The input resolution","The remote control batteries"],a:0,e:"Projectors shut down when they overheat. Clean the filter, check the fans, and replace the lamp if it has reached its hours."},
+ {q:"A user's Wi-Fi drops whenever the break-room microwave runs. Which change helps most?",o:["Increase the DHCP lease time","Move the client to the 5 GHz band","Switch to WPA3","Change the SSID name"],a:1,e:"Microwave ovens interfere with 2.4 GHz. Moving to 5 GHz avoids that interference."},
+ {q:"A laser printer prints the same faint image a few inches lower on every page. What is the most likely cause?",o:["Low toner","Incorrect paper size","Ghosting from a worn drum or bad cleaning blade","A network issue"],a:2,e:"Ghost images repeating down the page point to the imaging drum or cleaning stage not clearing the previous image."},
+ {q:"Pages from a laser printer come out completely blank. Which is a likely cause?",o:["The fuser is too hot","The paper tray is full","The duplexer is enabled","The toner cartridge is empty or its sealing tape wasn't removed"],a:3,e:"No toner reaching the drum, from an empty cartridge or a seal left on, produces blank pages. A failed transfer corona can do it too."},
+ {q:"A printer repeatedly jams with paper wrinkled in an accordion pattern. What should the technician check?",o:["Pickup and feed rollers, paper type and humidity","The print driver version","The IP address","The toner level"],a:0,e:"Worn rollers, the wrong paper weight or damp paper cause feed jams."},
+ {q:"A user reports 'limited connectivity' and their IP is 169.254.x.x. Other users on the same switch work fine. What should the technician check first?",o:["The DNS server","The user's patch cable and switch port link lights","The internet provider","The email server"],a:1,e:"Only one user is affected, so start at that user's physical layer. Check the cable, the port and the link LEDs."},
+ {q:"Users on one floor experience slow network speeds. The switch port for their uplink shows many CRC errors. What is the likely cause?",o:["A DNS misconfiguration","A DHCP scope that's full","A damaged cable, bad termination or interference on that link","An expired certificate"],a:2,e:"CRC errors mean corrupted frames, usually from bad cabling, a bad connector, EMI or a duplex mismatch."},
+ {q:"Which tool verifies that each of the eight wires in a newly terminated patch cable is connected to the correct pin?",o:["Multimeter set to amps","Wi-Fi analyzer","Loopback plug","Cable tester"],a:3,e:"A cable tester checks continuity and pin order, catching opens, shorts and split pairs."},
+ {q:"A PC shows a BSOD with the stop code MEMORY_MANAGEMENT after new RAM was installed. What should the technician do?",o:["Reseat or remove the new RAM and run Windows Memory Diagnostic","Reinstall the network driver","Replace the PSU","Change the screen resolution"],a:0,e:"Memory errors right after a RAM upgrade point to the new modules. Reseat them, check compatibility and test them."},
+ {q:"A PC won't power on at all: no lights, no fans. The outlet is confirmed working. What is the most likely failed component?",o:["The hard drive","The power supply or its connection to the motherboard","The RAM","The monitor"],a:1,e:"A completely dead system points to the PSU, the 24-pin connector or the front-panel power switch."},
+ {q:"A capacitor on an older motherboard appears bulging and leaking. What is the correct action?",o:["Clean it with compressed air","Update the BIOS","Replace the motherboard","Add more RAM"],a:2,e:"Swollen or leaking capacitors cause instability and get worse over time. Replace the board."},
+ {q:"A laptop shows a dim image after the lid is opened, and pressing the brightness keys does nothing. What should be checked after the brightness setting?",o:["The keyboard","The Wi-Fi card","The SSD","The lid-close sensor and the display backlight connection"],a:3,e:"A dim display can come from a failing backlight, a loose display cable or a stuck lid sensor that keeps the backlight off."},
+ {q:"A smartphone touchscreen doesn't respond in one area. A drop happened last week. What is the likely failed component?",o:["The digitizer","The battery","The SIM card","The speaker"],a:0,e:"The digitizer layer senses touches. Physical damage creates dead zones even if the display looks fine."},
+ {q:"A RAID 5 array reports a degraded state. What should the technician do first?",o:["Delete and recreate the array","Identify and replace the failed drive, then let the array rebuild","Convert to RAID 0","Ignore it since data is still accessible"],a:1,e:"A degraded RAID 5 has lost its redundancy. Replace the failed member quickly and let it rebuild, ideally after confirming a backup."},
+ {q:"Several users can't reach the internet, but they can reach local servers. Their default gateway responds to ping. What should the technician check next?",o:["Each user's NIC driver","The local DHCP scope","The router's WAN connection and ISP status","The users' monitors"],a:2,e:"The gateway answers, so the LAN works. The break is upstream on the WAN link or at the ISP."},
+ {q:"A user hears a high-pitched grinding sound from a desktop that gets louder at startup. What is the most likely source?",o:["The monitor","The keyboard","The network card","A failing fan bearing"],a:3,e:"Grinding or whining that changes with speed is usually a failing case, CPU or PSU fan bearing."},
+ {q:"Which issue is most likely when a VoIP call has choppy audio but large file downloads are fine?",o:["High jitter and latency on the network","DNS failure","Expired DHCP lease","Bad monitor cable"],a:0,e:"Real-time voice is sensitive to jitter and latency. Bulk transfers tolerate them."},
+ {q:"A desktop's front USB ports don't work, but the rear ports do. What should the technician check?",o:["The Windows license","The front-panel USB header connection on the motherboard","The GPU","The CMOS battery"],a:1,e:"Front ports connect through an internal header cable that can be loose or unplugged."}
+]);
+
+/* ---------- Core 2 · 1.0 Operating Systems (25) ---------- */
+registerExamBank("os",[
+ {q:"A technician needs to see which process is using the most CPU on a Windows PC and end it. Which tool should they use?",o:["Disk Management","Event Viewer","Task Manager","Device Manager"],a:2,e:"Task Manager shows per-process CPU, memory, disk and network use and can end tasks."},
+ {q:"Which Windows command shows the IP configuration, including the DNS servers and DHCP lease details?",o:["netstat -an","tracert","nslookup","ipconfig /all"],a:3,e:"ipconfig /all lists every adapter's IP, mask, gateway, DNS, MAC and DHCP lease information."},
+ {q:"A user's Windows file system has errors. Which command scans and repairs the volume?",o:["chkdsk /f","sfc /scannow","diskpart","gpupdate /force"],a:0,e:"chkdsk /f fixes file system errors on a disk. sfc repairs protected Windows system files."},
+ {q:"Several Windows system files are corrupt. Which command verifies and repairs protected system files?",o:["format c:","sfc /scannow","robocopy","winver"],a:1,e:"System File Checker replaces corrupt or modified protected system files from the component store."},
+ {q:"Which Windows edition can join an Active Directory domain?",o:["Windows 11 Home","Windows 10 Home","Windows 11 Pro","Windows 11 Home in S mode"],a:2,e:"Pro, Enterprise and Education can join domains. Home editions can't."},
+ {q:"Which feature is available in Windows 11 Pro but not Home?",o:["Windows Defender","Microsoft Store","Windows Update","BitLocker drive encryption with full management"],a:3,e:"Full BitLocker, Group Policy editing, Remote Desktop host and domain join need Pro or higher. Home gets only Device Encryption on supported hardware."},
+ {q:"A technician must copy a large folder tree to a server, keep NTFS permissions, and resume if the copy is interrupted. Which command fits best?",o:["robocopy /mir /sec /z","copy","xcopy","move"],a:0,e:"Robocopy supports mirroring, copying security, and restartable mode (/z) for interrupted copies."},
+ {q:"Which file system should be used on a 128 GB USB drive that must work with both Windows and macOS and store files larger than 4 GB?",o:["FAT32","exFAT","NTFS","ext4"],a:1,e:"exFAT is read/write on both platforms and has no 4 GB file limit. FAT32 caps files at 4 GB."},
+ {q:"On a new 4 TB disk, which partition style must be used to create one partition larger than 2 TB?",o:["MBR","FAT32","GPT","Extended"],a:2,e:"MBR limits partitions to 2 TB and four primary partitions. GPT removes those limits and is required for UEFI boot."},
+ {q:"A user wants to roll back a driver that caused display problems. Where can they do this?",o:["Disk Management","Task Scheduler","Services console","Device Manager > device Properties > Driver > Roll Back Driver"],a:3,e:"Device Manager offers Roll Back Driver if a previous driver version exists."},
+ {q:"Which Control Panel or Settings area lets a user map a file extension such as .pdf to a different default app?",o:["Default apps","Device Manager","Network and Sharing Center","Power Options"],a:0,e:"Settings > Apps > Default apps controls which program opens each file type."},
+ {q:"Which Linux command shows the current working directory?",o:["ls","pwd","cd","grep"],a:1,e:"pwd prints the working directory. ls lists contents and cd changes directories."},
+ {q:"A Linux admin needs to give a script execute permission for its owner. Which command does this?",o:["chown u+x script.sh","sudo script.sh","chmod u+x script.sh","ps script.sh"],a:2,e:"chmod changes permissions. u+x adds execute for the owner. chown changes ownership."},
+ {q:"Which macOS feature performs automatic, versioned backups to an external drive?",o:["Spotlight","Keychain","Mission Control","Time Machine"],a:3,e:"Time Machine keeps hourly, daily and weekly backups on an external or network drive."},
+ {q:"Which macOS tool stores saved passwords, certificates and secure notes?",o:["Keychain Access","FileVault","Boot Camp","Finder"],a:0,e:"Keychain stores credentials and certificates. FileVault encrypts the disk."},
+ {q:"A Mac app has frozen and won't respond. Which shortcut opens Force Quit Applications?",o:["Ctrl+Alt+Del","Command+Option+Esc","Command+Space","Command+Tab"],a:1,e:"Command+Option+Escape opens the Force Quit window on macOS."},
+ {q:"A Windows PC must automatically run a cleanup script every Sunday at 2 a.m. Which tool should the technician use?",o:["Event Viewer","Resource Monitor","Task Scheduler","msconfig"],a:2,e:"Task Scheduler runs programs or scripts on a schedule or in response to triggers."},
+ {q:"Which tool would a technician use to stop a Windows service from starting automatically?",o:["diskmgmt.msc","certmgr.msc","lusrmgr.msc","services.msc"],a:3,e:"The Services console sets each service's startup type, such as Automatic, Manual or Disabled."},
+ {q:"What is the minimum requirement for upgrading a PC to Windows 11 that often blocks older hardware?",o:["TPM 2.0 and a supported CPU with UEFI Secure Boot capability","16 GB RAM","An NVMe SSD","A touch screen"],a:0,e:"Windows 11 requires TPM 2.0, UEFI with Secure Boot capability and a supported CPU, plus 4 GB RAM and 64 GB of storage."},
+ {q:"A technician wants to deploy Windows to 50 identical PCs over the network without touching each one. Which installation method fits?",o:["Upgrade from USB on each PC","Image deployment using network boot (PXE)","Repair installation","Recovery partition"],a:1,e:"PXE boot with an imaging or deployment service installs a standard image across many machines."},
+ {q:"Which command applies new Group Policy settings immediately on a domain-joined PC?",o:["gpresult /r","net use","gpupdate /force","whoami"],a:2,e:"gpupdate /force reapplies computer and user policies. gpresult shows which ones applied."},
+ {q:"Which Windows tool shows the applied Group Policy objects and their results for the current user?",o:["gpupdate","tasklist","sfc","gpresult /r"],a:3,e:"gpresult /r prints the resultant set of policy, listing which GPOs applied."},
+ {q:"A user must map drive letter S: to \\\\fileserver\\sales from the command line. Which command works?",o:["net use S: \\\\fileserver\\sales","net user S: \\\\fileserver\\sales","map S: fileserver","ipconfig S:"],a:0,e:"net use maps network shares to drive letters."},
+ {q:"Which Linux package command installs software on Debian or Ubuntu?",o:["yum install only","apt install","brew install","msiexec"],a:1,e:"Debian-based systems use apt. Red Hat-based systems use dnf (formerly yum)."},
+ {q:"Which Windows Settings or Control Panel area shows whether the network profile is Public or Private, which affects firewall rules and discovery?",o:["Ease of Access","Sound","Network and Internet (Network and Sharing Center)","Region"],a:2,e:"The network profile, Public or Private, is set in Settings > Network & Internet. Public is more restrictive."}
+]);
+
+/* ---------- Core 2 · 2.0 Security (25) ---------- */
+registerExamBank("sec",[
+ {q:"An employee gets an email that appears to come from the CEO, urgently asking them to buy gift cards. What attack is this?",o:["Whaling","Tailgating","Shoulder surfing","Business email compromise / spear phishing using impersonation"],a:3,e:"Impersonating an executive to trick staff into sending money or gift cards is targeted phishing, often called business email compromise."},
+ {q:"Someone follows an employee through a badge-secured door without scanning their own badge. What is this called?",o:["Tailgating","Phishing","Vishing","Dumpster diving"],a:0,e:"Tailgating or piggybacking is following an authorized person through a secure entry. Access control vestibules help prevent it."},
+ {q:"Which physical control prevents tailgating by allowing only one person through at a time?",o:["Bollards","Access control vestibule (mantrap)","CCTV","Motion sensor lights"],a:1,e:"An access control vestibule has two interlocking doors so only one authenticated person passes at a time."},
+ {q:"Which wireless security setting provides the strongest protection for a small office network?",o:["WEP","WPA2-TKIP","WPA3-Personal (SAE)","Open with MAC filtering"],a:2,e:"WPA3 uses SAE, which resists offline password cracking. WEP and TKIP are broken."},
+ {q:"A technician disables WPS on a SOHO router. Why?",o:["WPS slows down the network","WPS prevents DHCP","WPS blocks guest access","WPS PINs can be brute-forced to recover the Wi-Fi key"],a:3,e:"The WPS PIN method is vulnerable to brute force, so best practice is to disable it."},
+ {q:"Which account practice limits damage if a user's account is compromised?",o:["Principle of least privilege","Password reuse","Shared admin accounts","Disabling MFA"],a:0,e:"Least privilege gives users only the access they need, which limits what an attacker can do with a stolen account."},
+ {q:"A user receives a phone call from 'IT support' asking for their password to fix an issue. What attack is this?",o:["Smishing","Vishing","Evil twin","On-path"],a:1,e:"Voice phishing uses phone calls to trick people into revealing credentials."},
+ {q:"Which malware encrypts a user's files and demands payment for the key?",o:["Spyware","Keylogger","Ransomware","Adware"],a:2,e:"Ransomware encrypts data and demands payment. Offline backups are the key defense."},
+ {q:"What is the first step in the CompTIA best-practice procedure for malware removal?",o:["Quarantine the infected system","Disable System Restore","Remediate","Investigate and verify malware symptoms"],a:3,e:"The steps are: investigate and verify, quarantine, disable System Restore (Windows Home), remediate, schedule scans and updates, re-enable System Restore and create a restore point, then educate the user."},
+ {q:"During malware removal on Windows, why does the technician disable System Restore?",o:["To prevent the malware from being restored from infected restore points","To free disk space","To speed up scans","To enable Safe Mode"],a:0,e:"Restore points can hold the malware. Disabling System Restore deletes them so the infection can't come back."},
+ {q:"Which authentication factor is a fingerprint scan?",o:["Something you know","Something you are","Something you have","Somewhere you are"],a:1,e:"Biometrics such as fingerprints and faces are 'something you are'."},
+ {q:"A company wants laptops to be unreadable if stolen. Which Windows feature should be enabled?",o:["EFS on one folder","Windows Hello","BitLocker","SmartScreen"],a:2,e:"BitLocker encrypts the whole drive, protecting all data at rest if the laptop is lost."},
+ {q:"Which NTFS permission behavior applies when a file is moved to a different folder on the same NTFS volume?",o:["It inherits the destination folder's permissions","All permissions are removed","It becomes read-only","It keeps its original permissions"],a:3,e:"A move within the same volume keeps permissions. A copy, or a move to another volume, inherits the destination's permissions."},
+ {q:"A user has Read on a share and Modify on the NTFS folder. What is their effective access when connecting over the network?",o:["Read","Modify","Full Control","No access"],a:0,e:"Over the network, the most restrictive of share and NTFS permissions wins, so the user gets Read."},
+ {q:"Which Windows feature prompts for consent before a program makes system-level changes?",o:["BitLocker","User Account Control (UAC)","Windows Hello","Defender Firewall"],a:1,e:"UAC asks for approval or admin credentials before elevation, which limits silent changes by malware."},
+ {q:"A browser shows a certificate warning when users visit the company intranet. The certificate is self-signed. What fixes this properly?",o:["Tell users to click through the warning","Disable HTTPS","Issue a certificate from a trusted internal or public CA and deploy the CA's root certificate","Clear browser cache"],a:2,e:"Browsers trust certificates that chain to a trusted root. Use a proper CA and distribute its root through policy."},
+ {q:"An attacker sets up a Wi-Fi access point with the same SSID as a coffee shop's network to capture traffic. What is this?",o:["War driving","Bluejacking","DDoS","Evil twin"],a:3,e:"An evil twin mimics a legitimate SSID to lure clients into connecting through the attacker."},
+ {q:"Which practice protects data on drives being recycled so that it can't be recovered?",o:["Secure erase, drive wiping or physical destruction with a certificate of destruction","Quick format","Deleting the partition","Emptying the recycle bin"],a:0,e:"Quick formats and deletes leave data recoverable. Use overwriting or secure erase, or shredding and degaussing, and document it."},
+ {q:"Which mobile security setting requires a PIN or biometric to unlock the device after a short idle time?",o:["Location services","Screen lock with timeout","Airplane mode","Developer mode"],a:1,e:"A screen lock with a short timeout keeps people from using an unattended device."},
+ {q:"What is the main risk of jailbreaking or rooting a company phone?",o:["It improves battery life","It blocks updates from the carrier only","It removes built-in security controls and allows untrusted apps","It encrypts the device"],a:2,e:"Rooting or jailbreaking bypasses the OS security model, so MDM policies commonly block such devices."},
+ {q:"Which Windows Defender Firewall feature allows a specific program through while keeping other inbound traffic blocked?",o:["Turning off the firewall","Setting the profile to Public","Disabling notifications","Creating an inbound allow rule for that app"],a:3,e:"Create an app-specific inbound rule rather than disabling the firewall."},
+ {q:"Which login option on Windows uses a PIN, face or fingerprint tied to the device's TPM?",o:["Windows Hello","Local password only","Guest account","Credential Manager"],a:0,e:"Windows Hello uses device-bound keys protected by the TPM and unlocked by a PIN or biometric."},
+ {q:"A user receives a text message with a link saying their package delivery failed. What attack is this most likely?",o:["Whaling","Smishing","Impersonation in person","Shoulder surfing"],a:1,e:"SMS phishing is smishing. Never tap links in unexpected texts."},
+ {q:"Which security measure helps stop someone from reading a user's screen in a crowded airport?",o:["Cable lock","Badge reader","Privacy screen filter","BIOS password"],a:2,e:"Privacy filters narrow the viewing angle to block shoulder surfing."},
+ {q:"Which group in Windows should regular users be placed in to prevent them from installing system-wide software?",o:["Administrators","Power Users","Backup Operators","Users (standard users)"],a:3,e:"Standard users can't make system-wide changes without admin credentials, in line with least privilege."}
+]);
+
+/* ---------- Core 2 · 3.0 Software Troubleshooting (21) ---------- */
+registerExamBank("sw",[
+ {q:"A Windows PC became very slow after a recent driver update. What is the quickest way to undo the system change while keeping user files?",o:["System Restore to a point before the update","Reset this PC with remove everything","Format the drive","Replace the CPU"],a:0,e:"System Restore reverts system files, drivers and registry to an earlier point without touching personal files."},
+ {q:"Windows won't boot after a failed update and shows the Automatic Repair screen. Which option should the technician try first?",o:["Deleting the Windows folder","Startup Repair from Windows Recovery Environment","Replacing the hard drive","Disabling the TPM"],a:1,e:"WinRE's Startup Repair fixes common boot problems. If it fails, try System Restore or uninstalling the update."},
+ {q:"A user's browser keeps redirecting searches to an unknown site and shows extra toolbars. What is the most likely cause?",o:["A failing hard drive","A bad network cable","A browser hijacker or malicious extension","An expired SSL certificate on Google"],a:2,e:"Unexpected redirects and toolbars point to adware or a hijacker extension. Remove it and scan for malware."},
+ {q:"An application crashes every time it starts after an OS upgrade. Which step should the technician try?",o:["Increase screen resolution","Disable the network adapter","Replace RAM immediately","Run the app in compatibility mode or update/reinstall it"],a:3,e:"After upgrades, try updating the app, repairing or reinstalling it, or using compatibility mode."},
+ {q:"A Windows PC is stuck in a reboot loop showing a BSOD. How can the technician read the stop code?",o:["Disable automatic restart on system failure from the Advanced startup options","Open Task Manager","Check the printer queue","Run ipconfig"],a:0,e:"Turning off auto-restart on failure keeps the BSOD on screen so the stop code can be read."},
+ {q:"Which Windows tool shows a timeline of application crashes, Windows failures and updates to help spot when problems started?",o:["Disk Defragmenter","Reliability Monitor","Character Map","Paint"],a:1,e:"Reliability Monitor charts stability over time with application failures, Windows errors and installs."},
+ {q:"A PC is slow to start. Which tool lets the technician disable unneeded startup programs in Windows 10/11?",o:["Disk Management","Event Viewer","Task Manager > Startup apps","Device Manager"],a:2,e:"The Startup tab in Task Manager, or Settings > Apps > Startup, enables or disables startup apps."},
+ {q:"A user receives an 'Invalid certificate' warning on many unrelated, legitimate websites. What should the technician check first?",o:["The monitor cable","The printer driver","The keyboard layout","The PC's date and time"],a:3,e:"A wrong system clock makes valid certificates look expired or not yet valid."},
+ {q:"A user's antivirus has been disabled and can't be turned back on, and the hosts file has been modified. What does this suggest?",o:["Malware infection","Normal Windows behavior","Hardware failure","Expired license only"],a:0,e:"Disabled security tools and a tampered hosts file are classic signs of malware."},
+ {q:"A user's mobile app keeps closing as soon as it opens. What should the technician try first?",o:["Factory reset immediately","Force stop the app and clear its cache, or update or reinstall it","Replace the battery","Remove the SIM card"],a:1,e:"Start with the least invasive steps: force stop, clear the cache, update or reinstall. Factory reset comes last."},
+ {q:"A smartphone shows high data usage, a fast-draining battery and unknown apps. What is the likely cause?",o:["A weak Wi-Fi signal","A full SD card","Malware or a malicious app","An outdated case"],a:2,e:"Unexplained data use, battery drain and apps you didn't install are signs of mobile malware."},
+ {q:"After a Windows update, a user's printer no longer prints. Other users can print. What should the technician try first?",o:["Replace the printer","Reformat the PC","Change the IP address of the switch","Restart the Print Spooler service and reinstall or update the printer driver"],a:3,e:"Spooler problems and drivers broken by updates are common. Restart the spooler and update the driver."},
+ {q:"Windows shows 'Your profile could not be loaded' and logs the user into a temporary profile. What is a likely fix?",o:["Repair the profile's registry entry or create a new profile and migrate the data","Replace the keyboard","Install more RAM","Change the time zone"],a:0,e:"A corrupt user profile can be repaired in the registry ProfileList key, or rebuilt by migrating data to a new profile."},
+ {q:"A PC reports 'Bootmgr is missing' or 'No operating system found'. What should the technician check first?",o:["The DNS settings","The boot order in UEFI/BIOS and whether a USB drive is attached","The screen saver","The audio driver"],a:1,e:"A wrong boot device, such as an attached USB stick, is common. If boot order is fine, use WinRE to rebuild the boot configuration."},
+ {q:"Which command run from WinRE can rebuild the Boot Configuration Data store?",o:["ipconfig /renew","sfc /verifyonly","bootrec /rebuildbcd","diskpart clean"],a:2,e:"bootrec /rebuildbcd scans for Windows installations and rebuilds the BCD."},
+ {q:"A user's desktop shows a fake 'Your PC is infected, call this number' browser pop-up. What should the technician advise?",o:["Call the number","Pay to remove the virus","Disable the firewall","Close the browser, don't call, and run a legitimate malware scan"],a:3,e:"These are tech-support scams. Close the browser, never call, and run a real scan."},
+ {q:"An application on Windows says a required DLL is missing. What should the technician do?",o:["Repair or reinstall the application or its runtime (for example, the Visual C++ Redistributable)","Download the DLL from a random website","Delete System32","Replace the motherboard"],a:0,e:"Reinstall the app or its runtime from a trusted source. Random DLL download sites are a malware risk."},
+ {q:"A Windows PC shows frequent 'low memory' warnings and heavy disk activity. Task Manager shows memory near 100%. What is the best long-term fix?",o:["Defragment the SSD","Add RAM or remove memory-hungry startup apps","Change the wallpaper","Disable Windows Update"],a:1,e:"When RAM runs out, Windows pages to disk. Add RAM or reduce the workload."},
+ {q:"After malware removal, which step should be done before closing the ticket?",o:["Wipe the user's personal files","Disable antivirus","Schedule scans, run updates, re-enable System Restore, create a restore point and educate the user","Leave System Restore off"],a:2,e:"These are the final steps of the malware removal procedure: scans and updates, a new restore point, then user education."},
+ {q:"A user can't open a Microsoft Store app, which says it needs repair. Where can the technician repair or reset the app?",o:["Device Manager","Disk Management","Services","Settings > Apps > Installed apps > Advanced options"],a:3,e:"Store apps have Repair and Reset buttons in their Advanced options."},
+ {q:"Windows Update keeps failing with the same error code. What is a reasonable troubleshooting step?",o:["Run the Windows Update troubleshooter and clear the SoftwareDistribution cache","Disable the firewall permanently","Replace the network card","Uninstall the antivirus permanently"],a:0,e:"The troubleshooter and resetting the update cache (stop the services, rename SoftwareDistribution) fix many update failures."}
+]);
+
+/* ---------- Core 2 · 4.0 Operational Procedures (19) ---------- */
+registerExamBank("ops",[
+ {q:"A technician is about to open a desktop to replace RAM. Which practice prevents ESD damage?",o:["Work on carpet","Wear an antistatic wrist strap connected to the chassis and work on an antistatic mat","Wear wool clothing","Keep the PC plugged in and powered on"],a:1,e:"An ESD strap and mat equalize charge between you and the PC. Unplug the PC before working inside it."},
+ {q:"Which document describes how to safely handle and dispose of a chemical such as toner?",o:["SLA","AUP","Safety Data Sheet (SDS)","NDA"],a:2,e:"The SDS lists hazards, handling, first aid and disposal for a substance."},
+ {q:"What is the correct way to dispose of used lithium-ion laptop batteries?",o:["Put them in regular trash","Burn them","Store them in a hot room","Recycle them through an approved battery recycling program"],a:3,e:"Lithium-ion batteries are hazardous waste. Recycle them according to local regulations."},
+ {q:"A change to a production server must be approved before it happens. Which process covers this?",o:["Change management, with a request, risk analysis, rollback plan and change advisory board approval","Incident management","Asset tagging","Knowledge base article"],a:0,e:"Change management documents the purpose, scope, risk and rollback plan, and gets approval before implementation."},
+ {q:"Which element of a change request describes how to undo the change if it fails?",o:["Scope","Backout (rollback) plan","Purpose","End-user acceptance"],a:1,e:"A backout plan explains how to return to the previous state if the change causes problems."},
+ {q:"Which backup type copies only the data changed since the last full backup and doesn't reset the archive bit?",o:["Full","Incremental","Differential","Synthetic full"],a:2,e:"A differential backup grows each day until the next full backup. Restoring needs the full plus the latest differential."},
+ {q:"What does the 3-2-1 backup rule recommend?",o:["Three backups per day","Two full backups and one incremental","One cloud backup only","Three copies of data, on two different media, with one copy offsite"],a:3,e:"Keep three copies on two media types, with one offsite or offline."},
+ {q:"While fixing a PC, a technician finds illegal content. What should they do first?",o:["Follow company policy: stop, preserve the evidence, and report to the proper authority","Delete it","Post about it online","Ignore it"],a:0,e:"Follow incident response policy. Don't alter evidence, preserve the chain of custody, and report through proper channels."},
+ {q:"What does chain of custody document?",o:["The network topology","Who handled evidence, when, and what was done with it","The software license count","The user's password history"],a:1,e:"Chain of custody proves evidence integrity by logging every person who handled it."},
+ {q:"A customer is angry about a repeated issue. What is the best response?",o:["Argue that it's not your fault","Hang up","Listen actively, stay calm, avoid being dismissive and set clear expectations","Tell them to search online"],a:2,e:"Professional communication means active listening, staying calm, clarifying and setting expectations."},
+ {q:"Which ticketing information is most important for another technician picking up the case?",o:["The technician's lunch schedule","Only the user's name","A screenshot of the desktop wallpaper","Clear problem description, steps taken, and current status"],a:3,e:"Good documentation records the issue, what has been tried, the results and next steps."},
+ {q:"Which policy defines what employees may and may not do with company computers and internet access?",o:["Acceptable use policy (AUP)","SLA","MOU","Disaster recovery plan"],a:0,e:"An AUP sets the rules for using company IT resources."},
+ {q:"Which document defines the response and resolution times a help desk commits to?",o:["NDA","Service-level agreement (SLA)","Change request","SDS"],a:1,e:"An SLA states measurable service commitments such as response times."},
+ {q:"Which regulation covers the handling of payment card data?",o:["HIPAA","GDPR only","PCI DSS","FERPA"],a:2,e:"PCI DSS sets security requirements for storing, processing and sending cardholder data."},
+ {q:"A technician needs to lift a heavy UPS. What is the safe technique?",o:["Bend at the waist","Twist while lifting","Lift with arms extended","Bend at the knees, keep the back straight and the load close, and get help if needed"],a:3,e:"Lift with your legs, keep the load close, avoid twisting and use a team lift for heavy items."},
+ {q:"Which script file extension is used for Windows PowerShell scripts?",o:[".ps1",".sh",".py",".bat"],a:0,e:".ps1 is PowerShell, .sh is a shell script, .py is Python and .bat is a Windows batch file."},
+ {q:"What is a key risk when running scripts that change system settings?",o:["Scripts never run","Unintentionally introducing malware or making destructive changes, such as misconfiguring systems or deleting data","Scripts always need a GUI","Scripts disable the keyboard"],a:1,e:"Scripts can spread mistakes at scale or run malicious code. Test them and download only from trusted sources."},
+ {q:"Which remote access tool lets a technician view and control a user's desktop with their permission over the internet?",o:["Telnet","FTP","Remote assistance or screen-sharing software, such as Quick Assist","TFTP"],a:2,e:"Screen-sharing tools like Quick Assist provide controlled remote support, ideally with the user's consent."},
+ {q:"Which item should be recorded in an asset management system for each laptop?",o:["The user's personal phone number only","The laptop's wallpaper","The user's favorite websites","Asset tag, serial number, assigned user and purchase/warranty info"],a:3,e:"Asset inventory tracks ownership, location, warranty and lifecycle for each device."}
+]);
 
 </script>
 <script>

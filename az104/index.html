@@ -1198,6 +1198,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 #view p code,#view li code,.tip code{overflow-wrap:anywhere}
 .ios-cap:empty{display:none}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1727,23 +1736,54 @@ function renderRanks(){
 const EXAM={1:{code:"AZ-104",pass:700}};
 const EXAM_LEN={full:[50,100],half:[25,50]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(10*pct);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1762,16 +1802,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">50 questions · 100 minutes</span><em>About the real exam length (40–60 questions in 100 minutes).</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">25 questions · 50 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also uses case studies, drag-and-drop, yes/no and hot-area items. Practice those with the simulations and Azure CLI labs in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">AZ-104 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">AZ-104 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1794,6 +1836,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1811,24 +1854,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,L.score/10));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}Azure Administrator · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}Azure Administrator · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 1000</span></div>
     <div class="ex-gauge"><i style="left:${EXAM[c].pass/10}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>Domain ${d.o.domain}: ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 1–1000 score is an estimate: Microsoft doesn't publish how it scales raw scores.</p>
@@ -1838,6 +1882,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -5032,6 +5077,92 @@ quizViz($("#viz-rporto"),{title:"RPO and RTO",done:"Nailed RPO and RTO",qs:[
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1. Manage Azure identities and governance (15) ---------- */
+registerExamBank("idg",[
+ {q:"You need to add 500 new users to Microsoft Entra ID from a CSV file through the portal. Which feature should you use?",o:["Bulk create users","Entra Connect Sync","Administrative units","Dynamic groups"],a:0,e:"Bulk operations in the Entra admin center create users from a CSV template."},
+ {q:"Users in the Sales department should automatically join a group based on their department attribute. What should you create?",o:["An assigned membership group","A security group with dynamic user membership rule (user.department -eq \"Sales\")","A Microsoft 365 group with assigned owners only","An administrative unit"],a:1,e:"Dynamic membership rules evaluate user attributes. They need Entra ID P1 licensing."},
+ {q:"Helpdesk staff must reset passwords only for users in the Paris office. What should you configure?",o:["Global Administrator for helpdesk","An Azure RBAC Contributor role","An administrative unit for Paris users with the Helpdesk Administrator role scoped to it","A management group"],a:2,e:"Administrative units restrict the scope of Entra directory roles."},
+ {q:"You need to invite an external partner so they can sign in with their own organization's account. What should you do?",o:["Create a cloud-only member with a new password","Sync them with Entra Connect","Create a service principal","Invite them as a B2B guest user"],a:3,e:"B2B collaboration adds guests who authenticate with their home identity provider."},
+ {q:"Which SSPR setting requires users to confirm their registration information periodically?",o:["Number of days before users are asked to reconfirm their authentication information","Number of methods required to reset","Notify admins on reset","Writeback"],a:0,e:"Reconfirmation keeps methods current. The default is 180 days."},
+ {q:"You need to give a user permission to manage only virtual machines in resource group RG1, not storage or networking. Which built-in role should you assign at RG1?",o:["Contributor","Virtual Machine Contributor","Owner","Reader"],a:1,e:"Virtual Machine Contributor manages VMs but not the VNets or storage accounts they connect to."},
+ {q:"A user has Reader at the subscription and Contributor on resource group RG2. What can they do in RG2?",o:["Only read resources in RG2","Assign roles in RG2","Create and modify resources in RG2","Nothing in RG2"],a:2,e:"RBAC is additive. Effective permissions are the union of all assignments."},
+ {q:"Which role allows a user to assign RBAC roles to others without granting full resource management?",o:["Contributor","Reader","Virtual Machine Contributor","User Access Administrator (or Role Based Access Control Administrator)"],a:3,e:"These roles manage role assignments. Contributor explicitly can't assign roles."},
+ {q:"Every resource must have a CostCenter tag. Resources without it should get the resource group's value automatically. Which Azure Policy effect fits?",o:["Modify (inherit a tag from the resource group if missing)","Audit","Deny","Disabled"],a:0,e:"The Modify effect can add or replace tags, for example the built-in 'Inherit a tag from the resource group if missing'."},
+ {q:"Existing non-compliant resources must be corrected by a DeployIfNotExists policy. What do you need to create?",o:["A new subscription","A remediation task (the assignment needs a managed identity)","A resource lock","An NSG"],a:1,e:"Remediation tasks apply DINE or Modify policies to resources that already exist."},
+ {q:"A ReadOnly lock is applied to a storage account. What is a side effect?",o:["Data can't be read","The account is deleted","Listing account keys fails because it's a POST operation, which breaks some portal tasks","Nothing changes"],a:2,e:"ReadOnly blocks write and POST operations such as listKeys, which can disrupt access that relies on keys."},
+ {q:"You need to move a VM and its dependent resources to another resource group in the same subscription. What should you verify first?",o:["The VM is in a different region","The VM has no tags","The subscription has a budget","The resources support move, and dependent resources are moved together"],a:3,e:"Check move support and move dependencies such as disks, NICs and IPs together. The resource location doesn't change."},
+ {q:"Finance needs alerts when forecasted monthly spending exceeds a threshold for one resource group. What should you configure?",o:["A Cost Management budget scoped to the resource group with a forecasted alert condition","Azure Advisor","A resource lock","Azure Policy audit"],a:0,e:"Budgets support actual and forecasted alert thresholds at many scopes."},
+ {q:"You must apply the same policy to 20 subscriptions under one department. What is the most efficient approach?",o:["Assign the policy to each resource group","Place them under a management group and assign the policy there","Use tags","Create 20 locks"],a:1,e:"Assignments at a management group are inherited by all child subscriptions."},
+ {q:"A deleted user must be restored within the retention window with their group memberships. What should you do?",o:["Recreate the user with the same name","Restore from Azure Backup","Restore them from Deleted users in Entra ID within 30 days","Run Entra Connect full sync only"],a:2,e:"Soft-deleted users can be restored for 30 days with most attributes and memberships."}
+]);
+
+/* ---------- 2. Implement and manage storage (11) ---------- */
+registerExamBank("sto",[
+ {q:"A storage account must remain readable from a secondary region during a primary region outage, without failover. Which redundancy option is required?",o:["LRS","ZRS","GRS without read access","RA-GRS or RA-GZRS"],a:3,e:"Read-access geo-redundant options expose a secondary read endpoint."},
+ {q:"Blobs not accessed for 90 days should move to Cool, and be deleted after 365 days. What should you configure?",o:["A lifecycle management policy","Object replication","Soft delete","A stored access policy"],a:0,e:"Lifecycle rules tier or delete blobs based on age or last access."},
+ {q:"You need blobs copied asynchronously from a container in one storage account to another in a different region. What should you configure?",o:["AzCopy sync only","Object replication (requires blob versioning and change feed)","GRS","File Sync"],a:1,e:"Object replication copies block blobs between accounts using policies."},
+ {q:"Users accidentally overwrite blobs. You need to recover previous versions. What should be enabled?",o:["Static website","Hierarchical namespace","Blob versioning (and soft delete)","Large file shares"],a:2,e:"Versioning keeps prior versions automatically when blobs are overwritten."},
+ {q:"An Azure file share must be accessed by on-premises Windows clients over SMB using their AD DS identities. What should you configure?",o:["Anonymous access","A SAS token on each client","NFS 4.1 only","Identity-based authentication with on-premises AD DS for Azure Files, plus share-level RBAC"],a:3,e:"Azure Files supports AD DS or Entra Kerberos authentication with share and NTFS permissions."},
+ {q:"Port 445 is blocked by the ISP, and branch users need access to a file share. Which option helps?",o:["Use Azure File Sync to a local Windows Server cache, or connect over VPN/ExpressRoute","Change the share to port 80","Use public anonymous access","Enable static website"],a:0,e:"SMB needs 445. A local File Sync server or a private connection avoids the block."},
+ {q:"Which tool copies data between storage accounts from the command line with high performance?",o:["Storage Explorer only","AzCopy","Data Box","Azure Migrate"],a:1,e:"AzCopy handles server-side copies between accounts efficiently."},
+ {q:"A storage account must be reachable only from VNet1's subnet and one public IP of the office. What should you configure?",o:["An NSG on the storage account","Anonymous access disabled only","Storage firewall: selected networks with a VNet rule (service endpoint) and an IP rule","A resource lock"],a:2,e:"Storage network rules allow chosen subnets and public IP ranges and deny the rest."},
+ {q:"Which SAS type is signed with Entra credentials rather than the account key?",o:["Account SAS","Service SAS with a stored access policy","Shared key","User delegation SAS"],a:3,e:"User delegation SAS tokens are recommended for blobs because they avoid using account keys."},
+ {q:"You need to change a storage account from LRS to ZRS. What should you do?",o:["Request a conversion (or perform a manual migration) to ZRS","Change it in the access tier setting","Delete and recreate only","Enable versioning"],a:0,e:"LRS can be converted to ZRS through a conversion or by copying data to a new account."},
+ {q:"Which access tier has the lowest storage cost but requires rehydration before reading?",o:["Cold","Archive","Cool","Hot"],a:1,e:"Archive blobs are offline. Rehydrate them to an online tier first."}
+]);
+
+/* ---------- 3. Deploy and manage compute resources (15) ---------- */
+registerExamBank("cmp",[
+ {q:"An app on two VMs must survive a datacenter failure in the region. How should the VMs be deployed?",o:["In the same availability set","On the same dedicated host","In different availability zones","In one proximity placement group"],a:2,e:"Zones protect against datacenter failure (99.99% SLA). Availability sets protect only against rack and update failures."},
+ {q:"VMs in an availability set get which protections?",o:["Placement in different regions","Automatic scaling","Geo-replication","Spreading across fault domains and update domains"],a:3,e:"Fault domains separate racks and power. Update domains stagger planned maintenance."},
+ {q:"You need a VM to scale out automatically from 2 to 10 instances based on CPU. What should you deploy?",o:["A Virtual Machine Scale Set with autoscale rules","An availability set","A single larger VM","A proximity placement group"],a:0,e:"VMSS supports metric-based autoscale."},
+ {q:"You must resize a VM to a size not available on its current hardware cluster. What happens?",o:["It resizes live with no restart","The VM must be deallocated (stopped) before resizing","The resize is impossible","It moves to another region"],a:1,e:"If the size isn't available on the current cluster, deallocate first. Resizing always restarts the VM."},
+ {q:"You need to add a data disk to a running Linux VM. What must you do in the OS afterward?",o:["Nothing; it's used automatically","Reinstall the OS","Partition, format and mount it (and add it to /etc/fstab)","Change the VM size"],a:2,e:"New disks arrive raw. Prepare them inside the guest."},
+ {q:"Which disk type offers the highest performance and sub-millisecond latency for IO-intensive databases?",o:["Standard HDD","Standard SSD","Premium SSD v1 P10","Ultra Disk (or Premium SSD v2)"],a:3,e:"Ultra Disk and Premium SSD v2 provide configurable high IOPS and throughput."},
+ {q:"You need to deploy 50 identical VMs repeatedly using a declarative template stored in source control. What should you use?",o:["An ARM template or Bicep file","The portal wizard each time","Azure Advisor","Azure Migrate"],a:0,e:"IaC templates make deployments repeatable and versioned."},
+ {q:"An ARM template deployment in complete mode targets RG1. What happens to resources in RG1 not defined in the template?",o:["They're left unchanged","They're deleted","They're tagged","They're moved"],a:1,e:"Complete mode removes resources not in the template. Incremental mode, the default, leaves them."},
+ {q:"Which App Service feature lets you deploy a new version to a staging environment and swap it into production with no downtime?",o:["Scale up","Backup","Deployment slots","Custom domains"],a:2,e:"Slots warm up the new version, then swap with production. They need the Standard tier or higher."},
+ {q:"An App Service app needs more instances during business hours. What should you configure?",o:["Scale up only","Deployment slots","WebJobs","Autoscale (scale out) rules on the App Service plan"],a:3,e:"Scale out adds instances. Scale up changes the plan tier and size."},
+ {q:"You need to map www.contoso.com to an App Service app. Which DNS record and step are required?",o:["A CNAME to the app's azurewebsites.net name, plus domain verification in App Service","An MX record","A PTR record","A TXT record only"],a:0,e:"Add the CNAME (or A record plus TXT for verification), then bind the custom domain in App Service."},
+ {q:"Which service runs a single container on demand with per-second billing and no orchestrator?",o:["AKS","Azure Container Instances","App Service plan","VM Scale Set"],a:1,e:"ACI suits simple or burst container workloads."},
+ {q:"You want to host a containerized microservice with built-in scale-to-zero and Dapr support, without managing Kubernetes. Which service fits?",o:["Azure Container Instances","AKS","Azure Container Apps","Azure Batch"],a:2,e:"Container Apps is serverless containers on managed Kubernetes, with KEDA scaling and Dapr."},
+ {q:"Where should you store container images privately for AKS deployments?",o:["Azure Files","Blob static website","Key Vault","Azure Container Registry"],a:3,e:"ACR is the private registry. Attach it to AKS for pull access."},
+ {q:"A VM's disks must be encrypted with keys you control in Key Vault, at the platform level. What should you configure?",o:["Server-side encryption with customer-managed keys through a disk encryption set","No encryption is possible","TLS 1.2","A resource lock"],a:0,e:"Disk encryption sets let managed disks use customer-managed keys."}
+]);
+
+/* ---------- 4. Implement and manage virtual networking (11) ---------- */
+registerExamBank("net",[
+ {q:"VNet1 (10.1.0.0/16) and VNet2 (10.1.0.0/16) must be peered. What will happen?",o:["Peering works normally","Peering fails because the address spaces overlap","Azure renumbers VNet2 automatically","Only one-way traffic works"],a:1,e:"Peered VNets can't have overlapping address spaces."},
+ {q:"VNet A is peered with B, and B with C. Can A reach C through B by default?",o:["Yes, always","Only for DNS","No; peering isn't transitive without an NVA/route or a hub with gateway transit","Only with IPv6"],a:2,e:"Use a hub with routing, Azure Virtual Network Manager mesh or direct peering for A to C traffic."},
+ {q:"Spoke VNets must use the hub's VPN gateway to reach on-premises. Which peering settings are required?",o:["Allow forwarded traffic only","No settings needed","Disable peering","Allow gateway transit on the hub side and Use remote gateways on the spoke side"],a:3,e:"Gateway transit shares the hub's gateway with peered spokes."},
+ {q:"All internet-bound traffic from a subnet must go through a network virtual appliance at 10.0.2.4. What should you configure?",o:["A route table with 0.0.0.0/0 next hop Virtual appliance 10.0.2.4, associated with the subnet","An NSG deny rule","A service endpoint","A private DNS zone"],a:0,e:"User-defined routes override system routes for the associated subnet."},
+ {q:"An NSG on a subnet allows TCP 443 at priority 200, and an NSG on the VM's NIC has no allow rule for 443. Is inbound HTTPS allowed?",o:["Yes; the subnet NSG wins","No; inbound traffic must be allowed by both the subnet and NIC NSGs","Yes; NIC NSGs are ignored","Only from VNet"],a:1,e:"Inbound traffic is checked by the subnet NSG, then the NIC NSG. Both must allow it, and the default rules deny inbound from the internet."},
+ {q:"Which service provides outbound internet connectivity for a subnet with a fixed set of public IPs and no inbound access?",o:["Public load balancer inbound rule","Application Gateway","NAT gateway","VPN gateway"],a:2,e:"A NAT gateway gives scalable outbound SNAT using static public IPs."},
+ {q:"VMs in a VNet must resolve each other by hostname in a custom domain contoso.internal. What should you create?",o:["A public DNS zone","An MX record","A CDN profile","An Azure Private DNS zone linked to the VNet with auto-registration"],a:3,e:"Private DNS zones with auto-registration create records for VMs in the linked VNet."},
+ {q:"You need to load-balance HTTP traffic with URL path-based routing and a WAF. Which service fits?",o:["Application Gateway (WAF v2)","Azure Load Balancer Standard","NAT gateway","Traffic Manager only"],a:0,e:"Application Gateway is a Layer 7 load balancer with path routing and WAF."},
+ {q:"Which load balancer distributes TCP/UDP traffic to VMs at Layer 4 within a region?",o:["Application Gateway","Azure Load Balancer","Front Door","Traffic Manager"],a:1,e:"Azure Load Balancer works at Layer 4 with health probes and rules."},
+ {q:"A VM can't reach another VM on port 1433. Which Network Watcher tool identifies the effective route and next hop?",o:["Packet capture","Connection monitor only","Next hop","Topology"],a:2,e:"Next hop shows the routing decision, such as a UDR to an NVA or None."},
+ {q:"Admins need to connect to VMs over RDP/SSH from the portal without public IPs. What should you deploy in the VNet?",o:["A public IP per VM","A NAT gateway","A VPN for each admin only","Azure Bastion in AzureBastionSubnet"],a:3,e:"Bastion requires a subnet named AzureBastionSubnet, /26 or larger."}
+]);
+
+/* ---------- 5. Monitor and maintain Azure resources (8) ---------- */
+registerExamBank("mon",[
+ {q:"You need an email and SMS when CPU on a VM exceeds 85% for 5 minutes. What should you create?",o:["A metric alert rule with an action group","A Log Analytics workspace only","A diagnostic setting only","A budget"],a:0,e:"Alert rules evaluate conditions and trigger action groups that notify or automate."},
+ {q:"Which query language is used to search data in a Log Analytics workspace?",o:["SQL only","KQL","GraphQL","XPath"],a:1,e:"Kusto Query Language queries Azure Monitor Logs."},
+ {q:"Guest OS performance counters and Windows event logs must be collected from VMs into Log Analytics. What should you deploy?",o:["Diagnostic setting on the subscription only","Network Watcher","Azure Monitor Agent with a data collection rule","Azure Advisor"],a:2,e:"AMA collects guest data according to DCRs. The legacy agent is retired."},
+ {q:"VMs must be backed up daily and kept 30 days, with the ability to restore individual files. What should you use?",o:["Disk snapshots only manually","Azure Site Recovery","Object replication","Azure Backup with a Recovery Services vault and a VM backup policy"],a:3,e:"Azure Backup supports scheduled VM backups and file-level recovery."},
+ {q:"VMs must replicate to a secondary region and fail over during a regional outage. Which service fits?",o:["Azure Site Recovery","Azure Backup","Azure Advisor","Storage lifecycle management"],a:0,e:"Site Recovery provides disaster recovery replication and orchestrated failover."},
+ {q:"Before a planned DR drill, you need to validate failover without impacting production. Which action should you run in Site Recovery?",o:["Planned failover to production VNet","Test failover into an isolated VNet","Disable replication","Delete the vault"],a:1,e:"Test failover creates VMs in an isolated network while replication continues."},
+ {q:"Which feature monitors the availability and performance of a web application using synthetic tests from multiple locations?",o:["Service Health","Azure Policy","Application Insights availability tests","NSG flow logs"],a:2,e:"Availability tests ping the app's URL from around the world and alert on failures."},
+ {q:"Activity log data must be retained for two years for audit. What should you configure?",o:["Nothing; it's kept forever","An alert rule","A resource lock","A diagnostic setting sending the activity log to a Log Analytics workspace or storage account with appropriate retention"],a:3,e:"The activity log keeps 90 days by default. Export it for longer retention."}
+]);
 
 </script>
 <script>

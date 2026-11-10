@@ -1060,6 +1060,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 @media(max-width:700px){.lesson table:not(.viz table){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1586,23 +1595,54 @@ function renderRanks(){
 const EXAM={1:{code:"200-301",pass:825}};
 const EXAM_LEN={full:[100,120],half:[50,60]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(300+700*pct/100);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1621,16 +1661,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">100 questions · 120 minutes</span><em>The real exam's time limit.</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">50 questions · 60 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">TARGET SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">TARGET SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Above target":"Below target"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">Cisco doesn't publish the number of questions or the passing score. Candidates commonly report around 100 questions and a pass mark near 825 out of 1000, so this exam uses that as its target. The real exam can also include lab-style questions: practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">200-301 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">200-301 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1653,6 +1695,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1670,24 +1713,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-300)/7));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}CCNA · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}CCNA · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 1000</span></div>
     <div class="ex-gauge"><i style="left:${(EXAM[c].pass-300)/7}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"At or above the 825 target":"Below the 825 target"}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>${d.o.domain}.0 ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 300–1000 score is an estimate: Cisco doesn't publish its passing score or how it scales raw scores.</p>
@@ -1697,6 +1741,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -5339,6 +5384,132 @@ revealViz($("#viz-ntp"),{title:"The NTP hierarchy",cols:4,done:"Explored NTP str
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1.0 Network Infrastructure and Connectivity (25) ---------- */
+registerExamBank("inf",[
+ {q:"An interface shows a rising count of input errors and CRC errors, but no collisions, on a full-duplex link. What is the most likely cause?",o:["Physical layer problems such as a bad cable, connector or interference","A duplex mismatch","An incorrect OSPF area","A missing default route"],a:0,e:"CRC errors on a full-duplex link usually come from corrupted bits on the wire. Late collisions would point to a duplex mismatch instead."},
+ {q:"The output of show interfaces shows 'late collisions' increasing. What should the engineer check?",o:["The routing table","Duplex settings on both ends of the link","The VTP domain name","The NTP server"],a:1,e:"Late collisions are the classic sign of a duplex mismatch. One side runs half duplex while the other runs full."},
+ {q:"Which subnet mask gives exactly 6 usable host addresses?",o:["255.255.255.240","255.255.255.252","255.255.255.248","255.255.255.224"],a:2,e:"A /29 (255.255.255.248) has 8 addresses and 6 usable hosts."},
+ {q:"A host has the address 172.16.45.200/20. What is its network address?",o:["172.16.40.0","172.16.45.0","172.16.48.0","172.16.32.0"],a:3,e:"A /20 has a block size of 16 in the third octet. 45 falls in the 32–47 block, so the network is 172.16.32.0."},
+ {q:"Which subnet would you assign to a point-to-point WAN link to waste the fewest IPv4 addresses?",o:["/30 or /31","/24","/28","/26"],a:0,e:"A /30 gives two usable hosts. A /31 (RFC 3021) uses both addresses on point-to-point links."},
+ {q:"An interface has the MAC address 00:1A:2B:3C:4D:5E. What is the interface ID that modified EUI-64 creates from it?",o:["001A:2BFF:FE3C:4D5E","021A:2BFF:FE3C:4D5E","021A:2B3C:4D5E:FFFE","FFFE:001A:2B3C:4D5E"],a:1,e:"EUI-64 splits the MAC, inserts FFFE in the middle and flips the 7th bit (00 becomes 02)."},
+ {q:"Which IPv6 address type is equivalent to IPv4 private addressing and isn't routed on the internet?",o:["Global unicast (2000::/3)","Link-local (fe80::/10)","Unique local (fc00::/7, in practice fd00::/8)","Anycast"],a:2,e:"Unique local addresses are for internal use. Link-local addresses never leave the link at all."},
+ {q:"Which IPv6 multicast address reaches all routers on the local link?",o:["ff02::1","ff02::5","ff02::1:2","ff02::2"],a:3,e:"ff02::1 is all nodes, ff02::2 is all routers, ff02::5 is all OSPFv3 routers and ff02::1:2 is DHCPv6 agents."},
+ {q:"How is 2001:0db8:0000:0000:0000:0000:0a00:0001 correctly shortened?",o:["2001:db8::a00:1","2001:db8::a::1","2001:db8:0:0::a00::1","2001:db8::0a00:0001:0"],a:0,e:"Drop leading zeros in each group and replace one run of all-zero groups with ::. The :: can appear only once."},
+ {q:"Which cable type is needed for a 10GBASE-SR connection?",o:["Single-mode fiber over 10 km","Multimode fiber","Cat 5e UTP","Coaxial"],a:1,e:"SR (short reach) uses multimode fiber with 850 nm optics. LR uses single-mode."},
+ {q:"Which hypervisor type does VMware ESXi represent?",o:["Type 2 (hosted)","Container runtime","Type 1 (bare metal)","Emulator"],a:2,e:"ESXi installs directly on the server hardware."},
+ {q:"How do containers differ from virtual machines?",o:["Containers each run their own kernel","VMs are always smaller than containers","Containers need a Type 1 hypervisor","Containers share the host OS kernel; VMs each run a full guest OS"],a:3,e:"Containers are lightweight because they package only the app and its dependencies on a shared kernel."},
+ {q:"In a virtualized server, what provides Layer 2 connectivity between VMs and the physical NIC?",o:["A virtual switch (vSwitch)","A Layer 3 router only","A patch panel","A WLC"],a:0,e:"The hypervisor's virtual switch connects VM vNICs to each other and to the uplinks, and it can tag VLANs."},
+ {q:"Which 5 GHz channel width combines four 20 MHz channels?",o:["40 MHz","80 MHz","160 MHz","20 MHz"],a:1,e:"Two 20 MHz channels make 40 MHz and four make 80 MHz. 160 MHz combines eight."},
+ {q:"Which 802.11 term describes the unique MAC address of an AP radio for one SSID?",o:["SSID","ESSID","BSSID","SSID cloaking"],a:2,e:"The BSSID identifies a basic service set, usually the radio's MAC address. The SSID is the network name."},
+ {q:"A wireless LAN uses several APs sharing one SSID so clients can roam. What is this called?",o:["Independent BSS","Mesh only","Repeater mode","Extended service set (ESS)"],a:3,e:"Multiple BSSs with the same SSID connected by a distribution system form an ESS."},
+ {q:"Which security protocol does WPA3-Personal use to replace the WPA2 pre-shared key exchange?",o:["SAE (Simultaneous Authentication of Equals)","TKIP","WEP","LEAP"],a:0,e:"SAE resists offline dictionary attacks and provides forward secrecy."},
+ {q:"On a Windows client, which command releases and then requests a new DHCP lease?",o:["ipconfig /flushdns","ipconfig /release then ipconfig /renew","arp -d","netsh wlan show"],a:1,e:"/release drops the lease and /renew requests a new one."},
+ {q:"On a Linux host, which command shows the IP addresses on each interface?",o:["ipconfig /all","show ip interface brief","ip addr (or ip a)","netsh interface ip"],a:2,e:"The iproute2 command ip addr shows the interfaces and their addresses."},
+ {q:"On a macOS client, which command shows the IP address of interface en0?",o:["ipconfig /all","show ip int brief","route print","ipconfig getifaddr en0"],a:3,e:"macOS supports ipconfig getifaddr. ifconfig en0 also works."},
+ {q:"A router must forward DHCP requests from VLAN 10 clients to a server at 10.0.0.5. Which command goes on the VLAN 10 SVI or router interface?",o:["ip helper-address 10.0.0.5","ip dhcp pool VLAN10","ip default-gateway 10.0.0.5","ip dhcp excluded-address 10.0.0.5"],a:0,e:"ip helper-address relays the broadcast DHCP DORA messages to the server as unicast."},
+ {q:"Which IOS command stops the DHCP server from leasing 192.168.1.1 through .10?",o:["network 192.168.1.0 255.255.255.0","ip dhcp excluded-address 192.168.1.1 192.168.1.10","default-router 192.168.1.1","no ip dhcp pool"],a:1,e:"Excluded addresses are configured globally, outside the pool, to protect statically assigned hosts."},
+ {q:"In the DHCP DORA process, which message does the client send to accept an offered address?",o:["DHCPDISCOVER","DHCPOFFER","DHCPREQUEST","DHCPACK"],a:2,e:"The order is Discover, Offer, Request, Acknowledge. The client accepts with a Request, and the server confirms with an ACK."},
+ {q:"Which interface status shows the line protocol is down but the interface is enabled, often caused by a keepalive or encapsulation mismatch?",o:["administratively down/down","down/down","up/up","up/down"],a:3,e:"up/down means Layer 1 is working but Layer 2 isn't, for example from mismatched encapsulation."},
+ {q:"Which PoE standard can deliver up to about 30 W per port?",o:["802.3at (PoE+)","802.3af","802.3bt Type 4","802.3ad"],a:0,e:"802.3af is about 15.4 W, 802.3at is about 30 W, and 802.3bt reaches 60–100 W. 802.3ad is link aggregation."}
+]);
+
+/* ---------- 2.0 Switching and Network Access (25) ---------- */
+registerExamBank("sw",[
+ {q:"A switch receives a frame whose destination MAC isn't in its MAC address table. What does it do?",o:["Drops the frame","Floods the frame out all ports in that VLAN except the one it came in on","Sends it to the default gateway only","Sends an ARP request"],a:1,e:"Unknown unicast frames are flooded within the VLAN until the switch learns the destination."},
+ {q:"What does a switch use to populate its MAC address table?",o:["The destination MAC of each frame","ARP replies only","The source MAC address of frames received on each port","CDP messages"],a:2,e:"Switches learn by recording the source MAC and the incoming port."},
+ {q:"A switchport must carry VLANs 10, 20 and 30 to another switch, with VLAN 99 as native. Which configuration fits?",o:["switchport mode access, switchport access vlan 10","switchport voice vlan 99","channel-group 1 mode on","switchport mode trunk, switchport trunk allowed vlan 10,20,30,99, switchport trunk native vlan 99"],a:3,e:"Configure the port as a trunk, restrict the allowed VLANs and set the native VLAN to match on both sides."},
+ {q:"Which command shows which VLANs are allowed and active on trunk links?",o:["show interfaces trunk","show vlan brief","show mac address-table","show ip route"],a:0,e:"show interfaces trunk lists trunk ports, the native VLAN, the allowed VLANs and the ones forwarding."},
+ {q:"An access port connects a PC and an IP phone. The phone should be in VLAN 150 and the PC in VLAN 50. Which commands are needed?",o:["switchport mode trunk and native vlan 150","switchport access vlan 50 and switchport voice vlan 150","switchport access vlan 150 only","channel-group 150"],a:1,e:"The voice VLAN feature tags phone traffic with 150 while the PC's untagged traffic uses access VLAN 50."},
+ {q:"Two switches are configured for EtherChannel, one with 'mode active' and the other with 'mode passive'. What happens?",o:["It fails; both must be active","It forms as PAgP","The LACP EtherChannel forms","It forms as a static channel"],a:2,e:"LACP forms when at least one side is active. Passive with passive doesn't form."},
+ {q:"Which EtherChannel mode combination will not form a channel?",o:["active and passive","active and active","on and on","passive and passive"],a:3,e:"Two passive sides both wait for the other to initiate, so LACP never starts."},
+ {q:"Which must match on all member ports for an EtherChannel to form?",o:["Speed, duplex, and switchport mode/VLAN settings","Port descriptions","Interface numbers","CDP settings"],a:0,e:"Members need consistent speed, duplex, mode, allowed and native VLANs."},
+ {q:"In Rapid PVST+, which switch becomes the root bridge?",o:["The one with the highest priority","The one with the lowest bridge ID (priority, then MAC)","The one with the most ports","The newest switch"],a:1,e:"The lowest bridge ID wins. Priority is compared first, in steps of 4096, then the lowest MAC."},
+ {q:"Which command makes a switch the root bridge for VLAN 10 by lowering its priority automatically?",o:["spanning-tree portfast","spanning-tree bpduguard enable","spanning-tree vlan 10 root primary","spanning-tree mode mst"],a:2,e:"root primary sets the priority below the current root, typically to 24576."},
+ {q:"Which RSTP port role is the best path to the root bridge on a non-root switch?",o:["Designated port","Alternate port","Backup port","Root port"],a:3,e:"Each non-root switch has one root port with the lowest cost to the root."},
+ {q:"Which RSTP port role provides a ready backup path to the root and moves to forwarding quickly if the root port fails?",o:["Alternate port","Designated port","Disabled port","Edge port"],a:0,e:"The alternate port is discarding but takes over fast if the root port fails."},
+ {q:"Which feature should be enabled on access ports connected to end hosts so they move to forwarding immediately?",o:["Root guard","PortFast","Loop guard","UDLD"],a:1,e:"PortFast (an edge port) skips listening and learning on host ports. Pair it with BPDU guard."},
+ {q:"A user plugs a small switch into a PortFast access port that has BPDU guard enabled. What happens?",o:["The new switch becomes root","Nothing","The port goes err-disabled when it receives a BPDU","The port becomes a trunk"],a:2,e:"BPDU guard shuts down an edge port as soon as a BPDU arrives, which prevents loops and rogue roots."},
+ {q:"Which protocol is vendor-neutral and used to discover neighboring devices from different vendors?",o:["CDP","VTP","DTP","LLDP"],a:3,e:"LLDP (802.1AB) is the open standard. CDP is Cisco-proprietary."},
+ {q:"Which command shows detailed neighbor information including the neighbor's IP address and platform?",o:["show cdp neighbors detail","show cdp neighbors","show ip interface brief","show version"],a:0,e:"show cdp neighbors detail includes the management address, platform and software version."},
+ {q:"Why might an engineer disable CDP on an internet-facing interface?",o:["To speed up routing","To avoid leaking device model, IOS version and addressing to outsiders","To enable PoE","To allow trunking"],a:1,e:"CDP advertises details an attacker could use. Use no cdp enable on untrusted interfaces."},
+ {q:"An extended ping is used to test reachability sourced from a router's loopback interface. Why?",o:["To change the MTU","To test the console port","To verify that the destination has a return route to the loopback network","To speed up the ping"],a:2,e:"Sourcing from the loopback proves both the forward and the return routes for that network."},
+ {q:"Which SVI configuration allows a Layer 3 switch to route for VLAN 20?",o:["switchport access vlan 20 on a port","vlan 20 name SALES only","spanning-tree vlan 20 root","interface vlan 20, ip address 10.20.0.1 255.255.255.0, no shutdown, and ip routing enabled globally"],a:3,e:"An SVI needs an IP address, must be up, and the switch needs ip routing turned on."},
+ {q:"Which interface type on a Layer 3 switch acts like a router port and doesn't belong to any VLAN?",o:["Routed port (no switchport)","Access port","Trunk port","SVI"],a:0,e:"no switchport turns a physical port into a routed interface."},
+ {q:"A wireless AP connected to a switch serves several SSIDs mapped to different VLANs. How should the switchport be configured for an autonomous AP?",o:["As an access port in VLAN 1","As an 802.1Q trunk carrying those VLANs","As a routed port","With port security max 1"],a:1,e:"Autonomous APs (and FlexConnect APs with local switching) need a trunk so each SSID's VLAN reaches the switch."},
+ {q:"In a split-MAC architecture, lightweight APs tunnel client traffic to the WLC using which protocol?",o:["GRE only","LWAPP over TCP","CAPWAP","SSH"],a:2,e:"CAPWAP carries the control channel (UDP 5246) and the data channel (UDP 5247) between APs and the controller."},
+ {q:"Which WLC port type is a logical interface used for client VLAN traffic?",o:["Service port","Redundancy port","Console port","Dynamic interface"],a:3,e:"Dynamic interfaces map WLANs to VLANs on the controller."},
+ {q:"Which security feature does an engineer configure on a WLAN to authenticate each user against a RADIUS server?",o:["WPA2/WPA3-Enterprise with 802.1X","PSK only","Open with MAC filtering","Hidden SSID"],a:0,e:"Enterprise mode uses 802.1X/EAP with RADIUS for per-user authentication."},
+ {q:"A packet capture is needed of traffic on switch port Gi1/0/5 to send to an analyzer on Gi1/0/24. What should be configured?",o:["An ACL on Gi1/0/5","A local SPAN session with Gi1/0/5 as source and Gi1/0/24 as destination","An EtherChannel","A static route"],a:1,e:"SPAN mirrors traffic from source ports to the destination port where the analyzer sits."}
+]);
+
+/* ---------- 3.0 IP Routing (20) ---------- */
+registerExamBank("rt",[
+ {q:"In the routing table, what does the code 'O IA' mean?",o:["OSPF intra-area route","OSPF external type 1","OSPF inter-area route","EIGRP route"],a:2,e:"O is an intra-area OSPF route, O IA is inter-area, and O E1/E2 are external routes."},
+ {q:"A route entry reads 'O 10.5.0.0/16 [110/30] via 10.1.1.2'. What are 110 and 30?",o:["Hop count and bandwidth","Delay and load","Area and router ID","Administrative distance and metric (cost)"],a:3,e:"The bracket shows [administrative distance/metric]. OSPF's AD is 110 and the cost here is 30."},
+ {q:"A router has routes to 10.0.0.0/8 (static), 10.1.0.0/16 (OSPF) and 10.1.1.0/24 (EIGRP). Which is used for 10.1.1.50?",o:["The EIGRP /24","The static /8","The OSPF /16","The default route"],a:0,e:"The longest prefix match is chosen first, regardless of administrative distance."},
+ {q:"Which administrative distance does a directly connected route have?",o:["1","0","110","120"],a:1,e:"Connected is 0, static is 1, eBGP is 20, EIGRP is 90, OSPF is 110 and RIP is 120."},
+ {q:"An engineer configures 'ip route 0.0.0.0 0.0.0.0 203.0.113.1'. What is this?",o:["A host route","A floating static route","A default static route","A summary route"],a:2,e:"0.0.0.0/0 matches every destination and is used when nothing more specific exists."},
+ {q:"A backup static route should be used only if the OSPF route fails. Which configuration achieves this?",o:["ip route 10.9.0.0 255.255.0.0 192.0.2.1 1","ip route 10.9.0.0 255.255.0.0 null0","ip route 0.0.0.0 0.0.0.0 192.0.2.1","ip route 10.9.0.0 255.255.0.0 192.0.2.1 115"],a:3,e:"A floating static route uses an AD higher than OSPF's 110, so it's installed only when OSPF's route disappears."},
+ {q:"Which command configures an IPv6 default static route pointing to 2001:db8::1?",o:["ipv6 route ::/0 2001:db8::1","ip route ::/0 2001:db8::1","ipv6 route 0.0.0.0/0 2001:db8::1","ipv6 default-gateway 2001:db8::1"],a:0,e:"IPv6 static routes use ipv6 route, and ::/0 is the default prefix. ipv6 unicast-routing must also be enabled."},
+ {q:"Which must match for two OSPFv2 routers to become neighbors on a broadcast segment?",o:["Router ID","Area ID, hello/dead timers, subnet and mask, and authentication","Interface priority","Process ID"],a:1,e:"The area, timers, subnet, authentication and stub flags must match. Router IDs must be unique, and process IDs are local only."},
+ {q:"How is the OSPF router ID chosen if none is configured manually?",o:["Lowest MAC address","Lowest IP on any interface","Highest IPv4 address on an up loopback, otherwise the highest active physical interface IP","Random"],a:2,e:"Manual router-id first, then the highest loopback IP, then the highest active interface IP."},
+ {q:"On a broadcast multi-access segment, which router becomes the OSPF DR?",o:["Lowest priority","The first router to boot always","Lowest router ID","Highest interface priority, then highest router ID"],a:3,e:"Highest priority (default 1) wins and the router ID breaks ties. A priority of 0 means the router never becomes DR."},
+ {q:"Which OSPF neighbor state is normal between two DROTHER routers on the same segment?",o:["2-WAY","FULL","EXSTART","INIT"],a:0,e:"DROTHERs form full adjacencies only with the DR and BDR. With each other they stay in 2-WAY."},
+ {q:"What OSPF cost does a 1 Gbps interface get with the default reference bandwidth of 100 Mbps?",o:["10","1","100","0"],a:1,e:"Cost = reference bandwidth / interface bandwidth, rounded up to at least 1. That's why engineers raise the reference bandwidth."},
+ {q:"Which command makes OSPF stop sending hellos on a LAN interface while still advertising its subnet?",o:["no network","shutdown","passive-interface","ip ospf priority 0"],a:2,e:"Passive interfaces advertise their network but form no adjacencies."},
+ {q:"Which OSPF network type on point-to-point links skips DR/BDR election?",o:["broadcast","non-broadcast","point-to-multipoint non-broadcast","point-to-point"],a:3,e:"Point-to-point links have only two routers, so no DR is elected and adjacency forms faster."},
+ {q:"Which command enables OSPFv3 for IPv6 on an interface in area 0, process 1?",o:["ipv6 ospf 1 area 0","network ::/0 area 0","ospf ipv6 area 0","router ospf 1 ipv6"],a:0,e:"OSPFv3 is enabled per interface with ipv6 ospf <process> area <area>."},
+ {q:"In HSRP, which router becomes active?",o:["Lowest priority","Highest priority, then highest interface IP","Lowest IP","The one configured first"],a:1,e:"The default priority is 100. The highest wins, and the highest IP breaks ties."},
+ {q:"Which HSRP feature lets a higher-priority router take back the active role after it recovers?",o:["track","authentication","preempt","timers"],a:2,e:"Without preempt, a recovered higher-priority router stays standby."},
+ {q:"How does VRRP differ from HSRP?",o:["VRRP is Cisco-proprietary","VRRP provides load balancing only","VRRP is used for routing between AS","VRRP is an open standard; HSRP is Cisco-proprietary"],a:3,e:"VRRP (RFC 5798) is vendor-neutral. HSRP is Cisco's. Both provide a virtual gateway."},
+ {q:"A router has two equal-cost OSPF paths to a destination. What does it do by default?",o:["Installs both and load-balances (ECMP)","Uses only the first learned","Drops traffic","Uses the one with the lower router ID"],a:0,e:"OSPF installs equal-cost paths, up to 4 by default on IOS, and load-shares across them."},
+ {q:"Which command verifies OSPF neighbor states?",o:["show ip route ospf","show ip ospf neighbor","show ip protocols","show ip interface brief"],a:1,e:"show ip ospf neighbor lists each neighbor's router ID, state, priority and interface."}
+]);
+
+/* ---------- 4.0 Network Services and Security (20) ---------- */
+registerExamBank("svc",[
+ {q:"Which commands are required before SSH can be enabled on a Cisco router?",o:["Only enable secret","Only transport input ssh","A hostname, an ip domain-name, and crypto key generate rsa","snmp-server community"],a:2,e:"RSA keys need a hostname and domain name. Then set transport input ssh on the VTY lines and configure local users."},
+ {q:"Which command stores the privileged EXEC password using a strong hash?",o:["enable password","service password-encryption only","username admin password","enable secret"],a:3,e:"enable secret uses a strong hash (type 5, 8 or 9). enable password is weak or plain text."},
+ {q:"An auditor sees 'service password-encryption' in a router config and asks if the passwords are now safe. What does the command actually do?",o:["Applies weak type 7 obfuscation to plain-text passwords in the configuration","Encrypts SSH sessions","Hashes the enable secret","Encrypts SNMP"],a:0,e:"Type 7 is easily reversible. It only stops shoulder surfing of the config."},
+ {q:"Which AAA protocol encrypts the entire packet body and separates authentication, authorization and accounting?",o:["RADIUS","TACACS+","LDAP","Kerberos"],a:1,e:"TACACS+ (TCP 49) encrypts the whole payload and is preferred for device administration. RADIUS encrypts only the password."},
+ {q:"Which protocol securely copies files to a router using SSH?",o:["TFTP","FTP","SCP","HTTP"],a:2,e:"SCP (and SFTP) run over SSH. TFTP and FTP are unencrypted."},
+ {q:"In NAT terminology, what is the inside global address?",o:["The private address of an inside host","The outside host's real address","The router's loopback","The public address representing an inside host to the outside"],a:3,e:"Inside local is the host's private IP. Inside global is the translated public IP that outsiders see."},
+ {q:"Which configuration translates many inside hosts to the router's outside interface address?",o:["ip nat inside source list 1 interface g0/1 overload","ip nat inside source static 10.0.0.5 203.0.113.5","ip nat pool without overload","ip nat outside source static"],a:0,e:"PAT (overload) uses the interface address with unique ports for many hosts."},
+ {q:"A web server at 10.1.1.10 must always appear on the internet as 203.0.113.10. Which NAT type is needed?",o:["Dynamic NAT pool","Static NAT","PAT","NAT64"],a:1,e:"Static NAT gives a fixed one-to-one mapping so inbound connections can reach the server."},
+ {q:"Which command shows active NAT translations?",o:["show ip nat statistics only","show running-config nat","show ip nat translations","show access-lists"],a:2,e:"show ip nat translations lists the inside and outside, local and global mappings."},
+ {q:"Which DNS record type maps a name to an IPv4 address?",o:["AAAA","MX","PTR","A"],a:3,e:"A records map names to IPv4. AAAA maps to IPv6 and PTR does reverse lookups."},
+ {q:"Which command on a Cisco router points it to 8.8.8.8 for name resolution?",o:["ip name-server 8.8.8.8","ip domain-lookup 8.8.8.8","ip dns server 8.8.8.8","dns 8.8.8.8"],a:0,e:"ip name-server sets the DNS servers, and ip domain-lookup must be enabled (it is by default)."},
+ {q:"Which IPsec protocol provides encryption of the payload?",o:["AH","ESP","IKE","GRE"],a:1,e:"ESP provides confidentiality, integrity and authentication. AH provides integrity only and doesn't encrypt."},
+ {q:"Which protocol negotiates the security associations for an IPsec VPN?",o:["ESP","AH","IKE (IKEv1/IKEv2)","SSL"],a:2,e:"IKE handles authentication and key exchange to build the IPsec SAs."},
+ {q:"A standard ACL should block 192.168.10.0/24 from reaching a server subnet. Where should it be applied?",o:["As close to the source as possible","On every interface","On the console line","As close to the destination as possible"],a:3,e:"Standard ACLs match only the source, so place them near the destination to avoid blocking other traffic."},
+ {q:"Which wildcard mask matches all hosts in 172.16.32.0/20?",o:["0.0.15.255","0.0.31.255","0.0.0.255","255.255.240.0"],a:0,e:"The wildcard is the inverse of the mask: 255.255.255.255 minus 255.255.240.0 gives 0.0.15.255."},
+ {q:"An extended ACL line reads 'permit tcp any host 10.1.1.10 eq 443'. What does it allow?",o:["SSH to any host","HTTPS from any source to server 10.1.1.10","All traffic from 10.1.1.10","DNS to 10.1.1.10"],a:1,e:"It permits TCP from any source to destination 10.1.1.10 on port 443."},
+ {q:"What happens to traffic that doesn't match any entry in an applied ACL?",o:["It's permitted","It's logged and permitted","It's dropped by the implicit deny any at the end","It's sent to the default route"],a:2,e:"Every ACL ends with an invisible deny any."},
+ {q:"Which Layer 2 security feature limits the number of MAC addresses learned on an access port and can shut it down on violation?",o:["DHCP snooping","DAI","Storm control","Port security"],a:3,e:"Port security sets a maximum number of MACs, can make them sticky, and uses shutdown, restrict or protect on a violation."},
+ {q:"Which port security violation mode drops offending frames, logs and increments the violation counter, but keeps the port up?",o:["restrict","shutdown","protect","err-disable recovery"],a:0,e:"Protect drops silently, restrict drops and logs, and shutdown err-disables the port."},
+ {q:"For DHCP snooping, which ports should be configured as trusted?",o:["All access ports","Uplinks toward the legitimate DHCP server","No ports","Only voice ports"],a:1,e:"Only trusted ports may send server messages such as OFFER and ACK. Access ports stay untrusted."}
+]);
+
+/* ---------- 5.0 AI, and Network Operations and Management (10) ---------- */
+registerExamBank("ops",[
+ {q:"An engineer asks an AI assistant to generate an ACL configuration for a production firewall. What is the most important step before applying it?",o:["Paste it directly into production","Assume it's correct because the AI is confident","Review and validate the output against requirements and test it in a lab or change window","Share the running configuration publicly to get better output"],a:2,e:"AI output can be wrong or invented. Always verify it, test it and follow change control."},
+ {q:"Which prompt is most likely to produce a useful AI answer for a networking task?",o:["'Fix my network'","A one-word prompt","A prompt with passwords included for context","One that states the platform, IOS version, current config excerpt, the goal and the expected output format"],a:3,e:"Specific context, constraints and a desired format improve AI results. Never include secrets."},
+ {q:"Which is a risk of pasting device configurations into a public AI tool?",o:["Leaking sensitive data such as IPs, hashes and keys outside the organization","Faster routing","Automatic backups","Improved encryption"],a:0,e:"Configs contain sensitive details. Follow data-handling policy and sanitize anything shared."},
+ {q:"In controller-based networking, which interface does the controller use to communicate with network devices?",o:["Northbound API","Southbound API","Console port","CDP"],a:1,e:"Southbound APIs (such as NETCONF, RESTCONF and OpenFlow) program devices. Northbound APIs (usually REST) serve apps and automation tools."},
+ {q:"Which data format uses key/value pairs in braces and is common in REST APIs?",o:["CSV","Plain text logs","JSON","Binary BPDU"],a:2,e:"JSON represents objects in braces and arrays in brackets."},
+ {q:"Which REST HTTP method is typically used to retrieve data without changing it?",o:["POST","PUT","DELETE","GET"],a:3,e:"GET reads, POST creates, PUT/PATCH update and DELETE removes."},
+ {q:"Which characteristic describes Ansible?",o:["Agentless, uses SSH and YAML playbooks","Requires an agent on every device","Uses only Ruby manifests","Pull-based only via agents"],a:0,e:"Ansible pushes changes over SSH with YAML playbooks and needs no agent on the managed devices."},
+ {q:"Which SNMP component sends unsolicited notifications to the manager when an event occurs?",o:["GET request from the manager","Trap (or inform) from the agent","MIB walk","Community string"],a:1,e:"Agents send traps or informs (UDP 162). Managers poll with GET requests (UDP 161)."},
+ {q:"Which syslog severity is 'Warning'?",o:["2","6","4","7"],a:2,e:"The levels are 0 Emergency, 1 Alert, 2 Critical, 3 Error, 4 Warning, 5 Notice, 6 Informational and 7 Debug."},
+ {q:"Why must NTP be configured on network devices before collecting logs for an investigation?",o:["To encrypt logs","To reduce log size","To enable SSH","So timestamps are accurate and consistent across devices for correlation"],a:3,e:"Synchronized clocks let you line up events from many devices."}
+]);
 
 </script>
 <script>
