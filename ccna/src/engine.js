@@ -478,6 +478,7 @@ function renderHome(){
       <b>${o.title}</b><span class="mc-meta">${o.weight}% of the exam</span><span class="mc-bar"><i style="width:${o.weight/MAXW*100}%"></i></span></div>`};
   $("#view").innerHTML=`
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
+    <p class="tip" role="note"><b>Exam timing:</b> This guide follows the <b>200-301 v2.0</b> exam topics, which take effect on <b>February 3, 2027</b>. If you test on or before February 2, 2027, you will sit <b>v1.1</b>. Most lessons apply to both, but v1.1 has a different domain layout and no AI domain, so check Cisco's v1.1 exam topics before you book.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on labs on a simulated Cisco IOS command line, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
     <h2 class="sec">Exam domains <span class="mono">200-301 v2.0</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
@@ -677,3 +678,37 @@ function boot(){
   checkBadges(true);gameReady=true;renderHUD();
   addEventListener("hashchange",route);route();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();

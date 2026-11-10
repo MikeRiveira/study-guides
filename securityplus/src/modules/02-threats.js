@@ -231,7 +231,7 @@ registerModule({
   el.innerHTML=`<div class="viz-title">Phishing inspector: find all 6 red flags</div>
   <div class="mail"><div class="mail-h"><button class="flag" data-f="from" style="all:unset;cursor:pointer"><span class="s-small">From</span> ${F.from[1].replace("From: ","")}</button><button class="flag" data-f="subj" style="all:unset;cursor:pointer"><span class="s-small">Subject</span> <b>${F.subj[1]}</b></button></div>
   <div class="mail-b"><p><button class="flag" data-f="greet" style="all:unset;cursor:pointer">${F.greet[1]}</button></p><p>We detected unusual sign-in activity. Your mailbox will be permanently deleted unless you verify your account.</p>
-  <p><button class="flag mail-btn" data-f="link">${F.link[1]}</button></p><p><button class="flag mail-att" data-f="att">📎 ${F.att[1]} <span class="s-small">14 KB</span></button></p><p><button class="flag" data-f="sig" style="all:unset;cursor:pointer;color:#6b7488">${F.sig[1]}</button></p></div></div>
+  <p><button class="flag mail-btn" data-f="link">${F.link[1]}</button></p><p><button class="flag mail-att" data-f="att">📎 ${F.att[1]} <span class="s-small">14 KB</span></button></p><p><button class="flag" data-f="sig" style="all:unset;cursor:pointer;color:#586175">${F.sig[1]}</button></p></div></div>
   <div class="caption" aria-live="polite">Tap anything suspicious. Careful with that button.</div><div class="rv-prog s-small"></div>`;
   let clicks=0;
   el.addEventListener("click",e=>{const f=e.target.closest("[data-f]");if(!f)return;const k=f.dataset.f;found.add(k);f.classList.add("hit");

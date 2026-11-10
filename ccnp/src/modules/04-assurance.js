@@ -157,8 +157,8 @@ const CARDS=[];DECKS.forEach(([k])=>G[k].forEach((c,i)=>CARDS.push({deck:k,id:k+
 const QUIZ=[
 {q:"Which command shows debug output on a VTY session?",o:["terminal monitor","logging console","debug vty","show debugging"],a:0,e:"Debugs go to the console by default."},
 {q:"How can you safely debug traffic for a single host on a busy router?",o:["debug condition ip <host> then the debug","debug all","debug ip packet with no ACL","logging console debugging"],a:0,e:"Conditional debugging."},
-{q:"A ping returns M M M. What's the problem?",o:["Packets need fragmenting but DF is set","No route","ACL","The host is down"],a:0,e:"MTU."},
-{q:"Why use 'ping 10.9.9.9 source loopback0'?",o:["To test that the far end can route back to the loopback","To test the console","To raise TTL","To use TCP"],a:0,e:"Return path."},
+{q:"A ping returns M M M. What's the problem?",o:["Packets need fragmenting but DF is set","No route to the destination network","ACL","The host is down"],a:0,e:"MTU."},
+{q:"Why use 'ping 10.9.9.9 source loopback0'?",o:["To test that the far end can route back to the loopback","To test the console connection to the far-end router","To raise TTL","To use TCP"],a:0,e:"Return path."},
 {q:"How does traceroute learn each hop?",o:["TTL expires and the router returns ICMP time exceeded","Each hop sends CDP","It reads routing tables","It uses SNMP"],a:0,e:"Incrementing TTL."},
 {q:"'logging trap notifications' sends which levels?",o:["0 through 5","5 only","5 through 7","0 through 4"],a:0,e:"Level and more severe."},
 {q:"Which syslog level is 'errors'?",o:["3","2","4","5"],a:0,e:"0 emerg, 1 alert, 2 crit, 3 err."},
@@ -174,8 +174,8 @@ const QUIZ=[
 {q:"A long file transfer still shows in the NetFlow cache after 20 minutes. When will it be exported?",o:["At the active timeout (30 min default)","At the inactive timeout","Never","Only when it ends"],a:0,e:"Long-lived flows."},
 {q:"You need to capture traffic from a switch port and send it to an analyzer on another switch in the same campus Layer 2 domain. Which feature?",o:["RSPAN","Local SPAN","ERSPAN only","NetFlow"],a:0,e:"Remote-span VLAN."},
 {q:"The analyzer is in a data center several routed hops away. Which feature?",o:["ERSPAN","RSPAN","Local SPAN","Port security"],a:0,e:"GRE."},
-{q:"What must be configured on every switch carrying RSPAN traffic?",o:["The VLAN with remote-span, allowed on the trunks","A GRE tunnel","IP routing","An SVI"],a:0,e:"Dedicated VLAN."},
-{q:"A SPAN destination port connected to a laptop has no network access. Why?",o:["SPAN destinations don't forward normal traffic","The laptop is wrong","STP","PortFast"],a:0,e:"It only sends copies."},
+{q:"What must be configured on every switch carrying RSPAN traffic?",o:["The VLAN with remote-span, allowed on the trunks","A GRE tunnel between the source and destination","IP routing","An SVI"],a:0,e:"Dedicated VLAN."},
+{q:"A SPAN destination port connected to a laptop has no network access. Why?",o:["SPAN destinations don't forward normal traffic","The laptop's NIC doesn't support promiscuous mode","STP","PortFast"],a:0,e:"It only sends copies."},
 {q:"An ISP's router fails but your WAN interface stays up. Which feature detects the failure?",o:["IP SLA with tracking","Interface tracking","HSRP","UDLD"],a:0,e:"Probe beyond the interface."},
 {q:"An IP SLA operation is configured but 'show ip sla statistics' shows no results. Likely cause?",o:["It was never scheduled","The frequency is too high","No track object","NTP not set"],a:0,e:"ip sla schedule."},
 {q:"Which IP SLA operation measures jitter for voice?",o:["udp-jitter","icmp-echo","http","dns"],a:0,e:"Needs a responder."},
@@ -184,7 +184,7 @@ const QUIZ=[
 {q:"In which Catalyst Center area do you define sites, IP pools and the NTP server?",o:["Design","Policy","Provision","Assurance"],a:0,e:"Network hierarchy and settings."},
 {q:"Which Catalyst Center area assigns devices to sites and pushes configuration?",o:["Provision","Design","Policy","Platform"],a:0,e:"Provisioning."},
 {q:"What does AI/ML baselining in Catalyst Center Assurance do?",o:["Learns normal behavior and flags anomalies","Pushes images","Assigns IP addresses","Writes ACLs"],a:0,e:"Dynamic baselines instead of fixed thresholds."},
-{q:"Catalyst Center shows one issue 'clients on floor 3 failing DHCP' instead of 200 separate alerts. Which capability?",o:["AI-driven root cause analysis/correlation","SNMP traps","Syslog","SPAN"],a:0,e:"Correlation."},
+{q:"Catalyst Center shows one issue 'clients on floor 3 failing DHCP' instead of 200 separate alerts. Which capability?",o:["AI-driven root cause analysis/correlation","SNMP traps with event correlation","Syslog","SPAN"],a:0,e:"Correlation."},
 {q:"Which transport and port does NETCONF use?",o:["SSH, TCP 830","HTTPS, 443","SSH, 22 only","UDP 161"],a:0,e:"830."},
 {q:"Which NETCONF datastore lets you stage changes and commit them together?",o:["Candidate","Running","Startup","Intended"],a:0,e:"Commit."},
 {q:"Which NETCONF operation changes configuration?",o:["<edit-config>","<get-config>","<get>","<hello>"],a:0,e:"edit-config."},
@@ -193,7 +193,7 @@ const QUIZ=[
 {q:"What describes the structure of the data NETCONF and RESTCONF exchange?",o:["YANG models","MIBs","JSON Schema","Templates"],a:0,e:"Model-driven."},
 {q:"Which command enables RESTCONF on IOS XE (with the HTTPS server)?",o:["restconf","netconf-yang","ip http restconf","yang restconf enable"],a:0,e:"Plus ip http secure-server."},
 {q:"Which is a vendor-neutral YANG model family?",o:["OpenConfig","Cisco-IOS-XE-native","Cisco-IOS-XE-oper","MIB-II"],a:0,e:"Also IETF."},
-{q:"Which RESTCONF URL reads interface GigabitEthernet1?",o:["/restconf/data/ietf-interfaces:interfaces/interface=GigabitEthernet1","/netconf/interfaces/1","/api/v1/interface/1","/restconf/ops/get"],a:0,e:"Resource path."},
+{q:"Which RESTCONF URL reads interface GigabitEthernet1?",o:["/restconf/data/ietf-interfaces:interfaces/interface=GigabitEthernet1","/restconf/operations/ietf-interfaces:get-interface?name=GigabitEthernet1","/netconf/interfaces/1","/api/v1/interface/1"],a:0,e:"Resource path."},
 {q:"What is exchanged at the start of a NETCONF session?",o:["<hello> messages listing capabilities","SNMP traps","Certificates only","A RESTCONF token"],a:0,e:"Capabilities."}
 ];
 

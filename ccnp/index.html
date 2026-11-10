@@ -559,7 +559,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .pc-screen.s3,.pc-screen.s4,.pc-screen.s5,.pc-screen.s6{background:rgba(95,227,161,.1);color:var(--good);border-color:rgba(95,227,161,.5)}
 .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0;background:#f5f7fb;color:#1d2433}
 .mail-h{padding:12px 14px;border-bottom:1px solid #dde2ec;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.mail-h .s-small{color:#6b7488;display:inline-block;width:56px}
+.mail-h .s-small{color:#586175;display:inline-block;width:56px}
 .mail-b{padding:12px 14px;font-size:14px}.mail-b p{margin:0 0 10px}
 .flag{font:inherit;color:inherit;background:none;border:1px dashed transparent;border-radius:4px;padding:1px 3px;cursor:pointer;text-align:left;word-break:break-word}
 .flag:hover{border-color:#aab3c6}
@@ -567,7 +567,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .flag.mail-btn{background:#2f6fe4;color:#fff;padding:8px 16px;border-radius:6px;font-weight:600}
 .flag.mail-btn.hit{background:#c63e60}
 .flag.mail-att{display:inline-flex;gap:8px;align-items:center;border:1px solid #cfd6e3;padding:6px 10px;border-radius:6px;background:#fff}
-.flag.mail-att .s-small{color:#6b7488}
+.flag.mail-att .s-small{color:#586175}
 .perm{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
 @media(max-width:560px){.perm{grid-template-columns:1fr}}
 .perm-col{display:flex;flex-direction:column;gap:8px}
@@ -1082,6 +1082,13 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .pad-tasks li::before{content:"○ ";color:var(--muted)}.pad-tasks li.done::before{content:"✓ ";color:var(--good)}
 .lesson p code,.lesson li code,.lesson td code{overflow-wrap:anywhere}
 .py-q{margin:14px 0}
+
+/* ---------- Accessibility helpers ---------- */
+.sr-only{position:absolute!important;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:1000;padding:10px 16px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:600;text-decoration:none;transition:top .15s}
+.skip-link:focus{top:12px;outline:2px solid var(--on-accent);outline-offset:2px}
+main:focus{outline:none}
+[role="group"][tabindex="0"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* practice exam upgrades: pace marker, pool info, domain drills */
 .ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
@@ -1788,6 +1795,40 @@ function boot(){
   checkBadges(true);gameReady=true;renderHUD();
   addEventListener("hashchange",route);route();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
 
 </script>
 <script>
@@ -4381,7 +4422,7 @@ const QUIZ=[
 {q:"What is the main benefit of routed access over Layer 2 access?",o:["No STP on uplinks and both uplinks forward with ECMP","VLANs can span the whole campus","No routing protocol is needed","It removes the need for IP addressing"],a:0,e:"Routed uplinks converge fast and use both paths."},
 {q:"In a spine-leaf data center, a leaf switch connects to:",o:["Every spine","Every other leaf","One spine only","The internet directly"],a:0,e:"Full mesh between the layers, never within a layer."},
 {q:"A data center's traffic is mostly between servers. Which design suits it?",o:["Spine-leaf","Collapsed core","Hub and spoke","Ring"],a:0,e:"Spine-leaf is optimized for east-west traffic."},
-{q:"Two distribution switches run StackWise Virtual. What is true for access switches?",o:["They connect with a multichassis EtherChannel and nothing blocks","They need HSRP on each VLAN","STP blocks one uplink","They must use routed access"],a:0,e:"The pair appears as one switch."},
+{q:"Two distribution switches run StackWise Virtual. What is true for access switches?",o:["They connect with a multichassis EtherChannel and nothing blocks","They need HSRP on each VLAN, with one switch active and one standby","STP blocks one uplink","They must use routed access"],a:0,e:"The pair appears as one switch."},
 {q:"Which statement about the shared responsibility model is correct?",o:["The customer secures their data and configuration in the cloud","The provider is responsible for everything","The customer patches the provider's hypervisors","Security is not needed in SaaS"],a:0,e:"The provider secures the cloud itself; you secure what you put in it."},
 {q:"Which HSRP setting is required for a tracked failover to move the active role?",o:["Preempt on the router that should take over","A higher hello timer","HSRP version 2","Authentication"],a:0,e:"Without preempt the new higher-priority router stays standby."},
 {q:"R1 is HSRP active with priority 110 and tracks its uplink with decrement 20. R2 has priority 100 and preempt. The uplink fails. What happens?",o:["R1 drops to 90 and R2 becomes active","Nothing changes","R1 drops to 90 but stays active","Both become active"],a:0,e:"90 < 100 and R2 preempts."},
@@ -4389,12 +4430,12 @@ const QUIZ=[
 {q:"Which FHRP load-balances one group across several routers by handing out different virtual MACs?",o:["GLBP","HSRP","VRRP","CARP"],a:0,e:"The AVG assigns virtual MACs from the AVFs."},
 {q:"Which FHRP is an open standard?",o:["VRRP","HSRP","GLBP","HSRPv2"],a:0,e:"VRRP is IETF; HSRP and GLBP are Cisco."},
 {q:"What does SSO provide on a dual-supervisor chassis?",o:["The standby takes over with synchronized state while forwarding continues","Two active supervisors sharing load","Automatic routing protocol restart on neighbors","A faster boot"],a:0,e:"Stateful Switchover keeps the hardware forwarding."},
-{q:"Which feature requires NSF-aware neighbors?",o:["NSF (graceful restart)","NSR","SSO only","HSRP"],a:0,e:"Neighbors keep routes while the router restarts its sessions."},
+{q:"Which feature requires NSF-aware neighbors?",o:["NSF (graceful restart)","NSR (nonstop routing)","SSO only","HSRP"],a:0,e:"Neighbors keep routes while the router restarts its sessions."},
 {q:"Which feature keeps routing protocol state on the standby supervisor so neighbors never notice?",o:["NSR","NSF","GLBP","BFD"],a:0,e:"Nonstop Routing."},
 {q:"Which SD-WAN component authenticates new edges and helps with NAT traversal?",o:["SD-WAN Validator","SD-WAN Controller","SD-WAN Manager","WAN Edge"],a:0,e:"The Validator (vBond) orchestrates."},
 {q:"Which SD-WAN component distributes routes and policy with OMP?",o:["SD-WAN Controller","SD-WAN Validator","SD-WAN Manager","Catalyst Center"],a:0,e:"The Controller (vSmart)."},
 {q:"What carries user traffic between SD-WAN sites?",o:["IPsec tunnels between WAN Edges","DTLS tunnels to the controller","OMP sessions","GRE through vManage"],a:0,e:"The data plane is an IPsec mesh between TLOCs."},
-{q:"What does a TLOC identify?",o:["A WAN Edge's attachment to a transport","A user's VLAN","An OMP policy","A certificate"],a:0,e:"System IP + color + encapsulation."},
+{q:"What does a TLOC identify?",o:["A WAN Edge's attachment to a transport","A user's VLAN on the service side of the edge","An OMP policy","A certificate"],a:0,e:"System IP + color + encapsulation."},
 {q:"How does SD-WAN application-aware routing pick a path?",o:["From BFD measurements of loss, latency and jitter against an SLA","By lowest hop count","By the cheapest transport only","Randomly per flow"],a:0,e:"BFD runs on every tunnel."},
 {q:"Which is a limitation of SD-WAN over broadband internet?",o:["No end-to-end SLA from the ISP","No encryption","Can't use certificates","Doesn't support branch sites"],a:0,e:"Internet paths are best effort."},
 {q:"What is the SD-Access control plane?",o:["LISP","OMP","VXLAN","IS-IS"],a:0,e:"LISP map server/resolver."},
@@ -4403,7 +4444,7 @@ const QUIZ=[
 {q:"Which SD-Access node connects the fabric to the internet as the default exit?",o:["External border","Internal border","Control plane node","Fabric edge"],a:0,e:"External border handles unknown destinations."},
 {q:"Two IP cameras are in the same VN and subnet. How can SD-Access stop them from talking to each other?",o:["Scalable group policy (SGTs)","Put them in a different VRF only","It can't","Static ARP"],a:0,e:"Micro-segmentation inside a VN."},
 {q:"Which device holds the LISP host tracking database?",o:["Control plane node","Fabric edge","External border","Catalyst Center"],a:0,e:"EID to RLOC mappings live there."},
-{q:"What does an intermediate node in SD-Access know about the overlay?",o:["Nothing, it just routes IP in the underlay","All EID mappings","SGT policy","VN membership"],a:0,e:"It forwards VXLAN packets as normal IP."},
+{q:"What does an intermediate node in SD-Access know about the overlay?",o:["Nothing, it just routes IP in the underlay","All EID-to-RLOC mappings for the fabric","SGT policy","VN membership"],a:0,e:"It forwards VXLAN packets as normal IP."},
 {q:"What is the DSCP value of AF31?",o:["26","24","30","34"],a:0,e:"8x3 + 2x1 = 26."},
 {q:"Which AF value has the highest drop probability in class 2?",o:["AF23","AF21","AF22","AF12"],a:0,e:"y=3 is high drop."},
 {q:"Which marking survives being routed across several hops?",o:["DSCP","CoS","Both are lost","802.1p only"],a:0,e:"CoS is in the Layer 2 tag."},
@@ -4417,10 +4458,10 @@ const QUIZ=[
 {q:"Where should the trust boundary usually be?",o:["At the access port or IP phone","At the core","At the internet edge only","On the server"],a:0,e:"Mark as close to the source as you can trust."},
 {q:"Which is the slowest switching method?",o:["Process switching","CEF","dCEF","Fast switching"],a:0,e:"The CPU handles every packet."},
 {q:"CEF uses which two tables?",o:["FIB and adjacency table","RIB and CAM","ARP and MAC","TCAM and NetFlow"],a:0,e:"Both built ahead of traffic."},
-{q:"What does TCAM add that CAM can't do?",o:["Don't-care bits for longest-prefix and ACL matching","Larger MAC tables","Spanning tree","Routing protocols"],a:0,e:"Ternary: 0, 1 or X."},
+{q:"What does TCAM add that CAM can't do?",o:["Don't-care bits for longest-prefix and ACL matching","Larger MAC address tables for high-density access switches","Spanning tree","Routing protocols"],a:0,e:"Ternary: 0, 1 or X."},
 {q:"Which command shows the FIB?",o:["show ip cef","show ip route","show mac address-table","show arp"],a:0,e:"The CEF table is the FIB."},
 {q:"Where does the adjacency table get its Layer 2 information?",o:["ARP","OSPF","CDP","STP"],a:0,e:"It holds the rewrite header for each next hop."},
-{q:"Which traffic is punted to the CPU?",o:["Traffic addressed to the router, such as SSH and routing protocol packets","All transit traffic","Only multicast","Only IPv6"],a:0,e:"CoPP protects the CPU from it."},
+{q:"Which traffic is punted to the CPU?",o:["Traffic addressed to the router, such as SSH and routing protocol packets","All transit traffic, so the CPU can apply policy before the forwarding table","Only multicast","Only IPv6"],a:0,e:"CoPP protects the CPU from it."},
 {q:"An FHRP's virtual IP can be a router's own interface address in which protocol?",o:["VRRP","HSRP","GLBP","None"],a:0,e:"The address owner gets priority 255."},
 {q:"Which statement about OMP is true?",o:["It runs between WAN Edges and SD-WAN Controllers","It runs between WAN Edges directly","It's a data plane protocol","It replaces IPsec"],a:0,e:"Controllers reflect routes like a route reflector."},
 {q:"What protocol does SD-Access LAN Automation build for the underlay?",o:["IS-IS","OSPF","EIGRP","BGP"],a:0,e:"IS-IS by default."},
@@ -4838,7 +4879,7 @@ const G={
 hyper:[["Type 1 hypervisor?","Runs directly on the hardware (bare metal): ESXi, Hyper-V, KVM, Xen."],["Type 2 hypervisor?","Runs as an application on a host OS: VirtualBox, VMware Workstation."],["Which hypervisor type is used in data centers?","Type 1."],["What does a VM include?","Virtual hardware, its own guest OS and kernel, and applications."],["VM vs container?","A VM has its own OS kernel; containers share the host kernel and are lighter."],["What is a virtual switch?","Software inside the host connecting VMs' virtual NICs to each other and to physical uplinks."],["Standard vs distributed vSwitch?","Standard is per host; distributed is configured once across many hosts and follows VMs when they migrate."],["Physical switch port facing a hypervisor with VMs in several VLANs?","An 802.1Q trunk."],["What is NFV?","Network Functions Virtualization: routers, firewalls and other functions running as software on standard servers."],["Name a Cisco virtual router.","Catalyst 8000V."],["What is SR-IOV?","Lets a VM use a slice of the physical NIC directly, bypassing the vSwitch for performance."],["What is live migration?","Moving a running VM between hosts (vMotion)."],["Cisco NFV infrastructure software for branch?","NFVIS (Network Function Virtualization Infrastructure Software)."],["Why team uplinks on a hypervisor?","Redundancy and more bandwidth for VM traffic."],["Do two VMs on the same host and VLAN use the physical network to talk?","No, the virtual switch forwards between them inside the host."]],
 vrf:[["What is a VRF?","A separate routing and forwarding table on one router, with its own interfaces."],["What does VRF-lite mean?","VRFs without MPLS: each VRF needs its own link (often a subinterface) between routers."],["Can two VRFs use the same subnet?","Yes, overlapping addresses are fine in different VRFs."],["What is a route distinguisher?","A value prepended to prefixes (RD:prefix) to make overlapping VRF routes unique in MP-BGP."],["What do route targets do?","Control which routes a VRF imports and exports."],["Multiprotocol VRF command?","vrf definition NAME, then address-family ipv4 / ipv6."],["Legacy IPv4-only VRF command?","ip vrf NAME."],["Assign an interface to a VRF?","vrf forwarding NAME (or ip vrf forwarding NAME for the legacy form)."],["What happens to the IP when you add vrf forwarding?","IOS removes it; you must re-enter the IP address."],["Static route in a VRF?","ip route vrf NAME prefix mask next-hop."],["Show a VRF's routing table?","show ip route vrf NAME."],["Ping inside a VRF?","ping vrf NAME address."],["Show interfaces per VRF?","show ip vrf interfaces (or show vrf)."],["OSPF inside a VRF?","router ospf ID vrf NAME."],["VRF is like a VLAN for which layer?","Layer 3."],["Why does a plain ping fail to a VRF destination?","It uses the global routing table, which doesn't have the VRF's routes."]],
 gre:[["GRE IP protocol number?","47."],["GRE overhead?","24 bytes (20 outer IP + 4 GRE)."],["Does GRE carry multicast?","Yes, so routing protocols can run over it."],["Does GRE encrypt?","No. Add IPsec for confidentiality."],["When is a GRE tunnel up/up by default?","When the source has an IP and there's a route to the destination, even if the far end doesn't exist."],["How can a GRE tunnel detect a dead far end?","GRE keepalives."],["What is recursive routing on a tunnel?","Learning the route to the tunnel destination through the tunnel itself; the tunnel flaps."],["How do you avoid recursive routing?","Don't advertise the transport (tunnel source/destination) addresses into the tunnel's routing protocol."],["Common tunnel IP MTU with IPsec?","1400, with ip tcp adjust-mss 1360."],["ESP protocol number?","50."],["AH protocol number?","51."],["Why is AH rarely used?","It doesn't encrypt and breaks with NAT."],["IKE ports?","UDP 500, and UDP 4500 with NAT traversal."],["IKEv1 Phase 1 builds?","The ISAKMP (IKE) SA used to protect Phase 2."],["IKEv1 Phase 2 builds?","The IPsec SAs that protect data (quick mode)."],["Two IKEv2 advantages?","Fewer messages, built-in NAT-T and DPD, EAP support, better reliability."],["IPsec tunnel mode?","Encrypts the whole original packet and adds a new IP header; gateway to gateway."],["IPsec transport mode?","Protects the payload and keeps the original header; host to host or GRE over IPsec."],["What does a transform set define?","The ESP encryption and integrity algorithms (and mode)."],["What attaches IPsec to a tunnel interface?","tunnel protection ipsec profile NAME."],["What is a static VTI?","A native IPsec tunnel interface: tunnel mode ipsec ipv4. IP unicast only, no GRE."],["show crypto isakmp sa state QM_IDLE means?","Phase 1 is up and idle (good)."],["MM_NO_STATE means?","Phase 1 failed: policy, key or reachability problem."],["What does DMVPN build on?","Multipoint GRE (mGRE) with NHRP and IPsec."],["Why use GRE over IPsec instead of a crypto map?","A routable tunnel interface that carries multicast and routing protocols."]],
-lisp:[["What does LISP separate?","Identity (EID) from location (RLOC)."],["What is an EID?","Endpoint Identifier: the host's address, which doesn't change when it moves."],["What is an RLOC?","Routing Locator: the address of the LISP router the host sits behind."],["What does the ITR do?","Looks up the destination EID and encapsulates traffic toward the RLOC."],["What does the ETR do?","Registers local EIDs with the map server and decapsulates incoming traffic."],["What is an xTR?","A router acting as both ITR and ETR."],["Map server's job?","Accepts EID-prefix registrations from ETRs."],["Map resolver's job?","Accepts map-requests from ITRs and resolves them."],["Who sends map-register?","ETRs, to the map server."],["Who sends map-request?","ITRs, to the map resolver."],["Who sends map-reply?","The ETR that owns the EID (or the map server on its behalf)."],["LISP data port?","UDP 4341."],["LISP control port?","UDP 4342."],["What are PITR and PETR?","Proxy routers connecting LISP sites with non-LISP sites."],["LISP's role in SD-Access?","The control plane: the control plane node is the MS/MR."],["Why does LISP help mobility?","A host keeps its EID; only its EID-to-RLOC mapping changes."]],
+lisp:[["What does LISP separate?","Identity (EID) from location (RLOC)."],["In LISP, which address stays the same when a host moves?","The EID (Endpoint Identifier)."],["In LISP, which address changes when a host moves to another site?","The RLOC (Routing Locator) of the xTR it sits behind."],["What does the ITR do?","Looks up the destination EID and encapsulates traffic toward the RLOC."],["What does the ETR do?","Registers local EIDs with the map server and decapsulates incoming traffic."],["What is an xTR?","A router acting as both ITR and ETR."],["Map server's job?","Accepts EID-prefix registrations from ETRs."],["Map resolver's job?","Accepts map-requests from ITRs and resolves them."],["Who sends map-register?","ETRs, to the map server."],["Who sends map-request?","ITRs, to the map resolver."],["Who sends map-reply?","The ETR that owns the EID (or the map server on its behalf)."],["LISP data port?","UDP 4341."],["LISP control port?","UDP 4342."],["What are PITR and PETR?","Proxy routers connecting LISP sites with non-LISP sites."],["LISP's role in SD-Access?","The control plane: the control plane node is the MS/MR."],["Why does LISP help mobility?","A host keeps its EID; only its EID-to-RLOC mapping changes."]],
 vxlan:[["VXLAN UDP port?","4789."],["VNI size?","24 bits, about 16 million segments."],["What is a VTEP?","VXLAN Tunnel Endpoint: encapsulates and decapsulates VXLAN."],["VXLAN overhead?","About 50 bytes."],["What does VXLAN carry inside UDP?","The original Ethernet frame."],["Why use a larger underlay MTU with VXLAN?","The extra 50 bytes would otherwise push full-size frames over 1500."],["Why is the outer UDP source port a hash?","So underlay ECMP spreads different inner flows over different paths."],["Flood and learn?","Broadcast and unknown traffic is flooded to all VTEPs in the VNI; VTEPs learn remote MACs from traffic."],["Common VXLAN control plane in data centers?","BGP EVPN."],["VXLAN control plane in SD-Access?","LISP."],["Layer 2 VNI vs Layer 3 VNI?","L2 VNI maps to a VLAN/bridge domain; L3 VNI maps to a VRF."],["Two ways to handle BUM traffic without EVPN?","Underlay multicast or head-end (ingress) replication."],["What does VXLAN-GPO add in SD-Access?","The Scalable Group Tag in the VXLAN header."],["Why is VXLAN better than stretching VLANs?","Millions of segments over a routed underlay with all links forwarding and no stretched STP."],["What address does a VTEP use as its tunnel source?","A loopback routable in the underlay."]]
 };
 const DECKS=[["hyper","Hypervisors and VMs"],["vrf","VRF"],["gre","GRE and IPsec"],["lisp","LISP"],["vxlan","VXLAN"]];
@@ -4850,17 +4891,17 @@ const QUIZ=[
 {q:"What do containers share that VMs don't?",o:["The host OS kernel","Virtual hardware","Separate guest OSes","Nothing"],a:0,e:"Containers share the kernel."},
 {q:"An ESXi host runs VMs in VLANs 10, 20 and 30. How should the physical switch port be configured?",o:["802.1Q trunk allowing 10, 20 and 30","Access port in VLAN 10","Routed port","Shutdown"],a:0,e:"The vSwitch tags the VLANs."},
 {q:"Which virtual switch keeps a VM's port settings when it migrates to another host?",o:["Distributed switch","Standard switch","Physical switch","None"],a:0,e:"Configured across hosts."},
-{q:"What is NFV?",o:["Running network functions like routers and firewalls as software on standard servers","A new VLAN type","A routing protocol","A cabling standard"],a:0,e:"Network Functions Virtualization."},
+{q:"What is NFV?",o:["Running network functions like routers and firewalls as software on standard servers","A new VLAN type that carries virtual machine traffic between hypervisors in the data center","A routing protocol","A cabling standard"],a:0,e:"Network Functions Virtualization."},
 {q:"Two customers both use 10.1.1.0/24 and connect to the same router. What keeps them separate?",o:["VRFs","VLANs alone","ACLs","NAT on the ISP"],a:0,e:"Separate routing tables."},
 {q:"An engineer types 'vrf forwarding BLUE' on an interface that already has an IP. What happens?",o:["The IP is removed and must be re-entered","The IP moves into BLUE automatically","The command is rejected","The interface shuts down"],a:0,e:"IOS removes the address."},
 {q:"Which command shows the routing table of VRF RED?",o:["show ip route vrf RED","show ip route RED","show vrf RED routes","show ip vrf RED"],a:0,e:"The vrf keyword."},
-{q:"A ping from the router to a host in VRF RED fails, but the host is reachable from other RED sites. Why?",o:["The ping used the global table; use ping vrf RED","The VRF is down","OSPF is missing","The RD is wrong"],a:0,e:"Plain ping is global."},
+{q:"A ping from the router to a host in VRF RED fails, but the host is reachable from other RED sites. Why?",o:["The ping used the global table; use ping vrf RED","The VRF is down on the router because the RD was changed","OSPF is missing","The RD is wrong"],a:0,e:"Plain ping is global."},
 {q:"What is VRF-lite?",o:["VRFs without MPLS, using separate links or subinterfaces per VRF","A lightweight routing protocol","VRFs on switches only","VRFs with one route each"],a:0,e:"No MP-BGP or labels."},
-{q:"What is the purpose of a route distinguisher?",o:["To make overlapping VRF prefixes unique in MP-BGP","To filter routes","To encrypt routes","To set the VRF's MTU"],a:0,e:"RD:prefix."},
+{q:"What is the purpose of a route distinguisher?",o:["To make overlapping VRF prefixes unique in MP-BGP","To filter which routes each VRF imports from MP-BGP","To encrypt routes","To set the VRF's MTU"],a:0,e:"RD:prefix."},
 {q:"What IP protocol number does GRE use?",o:["47","50","51","4789"],a:0,e:"GRE = 47."},
 {q:"Why would you run OSPF over a GRE tunnel instead of a plain IPsec crypto map?",o:["GRE carries multicast, so OSPF hellos work","GRE encrypts","GRE is faster","Crypto maps don't support IP"],a:0,e:"Crypto maps can't carry multicast."},
-{q:"A GRE tunnel interface shows up/up but the far router doesn't exist. Why?",o:["GRE tunnels come up with a source and a route to the destination, unless keepalives are on","The tunnel is broken","IPsec is negotiating","OSPF keeps it up"],a:0,e:"No end-to-end check by default."},
-{q:"A tunnel flaps with %TUN-5-RECURDOWN. What is the cause?",o:["The route to the tunnel destination is learned through the tunnel","The IPsec key is wrong","MTU mismatch","Keepalives are off"],a:0,e:"Recursive routing."},
+{q:"A GRE tunnel interface shows up/up but the far router doesn't exist. Why?",o:["GRE tunnels come up with a source and a route to the destination, unless keepalives are on","The tunnel is broken, but the line protocol only goes down after the hold timer of the IGP expires","IPsec is negotiating","OSPF keeps it up"],a:0,e:"No end-to-end check by default."},
+{q:"A tunnel flaps with %TUN-5-RECURDOWN. What is the cause?",o:["The route to the tunnel destination is learned through the tunnel","The IPsec pre-shared key is wrong on one end of the tunnel","MTU mismatch","Keepalives are off"],a:0,e:"Recursive routing."},
 {q:"What is the overhead of GRE?",o:["24 bytes","8 bytes","50 bytes","4 bytes"],a:0,e:"20 + 4."},
 {q:"Which IPsec protocol provides encryption?",o:["ESP","AH","IKE","GRE"],a:0,e:"ESP (50)."},
 {q:"Which IPsec mode keeps the original IP header?",o:["Transport mode","Tunnel mode","Aggressive mode","Main mode"],a:0,e:"Transport protects the payload."},
@@ -4876,15 +4917,15 @@ const QUIZ=[
 {q:"Which device receives map-requests from ITRs?",o:["Map resolver","Map server","ETR","PETR"],a:0,e:"MR takes requests."},
 {q:"What connects a LISP site to non-LISP sites?",o:["PITR/PETR","ETR","Map server","VTEP"],a:0,e:"Proxy tunnel routers."},
 {q:"What is the VXLAN destination UDP port?",o:["4789","4341","47","500"],a:0,e:"IANA 4789."},
-{q:"How many segments can a VXLAN VNI identify?",o:["About 16 million","4094","65535","1024"],a:0,e:"24 bits."},
-{q:"What is a VTEP?",o:["The device that encapsulates and decapsulates VXLAN","A VLAN trunk","A routing protocol","A VXLAN header field"],a:0,e:"Tunnel endpoint."},
+{q:"How many segments can a VXLAN VNI identify?",o:["About 16 million","4094 (same as VLANs)","65535","1024"],a:0,e:"24 bits."},
+{q:"What is a VTEP?",o:["The device that encapsulates and decapsulates VXLAN","A VLAN trunk between leaf and spine switches","A routing protocol","A VXLAN header field"],a:0,e:"Tunnel endpoint."},
 {q:"Why should the underlay MTU be raised for VXLAN?",o:["VXLAN adds about 50 bytes","VXLAN removes headers","To disable fragmentation","MTU doesn't matter"],a:0,e:"Avoid fragmentation and drops."},
 {q:"Which control plane replaces flood-and-learn in data center VXLAN fabrics?",o:["BGP EVPN","OSPF","STP","HSRP"],a:0,e:"EVPN distributes MAC/IP."},
 {q:"Why does VXLAN put a flow hash in the outer UDP source port?",o:["So underlay ECMP load-shares flows","For encryption","To identify the VNI","For NAT"],a:0,e:"Entropy for hashing."},
 {q:"In SD-Access, what are LISP and VXLAN used for?",o:["LISP control plane, VXLAN data plane","VXLAN control plane, LISP data plane","Both data plane","Both management"],a:0,e:"A classic exam pairing."},
 {q:"A Layer 3 VNI maps to a:",o:["VRF","VLAN","Port","MAC"],a:0,e:"L2 VNI = VLAN, L3 VNI = VRF."},
 {q:"Which statement about GRE is true?",o:["It provides no confidentiality on its own","It encrypts with AES","It only carries IPv4 unicast","It requires IKE"],a:0,e:"Pair it with IPsec."},
-{q:"What does 'ip tcp adjust-mss 1360' on a tunnel do?",o:["Rewrites TCP SYNs so hosts send smaller segments that fit the tunnel","Sets the IP MTU","Encrypts TCP","Disables fragmentation"],a:0,e:"Prevents fragmentation."}
+{q:"What does 'ip tcp adjust-mss 1360' on a tunnel do?",o:["Rewrites TCP SYNs so hosts send smaller segments that fit the tunnel","Sets the IP MTU of the tunnel interface to 1360 bytes for all IP traffic","Encrypts TCP","Disables fragmentation"],a:0,e:"Prevents fragmentation."}
 ];
 
 registerModule({
@@ -5348,16 +5389,16 @@ const QUIZ=[
 {q:"One end is trunk with nonegotiate, the other dynamic desirable. What does the desirable side become?",o:["Access","Trunk","Err-disabled","Native"],a:0,e:"No DTP frames reach it, so it never agrees to trunk."},
 {q:"Which command stops DTP on a trunk port?",o:["switchport nonegotiate","no dtp","switchport mode static","spanning-tree portfast"],a:0,e:"Nonegotiate."},
 {q:"A trunk allows VLANs 10,20. An engineer runs 'switchport trunk allowed vlan 30'. Which VLANs are allowed now?",o:["Only 30","10, 20 and 30","10 and 20","All"],a:0,e:"Without 'add' the list is replaced."},
-{q:"CDP logs a native VLAN mismatch. What's the impact?",o:["Untagged traffic leaks between the two native VLANs","The trunk goes down","DTP disables","Nothing"],a:0,e:"Frames land in the wrong VLAN."},
+{q:"CDP logs a native VLAN mismatch. What's the impact?",o:["Untagged traffic leaks between the two native VLANs","The trunk goes down until the native VLANs match on both ends","DTP disables","Nothing"],a:0,e:"Frames land in the wrong VLAN."},
 {q:"Which pair forms an LACP EtherChannel?",o:["active / passive","passive / passive","auto / active","on / active"],a:0,e:"At least one active."},
 {q:"Which pair forms a PAgP EtherChannel?",o:["desirable / auto","auto / auto","active / desirable","on / desirable"],a:0,e:"At least one desirable."},
-{q:"show etherchannel summary shows a member as (s). What does it mean?",o:["Suspended, usually a configuration mismatch","In use","Stand-alone","Hot standby"],a:0,e:"Lowercase s."},
-{q:"Two routers connect over a 4-link EtherChannel with src-mac load balancing. Why is only one link busy?",o:["All frames have the same source MAC, so they hash to one link","LACP is broken","STP blocks three links","The links are in standby"],a:0,e:"Use an IP-based hash."},
+{q:"show etherchannel summary shows a member as (s). What does it mean?",o:["Suspended, usually a configuration mismatch","Stand-alone, because the port isn't running LACP","In use","Hot standby"],a:0,e:"Lowercase s."},
+{q:"Two routers connect over a 4-link EtherChannel with src-mac load balancing. Why is only one link busy?",o:["All frames have the same source MAC, so they hash to one link","LACP is broken on three links, so they stay in the suspended state","STP blocks three links","The links are in standby"],a:0,e:"Use an IP-based hash."},
 {q:"Where should trunk configuration be changed after the EtherChannel is up?",o:["interface port-channel","Each member only","Global config","It can't be changed"],a:0,e:"The port-channel interface pushes to members."},
 {q:"Which three must match for switches to be in the same MST region?",o:["Name, revision and VLAN-to-instance map","Name, priority and MAC","Revision, hello timer and VLANs","Only the name"],a:0,e:"All three."},
 {q:"Which MST instance sends BPDUs?",o:["Instance 0 (IST)","Every instance","Instance 1","None"],a:0,e:"MSTI info rides inside IST BPDUs."},
 {q:"A switch plugged into a PortFast access port with BPDU Guard sends a BPDU. What happens?",o:["The port is err-disabled","The port becomes root-inconsistent","Nothing","The port becomes a trunk"],a:0,e:"BPDU Guard."},
-{q:"An access switch with priority 0 is connected to a distribution port with Root Guard. What happens?",o:["The distribution port goes root-inconsistent until the superior BPDUs stop","The access switch becomes root","The port is err-disabled","STP is disabled"],a:0,e:"Root Guard blocks without err-disable."},
+{q:"An access switch with priority 0 is connected to a distribution port with Root Guard. What happens?",o:["The distribution port goes root-inconsistent until the superior BPDUs stop","The access switch becomes root, and the distribution port moves to forwarding","The port is err-disabled","STP is disabled"],a:0,e:"Root Guard blocks without err-disable."},
 {q:"A fiber link becomes unidirectional and a blocking port stops receiving BPDUs. What prevents it from forwarding into a loop?",o:["Loop Guard (or UDLD)","Root Guard","BPDU Filter","PortFast"],a:0,e:"Loop-inconsistent."},
 {q:"Which RSTP role is a backup path to the root bridge?",o:["Alternate","Backup","Designated","Edge"],a:0,e:"Backup is for the same segment."},
 {q:"Which protocol supports unequal-cost load balancing?",o:["EIGRP","OSPF","RIPv2","IS-IS"],a:0,e:"variance."},
@@ -5375,13 +5416,13 @@ const QUIZ=[
 {q:"What does an ABR install when you configure area range?",o:["A Null0 discard route","A default route","A static route to the DR","Nothing"],a:0,e:"Loop prevention."},
 {q:"Which is true of OSPFv3?",o:["Neighbors use link-local addresses","It doesn't use areas","It needs no router ID","It uses AD 90"],a:0,e:"Same areas and SPF."},
 {q:"What port does BGP use?",o:["TCP 179","UDP 179","TCP 646","UDP 520"],a:0,e:"TCP 179."},
-{q:"An eBGP neighbor stays in Active. Which is a likely cause?",o:["No route to the neighbor's address or TCP 179 blocked","Too many prefixes","Wrong local preference","MED mismatch"],a:0,e:"TCP never completes."},
+{q:"An eBGP neighbor stays in Active. Which is a likely cause?",o:["No route to the neighbor's address or TCP 179 blocked","Too many prefixes received from the neighbor","Wrong local preference","MED mismatch"],a:0,e:"TCP never completes."},
 {q:"show ip bgp summary shows 'Idle' for a neighbor configured with the wrong remote-as. Why?",o:["The OPEN is rejected with a bad peer AS","TCP 179 is blocked","Next hop unreachable","Weight mismatch"],a:0,e:"Remote-as must match."},
-{q:"Why doesn't 'network 10.0.0.0 mask 255.0.0.0' advertise anything when the router has 10.1.0.0/16 and 10.2.0.0/16?",o:["The network statement needs an exact match in the RIB","BGP doesn't support /8","The mask is wrong","Needs auto-summary"],a:0,e:"Add a Null0 static for the /8."},
+{q:"Why doesn't 'network 10.0.0.0 mask 255.0.0.0' advertise anything when the router has 10.1.0.0/16 and 10.2.0.0/16?",o:["The network statement needs an exact match in the RIB","BGP doesn't support advertising /8 networks","The mask is wrong","Needs auto-summary"],a:0,e:"Add a Null0 static for the /8."},
 {q:"What is the first attribute in Cisco's BGP best path selection?",o:["Weight","Local preference","AS path","MED"],a:0,e:"Highest weight."},
 {q:"Two paths have the same weight. One has LP 200 and AS path length 4; the other LP 100 and length 1. Which wins?",o:["LP 200","Shorter AS path","Neither, ECMP","The oldest"],a:0,e:"LP is checked before AS path."},
 {q:"To make other ASes prefer your ISP-A link for traffic coming to you, you would:",o:["Prepend your AS on advertisements to ISP-B","Set local preference on routes from ISP-A","Set weight on ISP-A","Lower MED from ISP-A"],a:0,e:"Inbound traffic is influenced by what you advertise."},
-{q:"To make your whole AS send outbound traffic through ISP-A, you would:",o:["Set higher local preference on routes learned from ISP-A","Prepend toward ISP-A","Set MED toward ISP-A","Raise weight on ISP-B"],a:0,e:"LP is AS-wide."},
+{q:"To make your whole AS send outbound traffic through ISP-A, you would:",o:["Set higher local preference on routes learned from ISP-A","Prepend your AS path several times toward ISP-A","Set MED toward ISP-A","Raise weight on ISP-B"],a:0,e:"LP is AS-wide."},
 {q:"Which attribute stays local to one router and isn't advertised?",o:["Weight","Local preference","MED","AS_PATH"],a:0,e:"Cisco-only."},
 {q:"Which origin code is preferred?",o:["i (IGP)","e (EGP)","? (incomplete)","They're equal"],a:0,e:"IGP < EGP < incomplete."},
 {q:"Where is a PBR route map applied?",o:["Inbound on the interface where the traffic arrives","Outbound on the exit interface","Globally","Under router ospf"],a:0,e:"ip policy route-map."},
@@ -5393,12 +5434,12 @@ const QUIZ=[
 {q:"What gives PTP its accuracy advantage over NTP?",o:["Hardware timestamping","TCP transport","Larger stratum range","Encryption"],a:0,e:"Timestamps in the NIC/ASIC."},
 {q:"Inside host 10.1.1.10 appears on the internet as 203.0.113.5. 203.0.113.5 is the:",o:["Inside global","Inside local","Outside local","Outside global"],a:0,e:"Inside host as seen from outside."},
 {q:"Many inside hosts share one public IP using ports. This is:",o:["PAT (overload)","Static NAT","Dynamic NAT","Twice NAT"],a:0,e:"Port Address Translation."},
-{q:"NAT is configured but nothing translates. The ACL and pool are right. What's commonly missing?",o:["ip nat inside / ip nat outside on the interfaces","A default route","ip routing","An SVI"],a:0,e:"Interfaces must be marked."},
+{q:"NAT is configured but nothing translates. The ACL and pool are right. What's commonly missing?",o:["ip nat inside / ip nat outside on the interfaces","A default route pointing to the outside interface","ip routing","An SVI"],a:0,e:"Interfaces must be marked."},
 {q:"Two HSRP routers both show Active. What does this indicate?",o:["They can't hear each other's hellos","Normal load sharing","Preempt is on","Version 2 is enabled"],a:0,e:"Check VLAN, group, version and authentication."},
 {q:"What enables VRRPv3 syntax on IOS XE?",o:["fhrp version vrrp v3","vrrp version 3","standby version 3","ip vrrp v3"],a:0,e:"Then use address-family under vrrp."},
 {q:"Which multicast range needs no RP and uses IGMPv3?",o:["232.0.0.0/8 (SSM)","239.0.0.0/8","224.0.0.0/24","233.0.0.0/8"],a:0,e:"Source-specific multicast."},
 {q:"A multicast packet arrives on an interface other than the one toward its source. What does the router do?",o:["Drops it (RPF failure)","Forwards it","Sends it to the RP","Floods it"],a:0,e:"RPF check."},
-{q:"Which PIM mode uses only a shared tree with traffic in both directions?",o:["Bidirectional PIM","PIM-SM","PIM-DM","SSM"],a:0,e:"DF instead of RPF to sources."},
+{q:"Which PIM mode uses only a shared tree with traffic in both directions?",o:["Bidirectional PIM","PIM sparse mode (SM)","PIM-DM","SSM"],a:0,e:"DF instead of RPF to sources."},
 {q:"What does MSDP exchange?",o:["Active sources between RPs","IGMP reports","Unicast routes","RP addresses"],a:0,e:"SA messages."},
 {q:"How does the first-hop router tell the RP about a new source in PIM-SM?",o:["Register messages","IGMP reports","MSDP","PIM hello"],a:0,e:"Unicast to the RP."},
 {q:"What is the multicast MAC for 239.1.1.1?",o:["01:00:5e:01:01:01","01:00:5e:ef:01:01","ff:ff:ff:ff:ff:ff","00:00:5e:01:01:01"],a:0,e:"Low 23 bits: 1.1.1."},
@@ -5942,8 +5983,8 @@ const CARDS=[];DECKS.forEach(([k])=>G[k].forEach((c,i)=>CARDS.push({deck:k,id:k+
 const QUIZ=[
 {q:"Which command shows debug output on a VTY session?",o:["terminal monitor","logging console","debug vty","show debugging"],a:0,e:"Debugs go to the console by default."},
 {q:"How can you safely debug traffic for a single host on a busy router?",o:["debug condition ip <host> then the debug","debug all","debug ip packet with no ACL","logging console debugging"],a:0,e:"Conditional debugging."},
-{q:"A ping returns M M M. What's the problem?",o:["Packets need fragmenting but DF is set","No route","ACL","The host is down"],a:0,e:"MTU."},
-{q:"Why use 'ping 10.9.9.9 source loopback0'?",o:["To test that the far end can route back to the loopback","To test the console","To raise TTL","To use TCP"],a:0,e:"Return path."},
+{q:"A ping returns M M M. What's the problem?",o:["Packets need fragmenting but DF is set","No route to the destination network","ACL","The host is down"],a:0,e:"MTU."},
+{q:"Why use 'ping 10.9.9.9 source loopback0'?",o:["To test that the far end can route back to the loopback","To test the console connection to the far-end router","To raise TTL","To use TCP"],a:0,e:"Return path."},
 {q:"How does traceroute learn each hop?",o:["TTL expires and the router returns ICMP time exceeded","Each hop sends CDP","It reads routing tables","It uses SNMP"],a:0,e:"Incrementing TTL."},
 {q:"'logging trap notifications' sends which levels?",o:["0 through 5","5 only","5 through 7","0 through 4"],a:0,e:"Level and more severe."},
 {q:"Which syslog level is 'errors'?",o:["3","2","4","5"],a:0,e:"0 emerg, 1 alert, 2 crit, 3 err."},
@@ -5959,8 +6000,8 @@ const QUIZ=[
 {q:"A long file transfer still shows in the NetFlow cache after 20 minutes. When will it be exported?",o:["At the active timeout (30 min default)","At the inactive timeout","Never","Only when it ends"],a:0,e:"Long-lived flows."},
 {q:"You need to capture traffic from a switch port and send it to an analyzer on another switch in the same campus Layer 2 domain. Which feature?",o:["RSPAN","Local SPAN","ERSPAN only","NetFlow"],a:0,e:"Remote-span VLAN."},
 {q:"The analyzer is in a data center several routed hops away. Which feature?",o:["ERSPAN","RSPAN","Local SPAN","Port security"],a:0,e:"GRE."},
-{q:"What must be configured on every switch carrying RSPAN traffic?",o:["The VLAN with remote-span, allowed on the trunks","A GRE tunnel","IP routing","An SVI"],a:0,e:"Dedicated VLAN."},
-{q:"A SPAN destination port connected to a laptop has no network access. Why?",o:["SPAN destinations don't forward normal traffic","The laptop is wrong","STP","PortFast"],a:0,e:"It only sends copies."},
+{q:"What must be configured on every switch carrying RSPAN traffic?",o:["The VLAN with remote-span, allowed on the trunks","A GRE tunnel between the source and destination","IP routing","An SVI"],a:0,e:"Dedicated VLAN."},
+{q:"A SPAN destination port connected to a laptop has no network access. Why?",o:["SPAN destinations don't forward normal traffic","The laptop's NIC doesn't support promiscuous mode","STP","PortFast"],a:0,e:"It only sends copies."},
 {q:"An ISP's router fails but your WAN interface stays up. Which feature detects the failure?",o:["IP SLA with tracking","Interface tracking","HSRP","UDLD"],a:0,e:"Probe beyond the interface."},
 {q:"An IP SLA operation is configured but 'show ip sla statistics' shows no results. Likely cause?",o:["It was never scheduled","The frequency is too high","No track object","NTP not set"],a:0,e:"ip sla schedule."},
 {q:"Which IP SLA operation measures jitter for voice?",o:["udp-jitter","icmp-echo","http","dns"],a:0,e:"Needs a responder."},
@@ -5969,7 +6010,7 @@ const QUIZ=[
 {q:"In which Catalyst Center area do you define sites, IP pools and the NTP server?",o:["Design","Policy","Provision","Assurance"],a:0,e:"Network hierarchy and settings."},
 {q:"Which Catalyst Center area assigns devices to sites and pushes configuration?",o:["Provision","Design","Policy","Platform"],a:0,e:"Provisioning."},
 {q:"What does AI/ML baselining in Catalyst Center Assurance do?",o:["Learns normal behavior and flags anomalies","Pushes images","Assigns IP addresses","Writes ACLs"],a:0,e:"Dynamic baselines instead of fixed thresholds."},
-{q:"Catalyst Center shows one issue 'clients on floor 3 failing DHCP' instead of 200 separate alerts. Which capability?",o:["AI-driven root cause analysis/correlation","SNMP traps","Syslog","SPAN"],a:0,e:"Correlation."},
+{q:"Catalyst Center shows one issue 'clients on floor 3 failing DHCP' instead of 200 separate alerts. Which capability?",o:["AI-driven root cause analysis/correlation","SNMP traps with event correlation","Syslog","SPAN"],a:0,e:"Correlation."},
 {q:"Which transport and port does NETCONF use?",o:["SSH, TCP 830","HTTPS, 443","SSH, 22 only","UDP 161"],a:0,e:"830."},
 {q:"Which NETCONF datastore lets you stage changes and commit them together?",o:["Candidate","Running","Startup","Intended"],a:0,e:"Commit."},
 {q:"Which NETCONF operation changes configuration?",o:["<edit-config>","<get-config>","<get>","<hello>"],a:0,e:"edit-config."},
@@ -5978,7 +6019,7 @@ const QUIZ=[
 {q:"What describes the structure of the data NETCONF and RESTCONF exchange?",o:["YANG models","MIBs","JSON Schema","Templates"],a:0,e:"Model-driven."},
 {q:"Which command enables RESTCONF on IOS XE (with the HTTPS server)?",o:["restconf","netconf-yang","ip http restconf","yang restconf enable"],a:0,e:"Plus ip http secure-server."},
 {q:"Which is a vendor-neutral YANG model family?",o:["OpenConfig","Cisco-IOS-XE-native","Cisco-IOS-XE-oper","MIB-II"],a:0,e:"Also IETF."},
-{q:"Which RESTCONF URL reads interface GigabitEthernet1?",o:["/restconf/data/ietf-interfaces:interfaces/interface=GigabitEthernet1","/netconf/interfaces/1","/api/v1/interface/1","/restconf/ops/get"],a:0,e:"Resource path."},
+{q:"Which RESTCONF URL reads interface GigabitEthernet1?",o:["/restconf/data/ietf-interfaces:interfaces/interface=GigabitEthernet1","/restconf/operations/ietf-interfaces:get-interface?name=GigabitEthernet1","/netconf/interfaces/1","/api/v1/interface/1"],a:0,e:"Resource path."},
 {q:"What is exchanged at the start of a NETCONF session?",o:["<hello> messages listing capabilities","SNMP traps","Certificates only","A RESTCONF token"],a:0,e:"Capabilities."}
 ];
 
@@ -6325,15 +6366,15 @@ const QUIZ=[
 {q:"'crypto key generate rsa' fails with 'Please define a domain-name first'. Fix?",o:["ip domain name ...","hostname ...","ip ssh version 2","username ..."],a:0,e:"FQDN names the key."},
 {q:"Which command on the VTY lines blocks Telnet?",o:["transport input ssh","no telnet","ip ssh version 2","access-class TELNET in"],a:0,e:"Only SSH allowed."},
 {q:"Which restricts SSH to the management subnet?",o:["access-class with a standard ACL on line vty","ip access-group on every interface","login local","exec-timeout"],a:0,e:"Filters connections to the lines."},
-{q:"What does 'login block-for 120 attempts 5 within 60' do?",o:["Blocks logins for 120 s after 5 failures in 60 s","Blocks 5 users","Times out idle users","Locks the console"],a:0,e:"Quiet mode."},
+{q:"What does 'login block-for 120 attempts 5 within 60' do?",o:["Blocks logins for 120 s after 5 failures in 60 s","Blocks 5 users for 120 seconds after 60 attempts","Times out idle users","Locks the console"],a:0,e:"Quiet mode."},
 {q:"Which protocol encrypts the entire packet body?",o:["TACACS+","RADIUS","SNMPv2c","HTTP"],a:0,e:"RADIUS only hides the password."},
 {q:"Which protocol is preferred for per-command authorization of administrators?",o:["TACACS+","RADIUS","LDAP","Kerberos"],a:0,e:"Separate authorization."},
 {q:"Which ports does RADIUS use?",o:["UDP 1812 and 1813","TCP 49","UDP 49","TCP 1812"],a:0,e:"Legacy 1645/1646."},
 {q:"'aaa authentication login default group tacacs+ local'. The TACACS+ server rejects the password. What happens?",o:["Login fails","The local database is tried","The enable secret is tried","No authentication"],a:0,e:"A reject is an answer."},
 {q:"Same method list. The TACACS+ server is unreachable. What happens?",o:["The local database is used","Login fails","Login succeeds without a password","The router reloads"],a:0,e:"No response moves to the next method."},
 {q:"A TACACS+ server is reachable but every login falls back to local. Likely cause?",o:["Shared key mismatch","Wrong username","TCP 49 open","Wrong privilege"],a:0,e:"The server can't decrypt."},
-{q:"Which command tests TACACS+ authentication without logging out?",o:["test aaa group tacacs+ user pass legacy","show tacacs","debug aaa","ping tacacs"],a:0,e:"test aaa."},
-{q:"What should be configured before 'aaa new-model' on a remote router?",o:["A local privilege 15 user","An ACL","SNMP","NTP"],a:0,e:"Avoid lockout."},
+{q:"Which command tests TACACS+ authentication without logging out?",o:["test aaa group tacacs+ user pass legacy","debug aaa authentication with terminal monitor","show tacacs","ping tacacs"],a:0,e:"test aaa."},
+{q:"What should be configured before 'aaa new-model' on a remote router?",o:["A local privilege 15 user","An ACL on the VTY lines","SNMPv3 users","NTP"],a:0,e:"Avoid lockout."},
 {q:"Which is typically used for 802.1X network access?",o:["RADIUS","TACACS+","SSH","SNMP"],a:0,e:"EAP over RADIUS."},
 {q:"A standard ACL should be placed:",o:["Close to the destination","Close to the source","On every interface","On the VTY only"],a:0,e:"It only knows the source."},
 {q:"An ACL has 10 deny ip any any, 20 permit tcp any any eq 443. What happens to HTTPS?",o:["Denied by line 10","Permitted by line 20","Logged","Depends on direction"],a:0,e:"First match wins."},
@@ -6344,17 +6385,17 @@ const QUIZ=[
 {q:"Which direction is a CoPP service policy applied?",o:["Input on control-plane","Output on control-plane","Input on every interface","Output on the WAN"],a:0,e:"Traffic to the CPU."},
 {q:"Which QoS action does CoPP use to limit a class?",o:["police","shape","bandwidth","priority"],a:0,e:"Drop the excess."},
 {q:"A script calls Catalyst Center and receives 401. What's wrong?",o:["Missing or expired token","Too many requests","Resource not found","Server error"],a:0,e:"Not authenticated."},
-{q:"A monitoring account can read but gets 403 when trying to change a device. Why?",o:["It's authenticated but not authorized (RBAC)","The token expired","Wrong URL","Rate limit"],a:0,e:"Forbidden."},
+{q:"A monitoring account can read but gets 403 when trying to change a device. Why?",o:["It's authenticated but not authorized (RBAC)","The token expired and must be refreshed","Wrong URL","Rate limit"],a:0,e:"Forbidden."},
 {q:"Why is HTTP Basic authentication acceptable only over HTTPS?",o:["Base64 is easily decoded","It's too slow","It needs certificates","It expires"],a:0,e:"Encoding, not encryption."},
 {q:"Where should an API key used by a script be stored?",o:["A secrets vault or environment variable","Hard-coded in the script","In the Git repo","In the URL"],a:0,e:"Keep it out of code."},
-{q:"What does a TrustSec SGT represent?",o:["A role or group, independent of IP address","A VLAN","A VRF","A QoS class"],a:0,e:"Security group."},
+{q:"What does a TrustSec SGT represent?",o:["A role or group, independent of IP address","A VLAN mapped to a security zone","A VRF","A QoS class"],a:0,e:"Security group."},
 {q:"How are SGTs carried to a device that can't tag packets inline?",o:["SXP","CDP","LLDP","OSPF"],a:0,e:"SGT Exchange Protocol."},
 {q:"What enforces TrustSec policy?",o:["SGACLs","VLAN ACLs","Route maps","PBR"],a:0,e:"Group-based ACLs."},
 {q:"Which standard defines MACsec?",o:["IEEE 802.1AE","IEEE 802.1X","IEEE 802.1Q","IEEE 802.11i"],a:0,e:"Key agreement via MKA."},
 {q:"MACsec encrypts traffic:",o:["Hop by hop between directly connected devices","End to end between hosts","Only at the WAN edge","Only for wireless"],a:0,e:"Layer 2."},
 {q:"Which tool blocks connections to malicious domains at the DNS layer?",o:["Umbrella","Secure Endpoint","ISE","Secure Network Analytics"],a:0,e:"DNS-layer security."},
 {q:"Which adds application visibility, IPS and URL filtering to a stateful firewall?",o:["NGFW","ACL","CoPP","uRPF"],a:0,e:"Next-generation firewall."},
-{q:"What's the difference between an IDS and an IPS?",o:["IPS is inline and can block; IDS only alerts","IDS is newer","IPS only logs","No difference"],a:0,e:"Inline vs passive."}
+{q:"What's the difference between an IDS and an IPS?",o:["IPS is inline and can block; IDS only alerts","IDS is newer and replaces IPS in modern networks","IPS only logs","No difference"],a:0,e:"Inline vs passive."}
 ];
 
 registerModule({
@@ -6688,7 +6729,7 @@ if resp.status_code == 200:
 const G={
 py:[["Python list syntax?","[1, 2, 3]: ordered, changeable."],["Python dict syntax?","{\"key\": value}."],["Get a dict value safely?","d.get(\"key\")."],["First item of a list?","x[0]."],["Last item of a list?","x[-1]."],["What defines a Python block?","Indentation."],["range(3) produces?","0, 1, 2."],["Python booleans?","True and False."],["Python null value?","None."],["Convert a JSON string to a dict?","json.loads()."],["Convert a dict to a JSON string?","json.dumps()."],["Parse a requests response body as JSON?","resp.json()."],["Check the HTTP status in requests?","resp.status_code."],["Library for NETCONF?","ncclient."],["Library for SSH CLI automation?","netmiko (or paramiko)."],["Library for REST calls?","requests."],["verify=False in requests?","Skips TLS certificate validation (lab only)."],["f-string example?","f\"Interface {name} is up\"."],["Handle an exception?","try: ... except ...:"],["Define a function?","def name(args): ..."]],
 json:[["JSON object delimiters?","{ }."],["JSON array delimiters?","[ ]."],["JSON key requirement?","Double-quoted strings."],["JSON booleans?","true and false, lowercase."],["JSON null?","null."],["Single quotes in JSON?","Not allowed."],["Trailing commas in JSON?","Not allowed."],["Comments in JSON?","Not allowed."],["Is \"1500\" a number?","No, it's a string. 1500 without quotes is a number."],["Encoding used by NETCONF?","XML."],["Encoding used by Ansible playbooks?","YAML."],["YAML structure?","Indentation, key: value, - for list items."]],
-api:[["REST read method?","GET."],["REST create method?","POST."],["REST replace method?","PUT."],["REST partial update method?","PATCH."],["HTTP 200?","OK."],["HTTP 201?","Created."],["HTTP 202?","Accepted (queued, often with a task ID)."],["HTTP 204?","No Content: success without a body."],["HTTP 400?","Bad request: malformed."],["HTTP 401?","Unauthorized: not authenticated."],["HTTP 403?","Forbidden: not permitted."],["HTTP 404?","Not found."],["HTTP 405?","Method not allowed."],["HTTP 415?","Unsupported media type."],["HTTP 429?","Too many requests."],["HTTP 500?","Internal server error."],["HTTP 503?","Service unavailable."],["Header for what you send?","Content-Type."],["Header for what you want back?","Accept."],["Catalyst Center token endpoint?","POST /dna/system/api/v1/auth/token."],["Catalyst Center auth header?","X-Auth-Token."],["Catalyst Center inventory endpoint?","GET /dna/intent/api/v1/network-device."],["Catalyst Center long tasks return?","202 with a taskId; poll /task/{id}."],["SD-WAN Manager login endpoint?","POST /j_security_check (j_username, j_password)."],["SD-WAN Manager session cookie?","JSESSIONID."],["SD-WAN Manager CSRF header?","X-XSRF-TOKEN from /dataservice/client/token."],["SD-WAN Manager API base path?","/dataservice/."],["Is REST stateful?","No, stateless."]],
+api:[["REST read method?","GET."],["REST create method?","POST."],["REST replace method?","PUT."],["REST partial update method?","PATCH."],["HTTP 200?","OK."],["HTTP 201?","Created."],["HTTP 202?","Accepted (queued, often with a task ID)."],["HTTP 204?","No Content: success without a body."],["HTTP 400?","Bad request: malformed."],["API returns 401 after a token expires. What do you do?","Authenticate again and resend with the new token."],["API returns 403 for a valid token. What's wrong?","The account lacks permission (authorization), not credentials."],["HTTP 404?","Not found."],["HTTP 405?","Method not allowed."],["HTTP 415?","Unsupported media type."],["API returns 429. How should a script react?","Back off: wait (honor Retry-After) and retry."],["HTTP 500?","Internal server error."],["HTTP 503?","Service unavailable."],["Header for what you send?","Content-Type."],["Header for what you want back?","Accept."],["Catalyst Center token endpoint?","POST /dna/system/api/v1/auth/token."],["Catalyst Center auth header?","X-Auth-Token."],["Catalyst Center inventory endpoint?","GET /dna/intent/api/v1/network-device."],["Catalyst Center long tasks return?","202 with a taskId; poll /task/{id}."],["SD-WAN Manager login endpoint?","POST /j_security_check (j_username, j_password)."],["SD-WAN Manager session cookie?","JSESSIONID."],["SD-WAN Manager CSRF header?","X-XSRF-TOKEN from /dataservice/client/token."],["SD-WAN Manager API base path?","/dataservice/."],["Is REST stateful?","No, stateless."]],
 eem:[["What is EEM?","On-box automation: events trigger actions."],["EEM syslog event?","event syslog pattern \"regex\"."],["EEM track event?","event track N state down|up."],["EEM manual event?","event none, run with event manager run NAME."],["EEM scheduled event?","event timer cron or watchdog."],["Block a command with EEM?","event cli pattern ... skip yes."],["EEM action order?","By label, sorted as strings."],["First CLI action usually?","cli command \"enable\"."],["Show registered applets?","show event manager policy registered."],["Show EEM history?","show event manager history events."],["Debug EEM CLI actions?","debug event manager action cli."],["EEM loop risk?","An action that generates the event the applet listens for."]],
 orch:[["Ansible model?","Agentless, push."],["Ansible language?","YAML playbooks."],["Ansible transport to network devices?","SSH (or NETCONF/HTTPS APIs)."],["Puppet model?","Agent-based, pull."],["Puppet language?","Puppet DSL (Ruby-based) manifests."],["Chef model?","Agent-based, pull."],["Chef language?","Ruby recipes/cookbooks."],["SaltStack transport?","ZeroMQ."],["Salt agentless option?","salt-ssh."],["Salt agents are called?","Minions."],["Salt facts are called?","Grains."],["Puppet facts tool?","Facter."],["Ansible device list?","Inventory."],["What is idempotence?","Running it again gives the same end state with no extra changes."],["Ansible module for IOS config lines?","cisco.ios.ios_config."],["How do agent tools manage network gear that can't run agents?","Proxy agents/minions."]],
 ai:[["Supervised learning?","Training on labeled examples."],["Unsupervised learning?","Finding patterns without labels (clustering, anomalies)."],["Predictive AI?","Forecasts future states (capacity, failures)."],["Generative AI?","Creates text or code with LLMs."],["Agentic AI?","Plans steps and calls tools to reach a goal."],["AI hallucination?","Confident but wrong output."],["Safeguard for AI-generated config?","Validate in a lab/dry run; human approval for production."],["AI data privacy rule?","Don't send secrets or customer data to unapproved AI tools."],["Least privilege for AI agents?","Read-only unless changes are approved; log actions."],["AIOps examples?","Dynamic baselines, anomaly detection, event correlation."]]
@@ -6701,7 +6742,7 @@ const QUIZ=[
 {q:"What does this print?<pre class=\"term\">d = {\"host\": \"R1\", \"port\": 22}\nprint(d[\"port\"] + 1)</pre>",o:["23","221","Error","port1"],a:0,e:"22 is an int."},
 {q:"What does this print?<pre class=\"term\">for i in range(3):\n    print(i, end=\" \")</pre>",o:["0 1 2","1 2 3","0 1 2 3","3"],a:0,e:"range(3) = 0..2."},
 {q:"Which converts the JSON text in 'body' into a Python dict?",o:["json.loads(body)","json.dumps(body)","dict(body)","body.json"],a:0,e:"loads = load string."},
-{q:"In a requests script, what does resp.status_code == 401 indicate?",o:["Authentication failed or missing","Success","Server error","Rate limited"],a:0,e:"Unauthorized."},
+{q:"In a requests script, what does resp.status_code == 401 indicate?",o:["Authentication failed or missing","Success with no content returned","Server error","Rate limited"],a:0,e:"Unauthorized."},
 {q:"Which library would a script use to make NETCONF calls?",o:["ncclient","requests","netmiko","flask"],a:0,e:"NETCONF client."},
 {q:"What does this print?<pre class=\"term\">devs = [{\"n\":\"R1\",\"up\":True},{\"n\":\"R2\",\"up\":False}]\nprint(len([d for d in devs if d[\"up\"]]))</pre>",o:["1","2","0","True"],a:0,e:"Only R1 is up."},
 {q:"Which is valid JSON?",o:["{\"enabled\": true}","{'enabled': true}","{\"enabled\": True}","{enabled: true}"],a:0,e:"Double quotes, lowercase true, quoted keys."},
@@ -6711,17 +6752,17 @@ const QUIZ=[
 {q:"Which HTTP method should create a new resource?",o:["POST","GET","DELETE","HEAD"],a:0,e:"POST creates."},
 {q:"A PUT returns 204. What does it mean?",o:["Success with no response body","Not found","Created with a body","Error"],a:0,e:"No Content."},
 {q:"An API returns 415. What's the likely cause?",o:["Wrong Content-Type header","Wrong password","Rate limit","Server crash"],a:0,e:"Unsupported media type."},
-{q:"An API returns 405 for DELETE on a resource. Why?",o:["That resource doesn't support DELETE","Bad credentials","Wrong JSON","It was deleted"],a:0,e:"Method not allowed."},
-{q:"How does a client authenticate to the Catalyst Center Intent API?",o:["POST Basic credentials to /dna/system/api/v1/auth/token, then send X-Auth-Token","Send an API key in the URL","Use j_security_check","Use SNMP"],a:0,e:"Token-based."},
+{q:"An API returns 405 for DELETE on a resource. Why?",o:["That resource doesn't support DELETE","Bad credentials for the DELETE method","Wrong JSON","It was deleted"],a:0,e:"Method not allowed."},
+{q:"How does a client authenticate to the Catalyst Center Intent API?",o:["POST Basic credentials to /dna/system/api/v1/auth/token, then send X-Auth-Token","Send an API key in the URL query string with every request to /dna/intent/api","Use j_security_check","Use SNMP"],a:0,e:"Token-based."},
 {q:"Which Catalyst Center endpoint lists the device inventory?",o:["GET /dna/intent/api/v1/network-device","GET /dataservice/device","GET /api/v0/devices","POST /dna/inventory"],a:0,e:"/dataservice is SD-WAN Manager."},
-{q:"A Catalyst Center call returns 202 and a taskId. What next?",o:["Poll /dna/intent/api/v1/task/{taskId}","Retry the call","It failed","Log in again"],a:0,e:"Asynchronous."},
+{q:"A Catalyst Center call returns 202 and a taskId. What next?",o:["Poll /dna/intent/api/v1/task/{taskId}","Retry the call until it returns 200 OK","It failed","Log in again"],a:0,e:"Asynchronous."},
 {q:"How do you log in to the SD-WAN Manager API?",o:["POST j_username and j_password to /j_security_check","POST to /dna/system/api/v1/auth/token","GET /login with Basic auth","OAuth only"],a:0,e:"Returns a JSESSIONID cookie."},
 {q:"What must accompany POST requests to SD-WAN Manager after login?",o:["X-XSRF-TOKEN header","X-Auth-Token","API key","No header"],a:0,e:"From /dataservice/client/token."},
 {q:"Which status code range means the client made an error?",o:["4xx","2xx","3xx","5xx"],a:0,e:"5xx is the server."},
 {q:"Which EEM event runs an applet only when started by hand?",o:["event none","event timer","event syslog","event cli"],a:0,e:"event manager run."},
 {q:"EEM actions labeled 1, 2, 10 run in which order?",o:["1, 10, 2","1, 2, 10","10, 2, 1","Random"],a:0,e:"String sort: use 1.0, 2.0 or 010, 020."},
 {q:"Why does an EEM applet start its CLI actions with 'cli command \"enable\"'?",o:["Applet CLI sessions start in user EXEC","To enable EEM","To log in","It's optional decoration"],a:0,e:"Privileged mode needed."},
-{q:"Which EEM event can block a command from running?",o:["event cli pattern ... skip yes","event none","event syslog","event track"],a:0,e:"skip yes."},
+{q:"Which EEM event can block a command from running?",o:["event cli pattern ... skip yes","event syslog pattern ... maxrun 0","event none","event track"],a:0,e:"skip yes."},
 {q:"Which tool is agentless and pushes changes over SSH?",o:["Ansible","Puppet","Chef","Salt with minions"],a:0,e:"Agentless."},
 {q:"Which tools are agent-based and pull configuration from a server?",o:["Puppet and Chef","Ansible and Terraform","Ansible and Salt-SSH","NETCONF and RESTCONF"],a:0,e:"Agents check in."},
 {q:"Which uses Ruby-based recipes and cookbooks?",o:["Chef","Ansible","Salt","Terraform"],a:0,e:"Chef."},
