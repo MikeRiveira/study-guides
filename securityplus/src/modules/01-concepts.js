@@ -1,4 +1,4 @@
-/* ================= Module 1: General Security Concepts (SY0-701 Domain 1.0, 12%) ================= */
+/* ================= Module 1: General Security Concepts (SY0-801 Domain 1.0, 16%) ================= */
 (function(){
 const LESSONS=[
 {id:"controls",num:"1.1",title:"Security control categories and types",html:`
@@ -18,7 +18,21 @@ const LESSONS=[
 <li><b>Directive</b>: tells people what to do (a policy, a "Do not enter" sign, a required procedure).</li></ul>
 <div class="tip"><b>Exam tip.</b> One control can have more than one type. A visible camera is a deterrent, and its recordings make it detective. Read the question for what the control is being used for.</div>
 <div class="viz" id="viz-ctype"></div>`},
-{id:"cia",num:"1.2",title:"CIA, non-repudiation, AAA and gap analysis",html:`
+{id:"zerotrust",num:"1.2",title:"Zero trust",html:`
+<p><b>Zero trust</b> drops the idea of a trusted inside network. Every request is authenticated, authorized and checked, every time, no matter where it comes from. "Never trust, always verify."</p>
+<h3>Control plane</h3>
+<ul><li><b>Adaptive identity</b>: the decision changes with context, such as location, device health and time of day.</li>
+<li><b>Threat scope reduction</b>: limit how far an attacker can get by granting access only to the specific resource needed.</li>
+<li><b>Policy-driven access control</b>: rules define who gets what, under what conditions.</li>
+<li><b>Policy engine</b>: evaluates the request against policy and decides grant, deny or revoke.</li>
+<li><b>Policy administrator</b>: carries out the decision, telling the enforcement point to open or close the session.</li>
+<li>Together, the policy engine and policy administrator form the <b>policy decision point (PDP)</b>.</li></ul>
+<h3>Data plane</h3>
+<ul><li><b>Implicit trust zones</b>: the area past the enforcement point, where traffic is trusted only after it's been checked.</li>
+<li><b>Subject/system</b>: the user or device asking for access.</li>
+<li><b>Policy enforcement point (PEP)</b>: the gatekeeper that allows, monitors and ends connections.</li></ul>
+<div class="viz" id="viz-zt"></div>`},
+{id:"cia",num:"1.3",title:"CIA, non-repudiation, AAA and gap analysis",html:`
 <h3>The CIA triad</h3>
 <ul><li><b>Confidentiality</b>: only authorized people can read the data. Encryption, access controls, MFA.</li>
 <li><b>Integrity</b>: data is not changed without detection. Hashing, digital signatures, certificates.</li>
@@ -33,20 +47,6 @@ const LESSONS=[
 <div class="viz" id="viz-aaa"></div>
 <h3>Gap analysis</h3>
 <p>A <b>gap analysis</b> compares where security is today with where it should be, usually against a framework such as NIST or ISO/IEC 27001. The output lists missing controls and a plan to close each gap.</p>`},
-{id:"zerotrust",num:"1.3",title:"Zero trust",html:`
-<p><b>Zero trust</b> drops the idea of a trusted inside network. Every request is authenticated, authorized and checked, every time, no matter where it comes from. "Never trust, always verify."</p>
-<h3>Control plane</h3>
-<ul><li><b>Adaptive identity</b>: the decision changes with context, such as location, device health and time of day.</li>
-<li><b>Threat scope reduction</b>: limit how far an attacker can get by granting access only to the specific resource needed.</li>
-<li><b>Policy-driven access control</b>: rules define who gets what, under what conditions.</li>
-<li><b>Policy engine</b>: evaluates the request against policy and decides grant, deny or revoke.</li>
-<li><b>Policy administrator</b>: carries out the decision, telling the enforcement point to open or close the session.</li>
-<li>Together, the policy engine and policy administrator form the <b>policy decision point (PDP)</b>.</li></ul>
-<h3>Data plane</h3>
-<ul><li><b>Implicit trust zones</b>: the area past the enforcement point, where traffic is trusted only after it's been checked.</li>
-<li><b>Subject/system</b>: the user or device asking for access.</li>
-<li><b>Policy enforcement point (PEP)</b>: the gatekeeper that allows, monitors and ends connections.</li></ul>
-<div class="viz" id="viz-zt"></div>`},
 {id:"physical",num:"1.4",title:"Physical security and deception",html:`
 <h3>Physical controls</h3>
 <ul><li><b>Bollards</b>: posts that stop vehicles from reaching a building.</li>
@@ -82,7 +82,7 @@ const LESSONS=[
 <ul><li>Encrypt <b>to</b> someone with <b>their public key</b>. Only their private key can decrypt it.</li>
 <li>Sign with <b>your private key</b>. Anyone can verify with your public key.</li></ul>
 <h3>Key exchange and key length</h3>
-<p>TLS uses both. Asymmetric crypto agrees on a <b>session key</b>, then symmetric crypto encrypts the data. Longer keys are stronger: AES-256 is stronger than AES-128, and RSA needs about 2048 bits or more. <b>Key stretching</b> (PBKDF2, bcrypt) makes weak passwords harder to brute-force.</p>
+<p>TLS uses both. Asymmetric crypto agrees on a <b>session key</b>, then symmetric crypto encrypts the data. Longer keys are stronger: AES-256 is stronger than AES-128, and RSA needs about 2048 bits or more.</p>
 <p><b>Encryption levels</b>: full-disk, partition, volume, file, database and record. <b>Transport encryption</b> (TLS, IPsec, VPN) protects data in transit.</p>
 <div class="viz" id="viz-tls"></div>
 <div class="viz" id="viz-keypick"></div>`},
@@ -117,8 +117,6 @@ const LESSONS=[
 <ul><li><b>Steganography</b>: hiding data inside another file, such as an image.</li>
 <li><b>Tokenization</b>: replacing sensitive data with a random token that maps back to it in a secure vault. Common for credit card numbers.</li>
 <li><b>Data masking</b>: hiding part of the data, such as showing only the last four digits.</li></ul>
-<h3>Other</h3>
-<p><b>Blockchain</b> is a distributed, append-only ledger where each block contains the hash of the one before, so tampering is obvious. An <b>open public ledger</b> lets anyone verify it.</p>
 <div class="viz" id="viz-tools"></div>
 <div class="viz" id="viz-mask"></div>`}
 ];
@@ -126,8 +124,8 @@ const LESSONS=[
 const G={
  controls:[["Technical control","Implemented in hardware or software: firewall, encryption, antivirus"],["Managerial control","Administrative policy and planning: risk assessment, security policy"],["Operational control","Done by people day to day: guards, awareness training"],["Physical control","Protects the facility: fences, locks, bollards"],["Preventive control","Stops an incident before it happens"],["Deterrent control","Discourages an attack without stopping it: warning sign"],["Detective control","Identifies an incident: IDS, log review, motion sensor"],["Corrective control","Limits damage and restores: backup restore, reimage"],["Compensating control","Alternative when the primary control isn't possible"],["Directive control","Tells people what to do: policy, signage"],["Gap analysis","Compares current security to a target framework"],["Confidentiality","Only authorized people can read data"],["Integrity","Data isn't altered without detection"],["Availability","Systems are up and reachable when needed"],["Non-repudiation","Can't deny an action; provided by digital signatures"],["Authentication","Proving identity"],["Authorization","What you're allowed to do"],["Accounting","Recording what you did"],["Zero trust","Never trust, always verify; no implicit trusted network"],["Policy engine","Zero trust: decides grant, deny or revoke"],["Policy administrator","Zero trust: carries out the decision, signals the PEP"],["Policy decision point","Policy engine + policy administrator"],["Policy enforcement point","Zero trust gatekeeper that allows or ends sessions"],["Adaptive identity","Access decisions that use context such as location and device health"],["Threat scope reduction","Limit access to only the needed resource"],["Implicit trust zone","Area past the PEP where checked traffic flows"]],
  physical:[["Bollards","Posts that stop vehicles"],["Access control vestibule","Two-door entry where one opens at a time; stops tailgating"],["Infrared sensor","Detects body heat"],["Pressure sensor","Detects weight on a surface"],["Microwave sensor","Detects movement over a wide area"],["Ultrasonic sensor","Detects movement through sound reflections"],["Honeypot","Decoy system to attract attackers"],["Honeynet","A network of honeypots"],["Honeyfile","Decoy file that alerts when opened"],["Honeytoken","Fake data that alerts when used"],["Change advisory board","Group that approves changes"],["Backout plan","How to undo a failed change"],["Maintenance window","Scheduled time for changes with least impact"],["Impact analysis","Assessing what a change could break"],["Version control","Tracks every change to code or configuration"]],
- crypto:[["Symmetric encryption","One shared key; fast; bulk data (AES)"],["Asymmetric encryption","Public/private key pair; slow; key exchange and signatures"],["AES","Standard symmetric cipher; 128, 192 or 256-bit keys"],["RSA","Asymmetric algorithm; 2048+ bit keys"],["ECC","Asymmetric with smaller keys for the same strength"],["Diffie-Hellman","Key agreement over an untrusted network"],["Encrypt to someone","Use their public key"],["Sign a message","Use your own private key"],["Session key","Symmetric key agreed during TLS for bulk data"],["Key stretching","Repeated hashing to slow brute force: PBKDF2, bcrypt"],["Hash","One-way fixed-length fingerprint of data"],["Avalanche effect","Tiny input change, completely different hash"],["Collision","Two inputs with the same hash; breaks MD5, SHA-1"],["SHA-256","Common secure hashing algorithm"],["Salt","Random data added before hashing; defeats rainbow tables"],["Rainbow table","Precomputed list of hashes for common passwords"],["Digital signature","Hash encrypted with the sender's private key"],["Digital signature proves","Integrity, authentication, non-repudiation"],["Full-disk encryption","Encrypts the whole drive, e.g. BitLocker"],["Transport encryption","Protects data in transit: TLS, IPsec, VPN"]],
- pki:[["PKI","System of CAs and certificates that binds public keys to identities"],["Root CA","Top of the chain, trusted by the OS; kept offline"],["Intermediate CA","Signs certificates on behalf of the root"],["CSR","Certificate signing request: your public key + details sent to a CA"],["Self-signed certificate","Signed by its own key; not trusted by default"],["Wildcard certificate","*.example.com covers one subdomain level"],["SAN","Subject alternative name: many names on one certificate"],["CRL","Certificate revocation list"],["OCSP","Online Certificate Status Protocol: real-time revocation check"],["OCSP stapling","Server attaches a signed OCSP response to the handshake"],["Key escrow","Third party holds keys for recovery"],["Root of trust","Trusted anchor everything is verified against"],["TPM","Motherboard chip storing keys; secure boot, BitLocker"],["HSM","Tamper-resistant appliance for key generation and storage"],["Key management system","Central service to create, rotate and revoke keys"],["Secure enclave","Isolated processor area protecting data from the OS"],["Steganography","Hiding data inside another file"],["Tokenization","Replace sensitive data with a token mapped in a vault"],["Data masking","Hide part of the data, e.g. last 4 digits shown"],["Blockchain","Append-only ledger; each block holds the previous block's hash"],["Open public ledger","Blockchain anyone can read and verify"]]
+ crypto:[["Symmetric encryption","One shared key; fast; bulk data (AES)"],["Asymmetric encryption","Public/private key pair; slow; key exchange and signatures"],["AES","Standard symmetric cipher; 128, 192 or 256-bit keys"],["RSA","Asymmetric algorithm; 2048+ bit keys"],["ECC","Asymmetric with smaller keys for the same strength"],["Diffie-Hellman","Key agreement over an untrusted network"],["Encrypt to someone","Use their public key"],["Sign a message","Use your own private key"],["Session key","Symmetric key agreed during TLS for bulk data"],["Hash","One-way fixed-length fingerprint of data"],["Avalanche effect","Tiny input change, completely different hash"],["Collision","Two inputs with the same hash; breaks MD5, SHA-1"],["SHA-256","Common secure hashing algorithm"],["Salt","Random data added before hashing; defeats rainbow tables"],["Rainbow table","Precomputed list of hashes for common passwords"],["Digital signature","Hash encrypted with the sender's private key"],["Digital signature proves","Integrity, authentication, non-repudiation"],["Full-disk encryption","Encrypts the whole drive, e.g. BitLocker"],["Transport encryption","Protects data in transit: TLS, IPsec, VPN"]],
+ pki:[["PKI","System of CAs and certificates that binds public keys to identities"],["Root CA","Top of the chain, trusted by the OS; kept offline"],["Intermediate CA","Signs certificates on behalf of the root"],["CSR","Certificate signing request: your public key + details sent to a CA"],["Self-signed certificate","Signed by its own key; not trusted by default"],["Wildcard certificate","*.example.com covers one subdomain level"],["SAN","Subject alternative name: many names on one certificate"],["CRL","Certificate revocation list"],["OCSP","Online Certificate Status Protocol: real-time revocation check"],["OCSP stapling","Server attaches a signed OCSP response to the handshake"],["Key escrow","Third party holds keys for recovery"],["Root of trust","Trusted anchor everything is verified against"],["TPM","Motherboard chip storing keys; secure boot, BitLocker"],["HSM","Tamper-resistant appliance for key generation and storage"],["Key management system","Central service to create, rotate and revoke keys"],["Secure enclave","Isolated processor area protecting data from the OS"],["Steganography","Hiding data inside another file"],["Tokenization","Replace sensitive data with a token mapped in a vault"],["Data masking","Hide part of the data, e.g. last 4 digits shown"]]
 };
 const DECKS=[["controls","Controls and zero trust"],["physical","Physical and change"],["crypto","Cryptography"],["pki","PKI and tools"]];
 const CARDS=[];DECKS.forEach(([k])=>G[k].forEach((c,i)=>CARDS.push({deck:k,id:k+i,q:c[0],a:c[1]})));
@@ -164,9 +162,9 @@ const QUIZ=[
  {q:"Why does TLS use asymmetric encryption to set up a session and symmetric encryption for the data?",o:["Symmetric is more secure","Asymmetric is too slow for bulk data","Symmetric can't be used over networks","Asymmetric can't encrypt"],a:1,e:"Asymmetric solves key exchange; symmetric is far faster for bulk data."},
  {q:"Which algorithm provides strong security with shorter keys and suits mobile devices?",o:["RSA","ECC","3DES","MD5"],a:1,e:"Elliptic curve cryptography gives equal strength with much smaller keys."},
  {q:"Which is a key agreement protocol?",o:["AES","SHA-256","Diffie-Hellman","bcrypt"],a:2,e:"Diffie-Hellman lets two parties agree on a shared secret over an untrusted network."},
- {q:"Which technique makes a stolen password hash slower to brute-force by hashing many times?",o:["Salting","Key stretching","Tokenization","Masking"],a:1,e:"Key stretching (PBKDF2, bcrypt) repeats the hash to slow attacks."},
+ {q:"Two users pick the same password, but their stored hashes are different. What made the difference?",o:["A salt","Tokenization","Data masking","A wildcard certificate"],a:0,e:"A unique random salt per user changes each hash and defeats rainbow tables."},
  {q:"Which is the strongest choice for encrypting a laptop drive?",o:["AES-256","DES","MD5","ROT13"],a:0,e:"AES-256 is the modern standard. DES is broken, MD5 is a hash and ROT13 is not encryption."},
- {q:"A user changes one letter of a document and the SHA-256 hash changes completely. What property is this?",o:["Collision","Avalanche effect","Key stretching","Salting"],a:1,e:"A small input change creating a totally different hash is the avalanche effect."},
+ {q:"A user changes one letter of a document and the SHA-256 hash changes completely. What property is this?",o:["Collision","Avalanche effect","Tokenization","Salting"],a:1,e:"A small input change creating a totally different hash is the avalanche effect."},
  {q:"Why is MD5 no longer recommended for integrity checks?",o:["It's too slow","Collisions can be created","It requires a private key","It's symmetric"],a:1,e:"Attackers can craft two inputs with the same MD5 hash."},
  {q:"Two users chose the same password but their stored hashes are different. Why?",o:["Each hash is salted","They used different keys","The hashes are encrypted","The system uses tokenization"],a:0,e:"A unique salt per user makes identical passwords hash differently."},
  {q:"A salt mainly defends against which attack?",o:["Rainbow tables","Phishing","Replay","DDoS"],a:0,e:"Salts make precomputed hash tables useless."},
@@ -181,11 +179,11 @@ const QUIZ=[
  {q:"What do you send to a CA to request a certificate?",o:["Your private key","A CSR","A CRL","A salt"],a:1,e:"A CSR contains your public key and identity details. Never send the private key."},
  {q:"Users see a browser warning when opening an internal app. The certificate was created on the server and not signed by any CA. What is the cause?",o:["Wildcard certificate","Self-signed certificate","OCSP stapling","Expired CRL"],a:1,e:"Self-signed certificates aren't vouched for by a trusted CA."},
  {q:"Why do root CAs usually sign intermediate CAs instead of server certificates?",o:["To keep the root offline and protected","Because roots can't sign","To avoid using hashes","To make certificates cheaper"],a:0,e:"If an intermediate is compromised, it can be revoked without replacing the root."},
- {q:"A government agency requires a third party to hold copies of encryption keys for recovery. What is this?",o:["Key stretching","Key escrow","Key exchange","Tokenization"],a:1,e:"Key escrow keeps keys with a trusted third party."},
+ {q:"A government agency requires a third party to hold copies of encryption keys for recovery. What is this?",o:["Key rotation","Key escrow","Key exchange","Tokenization"],a:1,e:"Key escrow keeps keys with a trusted third party."},
  {q:"A payment system replaces card numbers with random values that map back to the real numbers in a secure vault. What is this?",o:["Masking","Tokenization","Hashing","Steganography"],a:1,e:"Tokenization substitutes a token for the sensitive value."},
  {q:"A support screen shows a customer's card as ************4821. What is this?",o:["Tokenization","Data masking","Encryption","Salting"],a:1,e:"Masking hides part of the data."},
- {q:"An attacker hides stolen data inside a vacation photo before emailing it out. What technique is this?",o:["Steganography","Tokenization","Blockchain","Key escrow"],a:0,e:"Steganography hides data inside other files."},
- {q:"Why is tampering with an old block in a blockchain easy to detect?",o:["Each block contains the previous block's hash","Blocks are encrypted with AES","Blocks are stored on a TPM","Blocks expire"],a:0,e:"Changing one block breaks the hash chain for every block after it."},
+ {q:"An attacker hides stolen data inside a vacation photo before emailing it out. What technique is this?",o:["Steganography","Tokenization","Data masking","Key escrow"],a:0,e:"Steganography hides data inside other files."},
+ {q:"An app needs a key that is generated, stored and used only inside tamper-resistant hardware shared by many servers. What fits best?",o:["HSM","TPM","Key escrow","Steganography"],a:0,e:"A hardware security module serves keys to many systems; a TPM is tied to one device."},
  {q:"Which processor feature keeps data isolated even if the operating system is compromised?",o:["Secure enclave","CRL","Honeypot","SAN"],a:0,e:"A secure enclave is a hardware-isolated execution area."},
  {q:"Which level of encryption protects a single sensitive column in a customer table?",o:["Full-disk","Volume","Record or database-field","Transport"],a:2,e:"Database and record-level encryption can target specific fields."}
 ];
@@ -317,7 +315,7 @@ quizViz($("#viz-cert"),{title:"Diagnose the certificate warning",done:"Diagnosed
 
 revealViz($("#viz-tools"),{title:"Where do the keys live?",cols:4,done:"Explored every crypto tool",items:[
   ["TPM","On the motherboard","Stores keys for BitLocker and supports secure boot by measuring each boot step.","def"],["HSM","Appliance or card","Tamper-resistant hardware for CAs, banks and payment systems. Can generate and store thousands of keys.","def"],["Key management system","Central service","Cloud KMS or software that creates, rotates, audits and revokes keys from one place.","def"],["Secure enclave","Inside the CPU","Isolated memory and processing. Phones keep fingerprint data here.","def"],
-  ["Steganography","Obfuscation","Hidden data inside an image, audio or video file. Attackers use it to sneak data out.","atk"],["Tokenization","Obfuscation","The real value lives in a vault; systems use a random token instead.","vio"],["Data masking","Obfuscation","Replaces part of a value with asterisks or fake data.","vio"],["Blockchain","Ledger","Blocks linked by hashes. Change one and every later hash breaks.","vio"]]});
+  ["Steganography","Obfuscation","Hidden data inside an image, audio or video file. Attackers use it to sneak data out.","atk"],["Tokenization","Obfuscation","The real value lives in a vault; systems use a random token instead.","vio"],["Data masking","Obfuscation","Replaces part of a value with asterisks or fake data.","vio"],["Key escrow","Recovery","A trusted third party keeps copies of keys so encrypted data can be recovered if a key is lost.","def"]]});
 
 /* ---- masking vs tokenization vs encryption vs hashing ---- */
 (function(){

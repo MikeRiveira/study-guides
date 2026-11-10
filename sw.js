@@ -3,11 +3,11 @@
    Pages are served from the saved copy right away and refreshed in the background; when a refreshed page
    differs from the saved one, open tabs are told so they can offer a reload.
    Adding a guide: add its folder to PAGES below and bump VERSION. */
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = "study-guides-" + VERSION;
 const FONT_CACHE = "study-guides-fonts";
 const PAGES = [
-  "./", "aplus/", "netplus/", "securityplus/", "az900/", "ccna/", "cysaplus/",
+  "./", "aplus/", "netplus/", "securityplus/", "securityplus/sy0-701/", "az900/", "ccna/", "cysaplus/",
   "sc500/", "linuxplus/", "ccnp/", "az104/", "cheatsheets/"
 ];
 const ASSETS = [

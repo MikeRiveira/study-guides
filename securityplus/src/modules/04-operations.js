@@ -1,4 +1,4 @@
-/* ================= Module 4: Security Operations (SY0-701 Domain 4.0, 28%) ================= */
+/* ================= Module 4: Security Operations (SY0-801 Domain 4.0, 27%) ================= */
 (function(){
 const LESSONS=[
 {id:"baseline",num:"4.1",title:"Secure baselines and hardening targets",html:`
@@ -36,7 +36,9 @@ const LESSONS=[
 <ul><li><b>Vulnerability scans</b>: credentialed (logs in, sees more) or non-credentialed (outside view).</li>
 <li><b>Application security</b>: static analysis, dynamic analysis and <b>package monitoring</b> (tracking vulnerable libraries in your software).</li>
 <li><b>Threat feeds</b>: <b>OSINT</b> (open-source intelligence), <b>proprietary</b> third-party feeds, <b>ISACs</b> (information sharing and analysis centers for each industry) and the <b>dark web</b>.</li>
-<li><b>Penetration testing</b>, <b>responsible disclosure programs</b>, <b>bug bounty programs</b> and <b>system and process audits</b>.</li></ul>
+<li><b>Penetration testing</b>, <b>responsible disclosure programs</b>, <b>bug bounty programs</b> and <b>system and process audits</b>.</li>
+<li><b>Cloud security posture management (CSPM)</b>: tools that continuously check cloud accounts against your baseline and best practices, and flag misconfigurations such as public storage, missing MFA, open ports or disabled logging. In the cloud, misconfiguration is the most common vulnerability, so CSPM is how you find it at scale.</li></ul>
+<div class="viz" id="viz-cspm"></div>
 <h3>Analysis</h3>
 <ul><li><b>Confirmation</b>: a <b>false positive</b> reports a problem that isn't there. A <b>false negative</b> misses one that is. False negatives are more dangerous.</li>
 <li><b>CVE</b>: a unique ID for a public vulnerability. <b>CVSS</b>: a 0 to 10 severity score.</li>
@@ -100,13 +102,27 @@ const LESSONS=[
 <ul><li><b>Use cases</b>: user and resource provisioning, <b>guardrails</b> (blocking non-compliant deployments), <b>security groups</b>, <b>ticket creation</b>, <b>escalation</b>, <b>enabling and disabling services and access</b>, <b>continuous integration and testing</b>, and <b>integrations and APIs</b>.</li>
 <li><b>Benefits</b>: efficiency and time saved, enforced baselines, standard infrastructure configurations, scaling securely, employee retention (less tedious work), faster reaction time and a <b>workforce multiplier</b>.</li>
 <li><b>Other considerations</b>: complexity, cost, a <b>single point of failure</b>, <b>technical debt</b> and ongoing supportability.</li></ul>
-<div class="viz" id="viz-auto"></div>`},
+<div class="viz" id="viz-auto"></div>
+<h3>AI in automation and orchestration</h3>
+<p>SY0-801 adds AI to this objective. Security teams now use AI to work faster, and they need to secure it like any other automation.</p>
+<ul><li><b>Chatbots and assistants</b>: summarize alerts, explain logs, draft reports and answer questions about playbooks.</li>
+<li><b>Agentic AI</b>: AI agents that take actions on their own, such as enriching an alert, opening a ticket or isolating a host. Give them least privilege and keep a <b>human in the loop</b> for high-impact steps.</li>
+<li><b>Predictive analysis</b>: models that spot trends and forecast likely attacks or failures.</li>
+<li><b>AI-augmented baselines</b>: models learn what normal looks like for each user, host or app and flag deviations.</li></ul>
+<p>The same risks from the AI threats lesson apply: prompt injection through the alerts the AI reads, hallucinated answers, and agents with too much access. Log what the AI does, and keep an owner accountable for it.</p>
+<div class="viz" id="viz-aiauto"></div>`},
 {id:"ir",num:"4.9",title:"Incident response and digital forensics",html:`
 <h3>The process</h3>
 <ol><li><b>Preparation</b>: plans, tools, training, contact lists.</li><li><b>Detection</b>: alerts and reports reveal something wrong.</li><li><b>Analysis</b>: confirm it's real, find the scope.</li><li><b>Containment</b>: stop the spread (isolate hosts, block accounts).</li><li><b>Eradication</b>: remove the cause (malware, attacker accounts).</li><li><b>Recovery</b>: restore systems and watch for return.</li><li><b>Lessons learned</b>: what to improve next time.</li></ol>
 <div class="viz" id="viz-ir"></div>
 <h3>Supporting activities</h3>
 <p><b>Training</b>, <b>testing</b> (tabletop exercises and simulations), <b>root cause analysis</b> and <b>threat hunting</b> (proactively searching for attackers who slipped past alerts).</p>
+<h3>Negotiation</h3>
+<p>SY0-801 adds <b>negotiation</b> to incident response. In a ransomware or extortion case, attackers may demand payment to decrypt data or to not leak it. The decision belongs to leadership, guided by <b>legal counsel</b>, the <b>cyber insurer</b> and <b>law enforcement</b>, and it should be written into the IR plan ahead of time.</p>
+<ul><li>Use an experienced <b>negotiator</b>, often provided through the insurer, rather than an analyst improvising.</li>
+<li>Check <b>sanctions</b> rules first. Paying some groups is illegal.</li>
+<li>Negotiation can <b>buy time</b> for containment and recovery, and can confirm what data the attackers really hold.</li>
+<li>Payment never guarantees working keys or deleted data. <b>Immutable backups</b> are what remove the pressure to pay.</li></ul>
 <h3>Digital forensics</h3>
 <ul><li><b>Legal hold</b>: preserve all relevant data when litigation is expected. Normal deletion stops.</li>
 <li><b>Chain of custody</b>: a record of who handled evidence, when and why. Without it, evidence may be thrown out.</li>
@@ -127,7 +143,7 @@ const G={
  assets:[["Asset owner","Person accountable for an asset"],["Enumeration","Discovering devices on the network"],["Sanitization","Securely wiping data so it can't be recovered"],["Degaussing","Erasing magnetic media with a strong magnetic field"],["Certificate of destruction","Vendor proof that media was destroyed"],["Data retention","Keeping data as long as required, then disposing"],["Credentialed scan","Scanner logs in and sees more detail"],["Non-credentialed scan","Outside view without logging in"],["Package monitoring","Tracking vulnerable libraries in your software"],["OSINT","Open-source intelligence"],["ISAC","Information sharing and analysis center for an industry"],["Bug bounty","Paying outside researchers for reported flaws"],["Responsible disclosure","Researchers privately report flaws before publishing"],["False positive","Reports a problem that isn't there"],["False negative","Misses a real problem; more dangerous"],["CVE","Unique ID for a publicly known vulnerability"],["CVSS","0–10 vulnerability severity score"],["CVSS 9.0–10.0","Critical"],["Exposure factor","Percentage of an asset lost if a threat succeeds"],["Exception / exemption","Documented acceptance of an unremediated vulnerability"],["Validation of remediation","Rescan, audit, verify"]],
  monitor:[["SIEM","Collects and correlates logs and raises alerts"],["SCAP","Standards for automated configuration and vulnerability checks"],["Alert tuning","Adjusting rules to cut false positives"],["SNMP trap","Unsolicited alert pushed from a device"],["NetFlow","Records metadata of network conversations"],["DLP","Prevents sensitive data from leaving"],["Agentless monitoring","Collecting data remotely without installed software"],["SPF","DNS record listing authorized sending servers"],["DKIM","Cryptographic signature on outgoing mail, key in DNS"],["DMARC","Policy for SPF/DKIM failures plus alignment and reporting"],["DMARC p=reject","Receivers should refuse failing mail"],["File integrity monitoring","Alerts when critical files change"],["EDR","Endpoint detection and response"],["XDR","Extended detection across endpoints, network, cloud, email"],["UBA","User behavior analytics: detects unusual user activity"],["DNS filtering","Blocks resolution of malicious domains"],["SELinux","Mandatory access control for Linux"],["Group Policy","Centralized Windows configuration management"],["Implicit deny","Traffic matching no rule is blocked"]],
  iam:[["Provisioning","Creating accounts and access"],["Deprovisioning","Removing access when no longer needed"],["Identity proofing","Verifying identity before issuing credentials"],["Attestation","Periodic review confirming access is still needed"],["Federation","Trust between organizations' identity systems"],["SAML","XML-based SSO assertions for web apps"],["OAuth","Delegated authorization without sharing passwords"],["OpenID Connect","Authentication layer built on OAuth"],["LDAP","Protocol for querying directories"],["MAC","Mandatory access control: labels and clearances"],["DAC","Discretionary access control: owner decides"],["RBAC","Role-based access control"],["Rule-based access control","System-wide rules such as ACLs"],["ABAC","Attribute-based access control"],["Hard token","Physical device generating codes"],["Soft token","Authenticator app generating codes"],["Security key","FIDO2 hardware key; phishing-resistant"],["Passwordless","Sign-in with passkeys or biometrics, no password"],["Just-in-time permissions","Admin rights granted only when needed"],["Password vaulting","Storing and rotating privileged credentials"],["Ephemeral credentials","Short-lived credentials for one session"]],
- ir:[["SOAR","Security orchestration, automation and response"],["Guardrails","Automation blocking non-compliant changes"],["Workforce multiplier","Automation letting a small team do more"],["Technical debt","Future cost of shortcuts in automation"],["IR order","Preparation, detection, analysis, containment, eradication, recovery, lessons learned"],["Containment","Stop the spread: isolate, block"],["Eradication","Remove the cause: malware, accounts"],["Lessons learned","Post-incident review to improve"],["Root cause analysis","Finding the underlying reason an incident happened"],["Threat hunting","Proactively searching for hidden attackers"],["Legal hold","Preserve data relevant to expected litigation"],["Chain of custody","Record of who handled evidence and when"],["Order of volatility","Collect most volatile first: cache, RAM, then disk"],["E-discovery","Finding electronic data for legal proceedings"],["Forensic image hash","Proves the copy matches the original"],["Packet capture","Full contents of network traffic"],["Metadata","Data about data: headers, timestamps, file properties"],["Windows event 4625","Failed logon"],["Windows event 4624","Successful logon"],["Windows event 1102","Audit log cleared"]]
+ ir:[["SOAR","Security orchestration, automation and response"],["Guardrails","Automation blocking non-compliant changes"],["Workforce multiplier","Automation letting a small team do more"],["Technical debt","Future cost of shortcuts in automation"],["IR order","Preparation, detection, analysis, containment, eradication, recovery, lessons learned"],["Containment","Stop the spread: isolate, block"],["Eradication","Remove the cause: malware, accounts"],["Lessons learned","Post-incident review to improve"],["Root cause analysis","Finding the underlying reason an incident happened"],["Threat hunting","Proactively searching for hidden attackers"],["Legal hold","Preserve data relevant to expected litigation"],["Chain of custody","Record of who handled evidence and when"],["Order of volatility","Collect most volatile first: cache, RAM, then disk"],["E-discovery","Finding electronic data for legal proceedings"],["Forensic image hash","Proves the copy matches the original"],["Packet capture","Full contents of network traffic"],["Metadata","Data about data: headers, timestamps, file properties"],["Windows event 4625","Failed logon"],["Windows event 4624","Successful logon"],["Windows event 1102","Audit log cleared"],["CSPM","Cloud security posture management: continuous checks for cloud misconfigurations"],["Agentic AI","AI agents that take actions on their own; need least privilege and approvals"],["AI chatbot in the SOC","Summarizes alerts and answers playbook questions; ground it in real docs"],["Predictive analysis","Models that forecast likely attacks or failures from trends"],["AI-augmented baseline","Model learns normal behavior and flags deviations"],["Ransomware negotiation","Leadership decision with legal, insurer and law enforcement; use a negotiator"],["Sanctions check","Confirm paying a group is legal before any ransom payment"]]
 };
 const DECKS=[["harden","Hardening and mobile"],["assets","Assets and vulnerabilities"],["monitor","Monitoring and email"],["iam","Identity and access"],["ir","Automation, IR, forensics"]];
 const CARDS=[];DECKS.forEach(([k])=>G[k].forEach((c,i)=>CARDS.push({deck:k,id:k+i,q:c[0],a:c[1]})));
@@ -200,14 +216,21 @@ const QUIZ=[
  {q:"Which Windows event ID shows that the security log was cleared?",o:["4624","4625","1102","4740"],a:2,e:"Event 1102: the audit log was cleared."},
  {q:"Email headers showing the true sending server and route are an example of which data source?",o:["Metadata","Vulnerability scan","Dashboard","Firewall rule"],a:0,e:"Headers are message metadata."},
  {q:"Which access model does SELinux implement?",o:["Mandatory access control","Discretionary only","Role-based only","None"],a:0,e:"SELinux enforces mandatory access control policies."},
- {q:"A firewall has rules: 10 deny any any, 20 permit tcp any → web:443. Why can't anyone reach the web server?",o:["Rules are checked top-down and rule 10 matches first","Rule 20 is the implicit deny","Port 443 is UDP","The firewall is fail-open"],a:0,e:"First match wins. Specific permits must sit above broad denies."}
+ {q:"A firewall has rules: 10 deny any any, 20 permit tcp any → web:443. Why can't anyone reach the web server?",o:["Rules are checked top-down and rule 10 matches first","Rule 20 is the implicit deny","Port 443 is UDP","The firewall is fail-open"],a:0,e:"First match wins. Specific permits must sit above broad denies."},
+ {q:"Which tool continuously checks cloud accounts for problems such as public storage buckets, missing MFA and disabled logging?",o:["CSPM","SWG","HSM","NAC"],a:0,e:"Cloud security posture management compares cloud settings against a baseline and flags drift."},
+ {q:"A CSPM tool flags a storage bucket open to public read. What type of vulnerability is this?",o:["Misconfiguration","Zero-day","Race condition","Buffer overflow"],a:0,e:"Most cloud breaches start with a misconfiguration, which is what CSPM is built to catch."},
+ {q:"A SOC deploys an AI agent that can isolate hosts. Which control matters MOST?",o:["Least privilege and human approval for high-impact actions","Giving it domain admin so it never gets stuck","Turning off logging for the agent's actions","Letting it rewrite its own playbook"],a:0,e:"Agentic AI should hold only the access it needs, with a person approving risky steps."},
+ {q:"A model learns each user's normal login times and locations and alerts on deviations. What is this?",o:["An AI-augmented baseline","A honeytoken","Key escrow","Data masking"],a:0,e:"AI can build behavioral baselines and flag anomalies."},
+ {q:"During a ransomware incident, who should decide whether to negotiate with the attackers?",o:["Leadership, advised by legal counsel, the insurer and law enforcement","The first analyst who sees the ransom note","The help desk, to save time","The attackers' support portal"],a:0,e:"Negotiation is a business and legal decision, planned in advance in the IR plan."},
+ {q:"Why must an organization check sanctions rules before paying a ransom?",o:["Paying some groups is illegal","It speeds up decryption","It lowers the ransom","Insurers require payment in cash"],a:0,e:"Payments to sanctioned groups can break the law, regardless of the pressure."},
+ {q:"What BEST removes the pressure to pay a ransom for encrypted data?",o:["Tested, immutable backups","A faster internet connection","A larger IT team","A longer password policy"],a:0,e:"If you can restore cleanly, the attackers lose their leverage over encrypted data."}
 ];
 
 registerModule({
   id:"ops",slug:"operations",title:"Security Operations",
   lessons:LESSONS.map(l=>({...l,short:l.title.split(/[:,]| and /)[0]})),
   decks:DECKS,cards:CARDS,quiz:QUIZ,
-  vizKeys:["baselines","deploy","assetlc","cvss","fpfn","siem","fwrules","mail","saml","acmodels","auto","ir","cli"],
+  vizKeys:["baselines","deploy","assetlc","cvss","cspm","fpfn","siem","fwrules","mail","saml","acmodels","auto","aiauto","ir","cli"],
   viz(){
 revealViz($("#viz-baselines"),{title:"One baseline per hardening target",cols:4,done:"Reviewed every hardening target",items:[
   ["Workstations","Endpoints","Disable unneeded services, enforce screen lock, EDR, full-disk encryption, local admin removed.","def"],["Servers","Data center","Minimal roles installed, host firewall, patch schedule, logging to SIEM, no web browsing.","def"],["Mobile devices","MDM","Passcode, encryption, OS version minimum, app restrictions, remote wipe.","def"],["Switches","Network","Disable unused ports, port security, SSH only, change default VLAN, BPDU guard.","def"],
@@ -314,6 +337,31 @@ seqViz($("#viz-saml"),{title:"SAML single sign-on",left:"User's browser",right:"
 sortViz($("#viz-acmodels"),{title:"Name the access control model",bins:{mac:"Mandatory (MAC)",dac:"Discretionary (DAC)",rbac:"Role-based (RBAC)",abac:"Attribute-based (ABAC)"},
   items:[["Top Secret clearance needed to open Top Secret files","mac","Labels and clearances, enforced by the system."],["Alice shares her folder with Bob","dac","The owner decides."],["All help desk staff can reset passwords","rbac","Permission tied to the job role."],["Allowed if department=Finance AND device=managed AND country=US","abac","Several attributes combined."],["SELinux policy confines the web server process","mac","System-enforced policy users can't override."],["New nurse gets the Nurse group and its permissions","rbac","Role assignment."],["Doc access only from the hospital network during a shift","abac","Location and time attributes."],["File creator sets read-only for everyone else","dac","Owner-controlled permissions."]],done:"Named every access control model"});
 
+/* ---- CSPM dashboard ---- */
+(function(){
+  const el=$("#viz-cspm");
+  const F=[["Critical","Storage bucket \"hr-exports\" allows public read","Block public access on the bucket. A CSPM tool flags this within minutes, before a search engine or attacker finds it.",20],
+   ["Critical","Root account has no MFA","Enable MFA on the root account, then stop using it for daily work.",18],
+   ["High","Security group allows SSH (22) from 0.0.0.0/0","Limit SSH to the bastion host or use a managed access service.",14],
+   ["High","Database snapshot shared with an unknown external account","Remove the share and find out who created it.",14],
+   ["Medium","Audit logging disabled in one region","Turn on logging everywhere. You can't investigate what you didn't record.",10],
+   ["Medium","Disk encryption off on 4 new VMs","Encrypt the disks and add a guardrail that blocks unencrypted deployments.",9]];
+  const fixed=new Set();
+  el.innerHTML=`<div class="viz-title">CSPM dashboard: fix the cloud misconfigurations</div><div class="big-num bad" id="cs-n"></div><div class="s-small">POSTURE SCORE</div><div class="hd-list" id="cs-l"></div><div class="caption" aria-live="polite">A cloud security posture management tool compares every account against your baseline. Tap a finding to remediate it.</div>`;
+  function draw(msg){const sc=15+[...fixed].reduce((a,i)=>a+F[i][3],0);$("#cs-n",el).textContent=sc+"%";$("#cs-n",el).className="big-num "+(sc>=100?"good":sc>=60?"warn":"bad");
+    $("#cs-l",el).innerHTML=F.map((f,i)=>`<button class="hd-i ${fixed.has(i)?"ok":""}" data-i="${i}" style="text-align:left;color:var(--fg)"><span>${fixed.has(i)?"✓ Fixed: ":"⚠ "+f[0]+": "}${f[1]}</span></button>`).join("");
+    if(msg)$(".caption",el).innerHTML=msg;
+    if(fixed.size===F.length){$(".caption",el).innerHTML+='<br><br><span class="status-good">Posture at 100%.</span> CSPM runs continuously, so drift is caught the moment someone changes a setting.';award("viz:cspm",20,"Fixed every CSPM finding")}}
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(!b)return;const i=+b.dataset.i;if(fixed.has(i))return;fixed.add(i);draw(`<b>${F[i][0]}.</b> ${F[i][2]}`)});draw();
+})();
+
+quizViz($("#viz-aiauto"),{title:"AI in the SOC: let it act, or keep a human?",done:"Decided where AI fits in the SOC",qs:[
+  ["An AI assistant summarizes a 4,000-line alert timeline into a one-page brief for the analyst on shift.",["Good use: a workforce multiplier","Too risky: never let AI read logs"],0,"Summarizing and enriching alerts saves time, and a person still makes the call."],
+  ["An AI agent may disable any account it thinks is compromised, including executives and service accounts, with no approval.",["Fine, it's faster","Keep a human in the loop for high-impact actions"],1,"Agentic AI needs limits. Locking out a service account can take down production."],
+  ["A model learns normal login patterns for each user and flags logins that don't fit, as an AI-augmented baseline.",["Good use: predictive and behavioral analysis","Bad idea: baselines must be manual"],0,"AI is good at spotting deviations from a learned baseline. Tune it to keep false positives down."],
+  ["A SOC chatbot answers analysts' questions about the playbook and suggests the next step.",["Good use, if it's grounded in the real playbook","Bad idea: chatbots can never be used"],0,"Ground it in approved documents so it doesn't hallucinate steps."],
+  ["The AI agent's tool permissions, prompts and actions are not logged anywhere.",["Acceptable to save storage","A problem: AI actions need logging and an owner"],1,"Treat AI automation like any other automation: least privilege, logging and accountability."]]});
+
 quizViz($("#viz-auto"),{title:"Automate it or not?",done:"Weighed every automation decision",qs:[
   ["HR marks an employee terminated. A script disables all their accounts within 60 seconds.",["Good automation: faster reaction, consistent","Bad idea: too risky"],0,"Fast, consistent deprovisioning is a classic use case."],
   ["Every phishing report automatically creates a ticket, pulls headers and checks URLs against threat feeds.",["Good automation: workforce multiplier","Bad idea: adds technical debt"],0,"It saves analysts minutes on every report."],
@@ -324,7 +372,7 @@ stepViz($("#viz-ir"),{title:"Work a ransomware incident",done:"Worked an inciden
   ["Preparation","Before anything happens: an IR plan, a call tree, offline backups, EDR on every host, and a tabletop last quarter."],
   ["Detection","EDR alerts at 03:12: mass file renames on FIN-PC07. A user reports a ransom note at 03:15."],
   ["Analysis","Confirm it's real. Scope it: one host and one file share. Identify the strain and the entry point (a phishing attachment)."],
-  ["Containment","Isolate FIN-PC07 with EDR. Disable the user's account. Block the C2 domain at DNS and the firewall. Keep it powered on for forensics."],
+  ["Containment","Isolate FIN-PC07 with EDR. Disable the user's account. Block the C2 domain at DNS and the firewall. Keep it powered on for forensics. The ransom note demands payment, so leadership brings in legal counsel and the cyber insurer's negotiator while the team keeps working."],
   ["Eradication","Reimage the host. Remove the malicious mail from every inbox. Reset the credentials the attacker touched."],
   ["Recovery","Restore the share from the immutable backup. Watch closely for signs the attacker returns."],
   ["Lessons learned","Root cause: macros allowed in Office. Action: block macros from the internet, update the playbook, retrain the finance team."]],
@@ -360,6 +408,7 @@ stepViz($("#viz-ir"),{title:"Work a ransomware incident",done:"Worked an inciden
       steps:[
         ["What do you do first?",["Power off every computer in the building","Isolate FIN-PC07 from the network but leave it powered on","Pay the ransom","Wait for business hours"],1,"Contain the spread and keep volatile evidence in memory."],
         ["The share FIN-PC07 mapped is being encrypted. Next?",["Disconnect the share and disable the user's account","Delete the share","Restore it immediately from backup while encryption continues","Email all staff"],0,"Stop the attacker's access before recovering."],
+        ["A note demands $400,000 and threatens to leak finance data. Leadership asks how to respond.",["Have the on-call analyst email the attackers to bargain the price down","Follow the IR plan: brief legal, the insurer and law enforcement, and use an approved negotiator","Pay right away so the data isn't leaked","Ignore the note and tell nobody outside IT"],1,"Negotiation is a leadership decision made with legal, the insurer and law enforcement, using an experienced negotiator after a sanctions check."],
         ["Forensics needs evidence. Which do you collect first?",["Hard drive image","RAM capture","Printed screenshots","Backup tapes"],1,"Order of volatility: RAM before disk."],
         ["How do you prove the disk image wasn't altered later?",["Hash it and record the chain of custody","Store it on the CEO's laptop","Rename it","Compress it"],0,"Hashes and chain of custody keep evidence admissible."],
         ["Malware is removed and systems restored. What's left?",["Nothing","Lessons learned and root cause analysis","Buy a new firewall","Delete the logs"],1,"The review fixes the root cause so it doesn't happen again."]],
@@ -376,10 +425,11 @@ stepViz($("#viz-ir"),{title:"Work a ransomware incident",done:"Worked an inciden
   ],
   badges:[
     ["reader","SO","Shift Lead","Mark all 10 operations lessons studied",c=>c.allStudied()],
-    ["lab","OP","Ops Center","Complete all 13 diagrams in this module",c=>c.vizAll()],
+    ["lab","OP","Ops Center","Complete all 15 diagrams in this module",c=>c.vizAll()],
     ["siem","Q0","Queue Zero","Clear the SIEM triage queue",c=>c.earned("viz:siem")],
     ["cvss","CV","Severity Scale","Build every CVSS severity in the calculator",c=>c.earned("viz:cvss")],
     ["mail","DM","p=reject","Block the spoofed email with DMARC",c=>c.earned("viz:mail")],
+    ["cspm","PM","Posture Perfect","Bring the CSPM dashboard to 100%",c=>c.earned("viz:cspm")],
     ["ir","IR","First Responder","Pass the incident response simulation",c=>c.passed("irsim")],
     ["coc","CC","Chain of Custody","Pass the evidence collection simulation",c=>c.passed("evidence")],
     ["perfect","BT","Blue Team Ace","Score 100% on an operations quiz of 15+ questions",c=>c.earned("quiz100")]
