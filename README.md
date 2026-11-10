@@ -11,6 +11,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 | Microsoft Azure Administrator (AZ-104) | https://mikeriveira.github.io/study-guides/az104/ |
+| CompTIA Linux+ (XK0-006) | https://mikeriveira.github.io/study-guides/linuxplus/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
 | Cisco CCNP Enterprise core (ENCOR 350-401 v1.2) | https://mikeriveira.github.io/study-guides/ccnp/ |
 | CompTIA CySA+ (CS0-004) | https://mikeriveira.github.io/study-guides/cysaplus/ |
