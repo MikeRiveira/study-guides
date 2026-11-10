@@ -1073,6 +1073,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .dia button{min-width:0;overflow-wrap:anywhere}
 @media (max-width:520px){.dia button{padding:10px 4px;min-height:72px;font-size:13px}}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1783,23 +1792,54 @@ function renderRanks(){
 const EXAM={1:{code:"CS0-004",pass:750}};
 const EXAM_LEN={full:[85,165],half:[43,80]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(100+800*pct/100);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1818,16 +1858,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">85 questions · 165 minutes</span><em>The real exam length.</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">43 questions · 80 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also has performance-based questions. Practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">CS0-004 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">CS0-004 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1850,6 +1892,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1867,24 +1910,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-100)/8));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}CySA+ · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}CySA+ · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 900</span></div>
     <div class="ex-gauge"><i style="left:${(EXAM[c].pass-100)/8}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>${d.o.domain}.0 ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 100–900 score is an estimate: CompTIA doesn't publish how it scales raw scores.</p>
@@ -1894,6 +1938,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -3574,6 +3619,113 @@ revealViz($("#viz-delta"),{title:"CS0-003 to CS0-004 at a glance",cols:2,done:"R
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1.0 Security Operations (29) ---------- */
+registerExamBank("ops",[
+ {q:"An analyst sees a workstation making DNS queries every 60 seconds to random-looking subdomains of one domain, such as a8f3k2.example-cdn.top. What does this most likely indicate?",o:["Beaconing to command and control, possibly with DNS tunneling or a DGA","Normal Windows Update traffic","A misconfigured DHCP server","A failing NIC"],a:0,e:"Regular intervals and high-entropy subdomains are classic C2 beaconing or DNS tunneling indicators."},
+ {q:"NetFlow shows a server sending 40 GB to an unfamiliar external IP at 3 a.m. over port 443. What should the analyst suspect first?",o:["A routine backup to an approved provider, without needing to verify","Data exfiltration","A DNS outage","An ARP storm"],a:1,e:"Large, unusual outbound transfers at odd hours point to exfiltration until they're proven to be authorized."},
+ {q:"A host shows a process named svch0st.exe running from C:\\Users\\Public. Why is this suspicious?",o:["svchost always runs from the user folder","It's a normal update service","It mimics a legitimate Windows process name but runs from a non-standard path","Process names don't matter"],a:2,e:"Masquerading uses lookalike names. The real svchost.exe runs from System32."},
+ {q:"Which Windows Event ID indicates a successful account logon?",o:["4625","4720","1102","4624"],a:3,e:"4624 is a successful logon, 4625 a failed logon, 4720 a new account and 1102 a cleared audit log."},
+ {q:"An analyst finds Event ID 1102 on a domain controller. Why does it matter?",o:["The security audit log was cleared, often to cover tracks","A user changed their password","A service started","A printer was added"],a:0,e:"Clearing the security log is a common anti-forensics step."},
+ {q:"A cloud audit log shows an access key creating new IAM users and disabling logging from an unfamiliar region. Which indicator category is this?",o:["Network bandwidth anomaly","Cloud/identity indicator of compromise","Physical intrusion","Hardware failure"],a:1,e:"Unexpected privilege creation and logging changes in cloud control-plane logs signal account compromise."},
+ {q:"Which log source best shows which internal host requested a malicious domain?",o:["Printer logs","Badge reader logs","DNS resolver query logs","HVAC logs"],a:2,e:"DNS logs tie each query to the requesting client IP."},
+ {q:"An email link displays as https://login.microsoft.com but the href points to https://login.micros0ft-auth.co. What technique is this?",o:["URL shortening only","DNSSEC","Certificate pinning","Obfuscated or deceptive link (display text differs from destination)"],a:3,e:"Phishers hide malicious destinations behind trusted-looking anchor text."},
+ {q:"Which tool would an analyst use to detonate a suspicious attachment safely and watch its behavior?",o:["Sandbox","Port scanner","WAF","Password manager"],a:0,e:"Sandboxes run samples in isolation and record file, registry and network activity."},
+ {q:"Which command-line tool captures packets on a Linux sensor for later analysis in Wireshark?",o:["nslookup","tcpdump","chmod","whois"],a:1,e:"tcpdump writes pcap files that Wireshark can open."},
+ {q:"An analyst wants to know whether a file hash is known malware. Which resource is most direct?",o:["WHOIS","Traceroute","A file reputation service such as VirusTotal or threat intel lookups","Nmap"],a:2,e:"Reputation services check hashes against many antivirus engines and intel feeds."},
+ {q:"Which regular expression would match an IPv4 address-like pattern in logs?",o:["^[A-Z]+$","\\s+","[a-z]{2,}@","\\b\\d{1,3}(\\.\\d{1,3}){3}\\b"],a:3,e:"Four groups of 1–3 digits separated by dots match IPv4-shaped strings. It doesn't range-check octets."},
+ {q:"In a SIEM, what is the purpose of normalizing logs?",o:["Converting different log formats into common fields so events can be correlated","Deleting old logs","Encrypting logs at rest","Compressing logs only"],a:0,e:"Normalization maps vendor-specific fields to a shared schema."},
+ {q:"Which threat intelligence type focuses on high-level trends for executives?",o:["Tactical","Strategic","Operational","Technical IOCs"],a:1,e:"Strategic intel covers trends, actors and business risk for leaders. Tactical and technical intel cover TTPs and IOCs."},
+ {q:"Which standard format and transport are used to share structured threat intelligence automatically?",o:["CSV over FTP","PDF over email","STIX over TAXII","Syslog over UDP"],a:2,e:"STIX describes threat data and TAXII transports it."},
+ {q:"Which factor most improves confidence in a threat intelligence source?",o:["How many indicators it has","Whether it's free","Its logo","Timeliness, accuracy and relevance to your environment"],a:3,e:"Good intel is timely, accurate, relevant and from a reliable source."},
+ {q:"Which group shares sector-specific threat intelligence among members, such as financial institutions?",o:["ISAC","CERT/CC only","ISP","Registrar"],a:0,e:"Information Sharing and Analysis Centers serve industries, such as FS-ISAC for finance."},
+ {q:"A threat hunter starts with the hypothesis that an attacker is using scheduled tasks for persistence. What is the next step?",o:["Reimage all hosts","Query endpoint telemetry for new or unusual scheduled tasks across hosts","Close the hypothesis immediately","Wait for an alert"],a:1,e:"Hypothesis-driven hunting tests the theory against data, then refines it or escalates."},
+ {q:"Which concept describes reducing the time analysts spend on repetitive triage by automating enrichment and response?",o:["Manual ticketing","Air-gapping","Process improvement through SOAR playbooks","Change freeze"],a:2,e:"Automation and orchestration improve efficiency and consistency."},
+ {q:"A SOC wants a single view combining alerts, threat intel and asset data. Which concept is this?",o:["Split tunneling","Data masking","Least privilege","Single pane of glass"],a:3,e:"A single pane of glass consolidates information so analysts don't switch between consoles."},
+ {q:"Which AI use in security operations carries the risk of hallucinated or wrong conclusions?",o:["Using an LLM to summarize alerts or suggest queries without verification","Hashing files","Applying firewall rules from a vetted template","Running a signed EDR agent"],a:0,e:"LLM output must be validated. It can invent details or misread logs."},
+ {q:"Which identity indicator suggests an attacker has a valid session token rather than a password?",o:["Many failed passwords","Access from a new location without any MFA prompt or sign-in event, reusing an existing session","Password reset email","Account lockout"],a:1,e:"Token theft lets an attacker ride an existing session and skip authentication."},
+ {q:"Which encryption control protects data in use on a cloud VM?",o:["TLS","BitLocker only","Confidential computing (trusted execution environments)","Hashing"],a:2,e:"Confidential computing encrypts data in memory while it's processed."},
+ {q:"Which architecture concept reduces risk by continually verifying identity and device posture for each request?",o:["Flat network","Implicit trust zones","Perimeter-only firewall","Zero trust"],a:3,e:"Zero trust never assumes trust because of network location."},
+ {q:"An analyst sees PowerShell launched with -enc followed by a long Base64 string. What should they do?",o:["Decode the Base64 to inspect the command, since encoded PowerShell is often malicious","Ignore it; it's always benign","Delete PowerShell","Reboot the host"],a:0,e:"Encoded commands hide intent. Decode and analyze, and consider script block logging."},
+ {q:"Which host indicator suggests possible ransomware activity?",o:["Normal CPU usage","A sudden spike in file renames and writes with new extensions, plus deleted shadow copies","A new desktop shortcut","A screen saver change"],a:1,e:"Mass file modification and running vssadmin delete shadows are strong ransomware signs."},
+ {q:"Which network indicator suggests a port scan from an internal host?",o:["Steady HTTPS to one CDN","Normal NTP traffic","One source connecting to many ports or hosts in a short time with many resets","DHCP renewals"],a:2,e:"Sweeping connections across ports or hosts point to reconnaissance."},
+ {q:"Which scripting language is most associated with querying large SIEM datasets in Microsoft Sentinel?",o:["Bash","COBOL","Assembly","KQL"],a:3,e:"Kusto Query Language powers Sentinel and Defender hunting queries."},
+ {q:"Which mechanism lets a SIEM reduce alert fatigue by suppressing known benign events?",o:["Tuning rules and allow-listing verified benign activity","Disabling all rules","Increasing log retention","Turning off correlation"],a:0,e:"Regular tuning removes noisy, low-value alerts while keeping coverage."}
+]);
+
+/* ---------- 2.0 Vulnerability Management (22) ---------- */
+registerExamBank("vul",[
+ {q:"A scan of an OT network caused a PLC to crash. What should the team use instead for that environment?",o:["More aggressive scans","Passive scanning or carefully scheduled, vendor-approved active scans","Credentialed web app scans","Fuzzing in production"],a:1,e:"Industrial devices can be fragile. Passive monitoring or approved, low-impact scanning is safer."},
+ {q:"Which scan type runs from outside the network perimeter to see what an attacker on the internet would see?",o:["Internal credentialed scan","Agent-based scan","External scan","Static code analysis"],a:2,e:"External scans show internet-facing exposure."},
+ {q:"Why might an organization use agent-based scanning for laptops?",o:["Agents need no installation","Agents only scan servers","Agents replace patching","Agents report even when laptops are off the corporate network"],a:3,e:"Agents assess remote and roaming devices that network scans miss."},
+ {q:"A CVSS v3.1 vector includes AV:N/AC:L/PR:N/UI:N. What does this tell the analyst?",o:["The flaw is remotely exploitable, easy, needs no privileges and no user interaction","It requires physical access","It needs admin privileges","It requires the user to click a link"],a:0,e:"Network vector, low complexity, no privileges and no interaction add up to a high exploitability risk."},
+ {q:"Two vulnerabilities both have a CVSS score of 9.8. One is on an internet-facing server and listed in CISA's KEV catalog. Which should be patched first?",o:["The internal one","The internet-facing, actively exploited one","Either; scores are identical","Neither"],a:1,e:"Context such as exposure, asset value and active exploitation (KEV) matters beyond the base score."},
+ {q:"The team adds EPSS scores to its vulnerability dashboard. What does an EPSS score estimate?",o:["The severity of impact","The patch release date","The probability that a vulnerability will be exploited in the wild in the next 30 days","The number of affected hosts"],a:2,e:"The Exploit Prediction Scoring System predicts the likelihood of exploitation, which complements CVSS severity."},
+ {q:"A scan reports an Apache version as vulnerable, but the distribution backported the fix. What is this finding?",o:["True positive","False negative","Accepted risk","False positive"],a:3,e:"Version-based checks can miss backported patches. Validate them with package changelogs or credentialed checks."},
+ {q:"Which web vulnerability lets an attacker make the server send requests to internal resources such as cloud metadata endpoints?",o:["Server-side request forgery (SSRF)","Cross-site scripting","Clickjacking","Session fixation"],a:0,e:"SSRF tricks the server into fetching attacker-chosen URLs, often 169.254.169.254 in clouds."},
+ {q:"Which vulnerability lets attackers run OS commands by injecting input into a server-side shell call?",o:["CSRF","Command injection","Open redirect","XML bomb only"],a:1,e:"Unsanitized input passed to the system shell allows command injection."},
+ {q:"Which flaw allows an attacker to access another user's record by changing an ID in the URL?",o:["SQL injection","Buffer overflow","Insecure direct object reference / broken access control","DNS rebinding"],a:2,e:"IDOR is a broken access control issue. The server doesn't check authorization for each object."},
+ {q:"Which secure coding practice best prevents SQL injection?",o:["Client-side validation only","Hiding error messages only","Using GET instead of POST","Parameterized queries / prepared statements"],a:3,e:"Parameterization separates code from data so input can't change query logic."},
+ {q:"Which secure coding practice best mitigates XSS?",o:["Context-aware output encoding plus a Content Security Policy","Storing passwords in plain text","Using HTTP instead of HTTPS","Disabling cookies"],a:0,e:"Encoding output for its context, plus a CSP, stops injected scripts from running."},
+ {q:"Which tool type sends malformed or random input to an application to find crashes?",o:["Port scanner","Fuzzer","Hash calculator","SIEM"],a:1,e:"Fuzzing finds input-handling bugs such as overflows."},
+ {q:"Which output from Nmap shows a port that responded but where it can't tell whether the port is open or closed?",o:["open","closed","filtered","unfiltered"],a:2,e:"filtered means a firewall is blocking probes. unfiltered (seen with ACK scans) means reachable, but open or closed is unknown."},
+ {q:"Which tool is commonly used to test web applications by intercepting and modifying HTTP requests?",o:["Wireshark only","tcpdump","Nessus agent","Burp Suite or OWASP ZAP proxy"],a:3,e:"Intercepting proxies let testers tamper with requests."},
+ {q:"A server can't be patched for three months because of a vendor dependency. What is the best interim action?",o:["Apply compensating controls such as segmentation, WAF/IPS rules and monitoring, and document a risk exception","Ignore it","Turn off logging","Expose it to the internet"],a:0,e:"Compensating controls reduce the risk until the patch is possible. Track the exception formally."},
+ {q:"What is the purpose of a maintenance window in patch management?",o:["To skip testing","To apply changes at an agreed time that minimizes business impact","To avoid change approvals","To disable backups"],a:1,e:"Scheduled windows balance getting patched quickly against keeping operations stable."},
+ {q:"Which risk response is documented when leadership formally decides not to fix a low-risk vulnerability?",o:["Risk transfer","Risk avoidance","Risk acceptance (with an exception record)","Risk mitigation"],a:2,e:"Acceptance must be documented, approved and reviewed periodically."},
+ {q:"Which attack surface management activity continuously finds unknown internet-facing assets?",o:["Tabletop exercise","Code review","Password audit","External attack surface discovery (EASM)"],a:3,e:"EASM tools find shadow IT, forgotten hosts and exposed services."},
+ {q:"Which test involves a red team emulating real adversaries while the blue team defends, with a purple team sharing results?",o:["Adversary emulation / purple teaming","Vulnerability scan","Bug bounty only","Static analysis"],a:0,e:"Purple teaming combines offense and defense to improve detections together."},
+ {q:"Which configuration weakness is most commonly found in cloud storage?",o:["Too many CPUs","Publicly accessible buckets or containers","Strong encryption","MFA enabled"],a:1,e:"Misconfigured public access is a leading cause of cloud data exposure."},
+ {q:"Which SDLC practice integrates security testing into CI/CD pipelines automatically?",o:["Waterfall sign-off only","Manual annual review","DevSecOps with SAST/DAST/SCA gates","Disabling code review"],a:2,e:"Shift-left security runs automated checks in every build."}
+]);
+
+/* ---------- 3.0 Incident Response and Management (20) ---------- */
+registerExamBank("ir",[
+ {q:"In the Cyber Kill Chain, which phase involves the attacker establishing a remote control channel?",o:["Reconnaissance","Weaponization","Delivery","Command and control"],a:3,e:"The phases are recon, weaponization, delivery, exploitation, installation, C2, then actions on objectives."},
+ {q:"In the Diamond Model, what are the four core features?",o:["Adversary, capability, infrastructure, victim","Tactics, techniques, procedures, tools","Identify, protect, detect, respond","Plan, do, check, act"],a:0,e:"The Diamond Model links adversary, capability, infrastructure and victim for each event."},
+ {q:"An analyst maps observed behavior to T1059.001. What framework is this?",o:["OWASP Top 10","MITRE ATT&CK","NIST CSF","ISO 27001"],a:1,e:"ATT&CK technique IDs start with T. T1059.001 is PowerShell under Command and Scripting Interpreter."},
+ {q:"Which testing methodology focuses on operational security metrics and testing channels such as human, physical and wireless?",o:["OWASP Testing Guide","CVSS","OSSTMM","STIX"],a:2,e:"The Open Source Security Testing Methodology Manual covers operational security testing across channels."},
+ {q:"Which incident response phase includes creating playbooks, building jump kits and training staff?",o:["Containment","Recovery","Post-incident activity","Preparation"],a:3,e:"Preparation is everything you do before an incident to be ready."},
+ {q:"During analysis, how should an analyst determine scope?",o:["Identify all affected hosts, accounts and data using indicators across the environment","Look only at the first alert","Reimage the first host and stop","Ask the attacker"],a:0,e:"Scoping uses IOCs and telemetry to find every system involved before containment."},
+ {q:"What is the primary purpose of hashing a forensic disk image?",o:["Encrypt the evidence","Prove the image is an exact, unaltered copy of the original","Compress the image","Speed up analysis"],a:1,e:"Matching hashes at acquisition and later show integrity is preserved."},
+ {q:"Which device prevents an investigator's workstation from writing to a suspect drive?",o:["USB hub","Degausser","Write blocker","Crimper"],a:2,e:"Hardware or software write blockers keep evidence unmodified."},
+ {q:"Which artifact best shows programs executed on a Windows system, even after deletion?",o:["The Recycle Bin icon","Desktop wallpaper","Printer queue","Prefetch files and Amcache/Shimcache"],a:3,e:"Prefetch, Amcache and Shimcache record execution history."},
+ {q:"A compromised server must stay online for business but stop talking to the attacker. Which containment approach fits?",o:["Segment it and block C2 at the firewall while monitoring","Power it off immediately","Delete all logs","Disable all users"],a:0,e:"Isolation through ACLs and blocking C2 contains the threat while keeping the service running and preserving evidence."},
+ {q:"Which step belongs in eradication?",o:["Restoring from backup to production","Removing malware and persistence, and closing the vulnerability that was exploited","Writing the lessons-learned report","Notifying customers"],a:1,e:"Eradication removes the threat and its root cause. Recovery then restores service."},
+ {q:"During recovery, why should restored systems be monitored closely?",o:["To reduce licensing costs","To test new features","To detect reinfection or remaining attacker access","To avoid patching"],a:2,e:"Heightened monitoring after recovery catches persistence that was missed."},
+ {q:"Which post-incident activity identifies what went well and what to improve?",o:["Containment","Imaging","Beaconing analysis","Lessons-learned meeting / after-action review"],a:3,e:"A blameless review updates playbooks, controls and training."},
+ {q:"What does root cause analysis aim to find?",o:["The underlying reason the incident occurred, so it can be prevented","The attacker's name only","Only which host alerted first","The cost of hardware"],a:0,e:"Fixing the root cause prevents a repeat, not just the symptom."},
+ {q:"Which evidence should be collected first from a live, compromised system?",o:["Archived backups","Memory (RAM) contents","Printed documents","The hard drive image first"],a:1,e:"Follow the order of volatility. RAM holds processes, network connections and keys that are lost at power-off."},
+ {q:"Which document tracks every person who handled evidence and when?",o:["SLA","Risk register","Chain of custody form","Change ticket"],a:2,e:"Chain of custody keeps evidence admissible."},
+ {q:"In a tabletop exercise, what do participants do?",o:["Run live malware","Shut down production","Perform a penetration test","Walk through a scenario verbally to test plans and roles"],a:3,e:"Tabletops are discussion-based tests of IR plans and communication."},
+ {q:"Which ATT&CK tactic covers techniques like credential dumping from LSASS?",o:["Credential Access","Initial Access","Exfiltration","Impact"],a:0,e:"Credential Access (TA0006) includes OS credential dumping (T1003)."},
+ {q:"An analyst sees a DLL loaded from an unusual folder by a legitimate signed program. Which technique might this be?",o:["SQL injection","DLL search-order hijacking / side-loading","ARP poisoning","Phishing"],a:1,e:"Attackers place malicious DLLs where trusted apps will load them."},
+ {q:"Which metric measures the average time from an incident starting to the team detecting it?",o:["Mean time to recover","Mean time between failures","Mean time to detect (MTTD)","Recovery point objective"],a:2,e:"MTTD measures detection speed. MTTR measures response or recovery speed."}
+]);
+
+/* ---------- 4.0 Reporting and Communication (14) ---------- */
+registerExamBank("rpt",[
+ {q:"Which audience needs a vulnerability report focused on business risk trends rather than technical detail?",o:["System administrators","Developers","SOC tier 1","Executive leadership"],a:3,e:"Executives need risk, trends and decisions. Technical teams need specific remediation steps."},
+ {q:"Which item belongs in a vulnerability management report for system owners?",o:["Affected assets, severity, recommended remediation and due dates","Only the total number of scans","The analyst's personal notes","Raw packet captures"],a:0,e:"Actionable reports tell owners what to fix, how and by when."},
+ {q:"What is a common inhibitor to remediation that a report should capture?",o:["Too many patches being available","Business process interruption, legacy systems or vendor dependencies","Strong encryption","Having MFA"],a:1,e:"Reports should note why a fix is delayed, such as downtime limits, MOUs, SLAs or legacy systems."},
+ {q:"Which metric tracks how long it takes on average to fix critical vulnerabilities?",o:["Number of open tickets","Scan duration","Mean time to remediate","False negative rate"],a:2,e:"MTTR for vulnerabilities measures remediation speed against SLAs."},
+ {q:"Which KPI shows whether the vulnerability program is improving over time?",o:["Number of analysts","Size of the SIEM","Number of scanners","Trend of critical vulnerabilities open past SLA"],a:3,e:"Trends in overdue critical findings show program effectiveness."},
+ {q:"During an incident, who should approve public statements to the media?",o:["Designated communications/PR and legal, per the IR plan","Any analyst","The attacker","The help desk"],a:0,e:"Controlled communication through PR and legal avoids misinformation and legal exposure."},
+ {q:"Which law-enforcement consideration should be in an incident communication plan?",o:["Never contacting law enforcement","When and how to involve law enforcement, coordinated with legal","Posting evidence online","Sharing details on social media"],a:1,e:"Engaging law enforcement is a legal and business decision made with counsel."},
+ {q:"A breach involving personal data triggers legal notification obligations. Which factor determines the deadline?",o:["The analyst's preference","The SIEM vendor","Applicable regulations and contracts (for example GDPR's 72 hours to the authority)","The time of day"],a:2,e:"Regulations and contracts set notification timelines and recipients."},
+ {q:"Which section of an incident report summarizes what happened in plain language for non-technical readers?",o:["Timeline of IOCs","Appendix of hashes","Packet analysis","Executive summary"],a:3,e:"The executive summary gives the impact, cause and actions at a high level."},
+ {q:"Which element is essential in an incident timeline?",o:["Time-stamped events in order, from initial access through recovery","Only the end time","The team's lunch break","Network diagram only"],a:0,e:"A precise timeline supports scoping, lessons learned and legal needs."},
+ {q:"Which document defines the time an MSSP has to notify a customer of a confirmed incident?",o:["AUP","SLA / contract","Privacy notice","NDA only"],a:1,e:"Service-level agreements set response and notification commitments."},
+ {q:"Which metric reflects how quickly the team contains an incident after detection?",o:["Mean time between failures","Recovery point objective","Mean time to contain","Uptime"],a:2,e:"Time to contain measures how fast the spread is stopped."},
+ {q:"Why should vulnerability reports include an action plan with owners?",o:["To increase report length","To replace patching","To avoid audits","To ensure accountability and track remediation progress"],a:3,e:"Clear ownership and dates drive remediation."},
+ {q:"Which compliance report would show that an organization meets PCI DSS scanning requirements?",o:["Quarterly ASV external scan reports and internal scan results","A phishing simulation summary","A badge access log","A network diagram"],a:0,e:"PCI DSS requires quarterly external scans by an approved scanning vendor, plus internal scans."}
+]);
 
 </script>
 <script>boot();</script>
