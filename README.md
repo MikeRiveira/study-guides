@@ -11,6 +11,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
+| Cisco CCNP Enterprise core (ENCOR 350-401 v1.2) | https://mikeriveira.github.io/study-guides/ccnp/ |
 | CompTIA CySA+ (CS0-004) | https://mikeriveira.github.io/study-guides/cysaplus/ |
 | Microsoft Cloud and AI Security Engineer (SC-500) | https://mikeriveira.github.io/study-guides/sc500/ |
 | IT quick reference cheat sheets | https://mikeriveira.github.io/study-guides/cheatsheets/ |
@@ -133,6 +134,29 @@ The page is built from `ccna/src/` in the same way as the other guides, plus `cc
 
 ```
 python3 ccna/build.py
+```
+
+## Cisco CCNP Enterprise (ENCOR) study guide
+
+Six modules, one for each domain of the ENCOR 350-401 v1.2 core exam:
+
+| Module | Exam weight |
+|---|---|
+| 1. Architecture | 15% |
+| 2. Virtualization | 10% |
+| 3. Infrastructure | 30% |
+| 4. Network Assurance | 10% |
+| 5. Security | 20% |
+| 6. Automation and AI | 15% |
+
+It extends the CCNA guide's **simulated Cisco IOS command line** with CCNP features: multi-area OSPF with summarization, stub areas and filtering, eBGP with route maps and best path selection, VRF-lite, GRE and IPsec tunnels, HSRP and VRRPv3 with tracking, MST, DTP, QoS policies and CoPP, policy-based routing, IP SLA, Flexible NetFlow, SPAN and RSPAN, authenticated NTP, TACACS+ and EEM applets that fire as you type. 30 hands-on labs and 6 mini labs in the lessons use it. Module 6 adds a mock Catalyst Center API console, a Python pad and a JSON fixer. EIGRP and multicast are taught with diagrams rather than command-line labs.
+
+It has 39 lessons with 90 interactive diagrams, 44 simulations, 678 spaced-repetition flashcards, 261 quiz questions, and a timed practice exam (100 questions in 120 minutes, or a 50-question half exam) weighted by domain and scored against an unofficial target of 825. It uses the same level-up system as the other guides, with ranks from Network Engineer I to CCNP Enterprise Master and 91 badges. Progress is kept separately from the other guides.
+
+The page is built from `ccnp/src/` (with the simulator in `ccnp/src/ios/`). After editing, run:
+
+```
+python3 ccnp/build.py
 ```
 
 ## Microsoft Cloud and AI Security Engineer (SC-500) study guide
