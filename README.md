@@ -11,6 +11,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
+| CompTIA CySA+ (CS0-004) | https://mikeriveira.github.io/study-guides/cysaplus/ |
 | IT quick reference cheat sheets | https://mikeriveira.github.io/study-guides/cheatsheets/ |
 
 ## CompTIA A+ study guide
@@ -143,6 +144,27 @@ Each sheet has its own link, such as `cheatsheets/#ports` or `cheatsheets/#ios`.
 python3 cheatsheets/build.py
 ```
 
+## CompTIA CySA+ study guide
+
+Four modules, one for each domain of the CS0-004 exam (launched June 23, 2026; the English CS0-003 exam retires December 22, 2026):
+
+| Module | Exam weight |
+|---|---|
+| 1. Security Operations | 34% |
+| 2. Vulnerability Management | 26% |
+| 3. Incident Response and Management | 24% |
+| 4. Reporting and Communication | 16% |
+
+The signature feature is a **simulated SOC analyst console** used across all four modules: a command-line terminal with real `grep`, `awk`, `sort`, `uniq`, `cut` and pipes over generated logs (SSH brute force, proxy beacon hunting, scanner exports, Volatility memory forensics), a packet capture viewer with display filters, alert and finding triage queues, and branching incident playbooks (ransomware and business email compromise).
+
+It has 35 lessons with 58 interactive diagrams (such as an NTP timeline fixer, a beacon detector, a process tree hunt, a link deobfuscator, a prompt injection demo for AI assistants, a CVSS calculator, a context-based prioritizer, a Cyber Kill Chain mapper, a Diamond Model pivot, an evidence hashing demo and an MTTD/MTTR calculator), 24 simulations, 427 spaced-repetition flashcards, 298 quiz questions, and a timed practice exam (85 questions in 165 minutes, or a 43-question half exam) weighted by domain and scored against the 750 passing score. It uses the same level-up system as the other guides, with analyst ranks from SOC Trainee to CySA+ Master and 67 badges. Progress is kept separately from the other guides.
+
+The page is built from `cysaplus/src/` in the same way as the other guides. After editing, run:
+
+```
+python3 cysaplus/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA, Microsoft or Cisco. CompTIA, A+, Network+ and Security+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies. Cisco, Cisco IOS and CCNA are trademarks of Cisco Systems, Inc.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA, Microsoft or Cisco. CompTIA, A+, Network+, Security+ and CySA+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies. Cisco, Cisco IOS and CCNA are trademarks of Cisco Systems, Inc.
