@@ -89,7 +89,7 @@ python3 netplus/build.py
 
 ## CompTIA Security+ study guide
 
-Five modules, one for each SY0-801 exam domain (the exam launched in November 2026):
+Five modules, one for each SY0-801 exam domain (the exam launches November 17, 2026):
 
 | Module | Exam weight |
 |---|---|

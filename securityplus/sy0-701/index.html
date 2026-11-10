@@ -559,7 +559,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .pc-screen.s3,.pc-screen.s4,.pc-screen.s5,.pc-screen.s6{background:rgba(95,227,161,.1);color:var(--good);border-color:rgba(95,227,161,.5)}
 .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0;background:#f5f7fb;color:#1d2433}
 .mail-h{padding:12px 14px;border-bottom:1px solid #dde2ec;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.mail-h .s-small{color:#6b7488;display:inline-block;width:56px}
+.mail-h .s-small{color:#586175;display:inline-block;width:56px}
 .mail-b{padding:12px 14px;font-size:14px}.mail-b p{margin:0 0 10px}
 .flag{font:inherit;color:inherit;background:none;border:1px dashed transparent;border-radius:4px;padding:1px 3px;cursor:pointer;text-align:left;word-break:break-word}
 .flag:hover{border-color:#aab3c6}
@@ -567,7 +567,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .flag.mail-btn{background:#2f6fe4;color:#fff;padding:8px 16px;border-radius:6px;font-weight:600}
 .flag.mail-btn.hit{background:#c63e60}
 .flag.mail-att{display:inline-flex;gap:8px;align-items:center;border:1px solid #cfd6e3;padding:6px 10px;border-radius:6px;background:#fff}
-.flag.mail-att .s-small{color:#6b7488}
+.flag.mail-att .s-small{color:#586175}
 .perm{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
 @media(max-width:560px){.perm{grid-template-columns:1fr}}
 .perm-col{display:flex;flex-direction:column;gap:8px}
@@ -968,8 +968,8 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .grid-net .zone-sep{grid-column:1/-1;height:0;border-top:2px dashed var(--good);margin:2px 0;position:relative}
 .heat{display:grid;grid-template-columns:28px repeat(5,1fr);gap:4px;margin:12px 0;font-size:12px}
 .heat .hc0{background:rgba(95,227,161,.22)}.heat .hc1{background:rgba(255,210,122,.25)}.heat .hc2{background:rgba(255,154,92,.32)}.heat .hc3{background:rgba(255,115,147,.40)}
-.heat button{border:1px solid transparent;border-radius:6px;min-height:40px;color:var(--fg);font-family:var(--mono);font-size:12px}
-.heat button.sel{border-color:var(--fg);box-shadow:var(--glow)}
+.heat .hcell{display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:6px;min-height:40px;color:var(--fg);font-family:var(--mono);font-size:12px}
+.heat .hcell.sel{border-color:var(--fg);box-shadow:var(--glow)}
 .heat .ax{display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono)}
 .mailflow{display:grid;gap:8px;margin:10px 0}
 .mf-r{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;background:rgba(255,255,255,.02)}
@@ -1015,6 +1015,16 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .tl .pt.dn.r::before{margin-left:auto}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* ---------- Accessibility helpers ---------- */
+.sr-only{position:absolute!important;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:1000;padding:10px 16px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:600;text-decoration:none;transition:top .15s}
+.skip-link:focus{top:12px;outline:2px solid var(--on-accent);outline-offset:2px}
+main:focus{outline:none}
+[role="group"][tabindex="0"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Email mock is light-themed: keep its small labels readable (WCAG AA). */
+.viz .mail span.s-small,.sim .mail span.s-small{color:#586175}
+
 /* practice exam upgrades: pace marker, pool info, domain drills */
 .ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
 .ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
@@ -1035,7 +1045,7 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
     <nav role="tablist" id="nav" aria-label="Study mode" hidden></nav>
   </div>
 </header>
-<main><div class="wrap" style="padding-top:12px"><div class="tip" role="note"><b>Previous edition: SY0-701.</b> CompTIA replaced this exam with SY0-801 in November 2026. SY0-701 can still be taken until June 11, 2027, so this edition stays here until then. Studying for the new exam? <a href="../">Go to the SY0-801 guide</a>. Your progress is shared between both editions.</div></div><div class="wrap" id="view"></div></main>
+<main><div class="wrap" style="padding-top:12px"><div class="tip" role="note"><b>Previous edition: SY0-701.</b> CompTIA replaces this exam with SY0-801 on November 17, 2026. SY0-701 can still be taken until June 11, 2027, so this edition stays here until then. Studying for the new exam? <a href="../">Go to the SY0-801 guide</a>. Your progress is shared between both editions.</div></div><div class="wrap" id="view"></div></main>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="hexgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#56e0ff"/><stop offset="1" stop-color="#a495ff"/></linearGradient></defs></svg>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="levelup" id="levelup" hidden></div>
@@ -1719,6 +1729,40 @@ function boot(){
   addEventListener("hashchange",route);route();
 }
 
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
+
 </script>
 <script>
 /* ================= Module 1: General Security Concepts (SY0-701 Domain 1.0, 12%) ================= */
@@ -2322,7 +2366,7 @@ registerModule({
   el.innerHTML=`<div class="viz-title">Phishing inspector: find all 6 red flags</div>
   <div class="mail"><div class="mail-h"><button class="flag" data-f="from" style="all:unset;cursor:pointer"><span class="s-small">From</span> ${F.from[1].replace("From: ","")}</button><button class="flag" data-f="subj" style="all:unset;cursor:pointer"><span class="s-small">Subject</span> <b>${F.subj[1]}</b></button></div>
   <div class="mail-b"><p><button class="flag" data-f="greet" style="all:unset;cursor:pointer">${F.greet[1]}</button></p><p>We detected unusual sign-in activity. Your mailbox will be permanently deleted unless you verify your account.</p>
-  <p><button class="flag mail-btn" data-f="link">${F.link[1]}</button></p><p><button class="flag mail-att" data-f="att">📎 ${F.att[1]} <span class="s-small">14 KB</span></button></p><p><button class="flag" data-f="sig" style="all:unset;cursor:pointer;color:#6b7488">${F.sig[1]}</button></p></div></div>
+  <p><button class="flag mail-btn" data-f="link">${F.link[1]}</button></p><p><button class="flag mail-att" data-f="att">📎 ${F.att[1]} <span class="s-small">14 KB</span></button></p><p><button class="flag" data-f="sig" style="all:unset;cursor:pointer;color:#586175">${F.sig[1]}</button></p></div></div>
   <div class="caption" aria-live="polite">Tap anything suspicious. Careful with that button.</div><div class="rv-prog s-small"></div>`;
   let clicks=0;
   el.addEventListener("click",e=>{const f=e.target.closest("[data-f]");if(!f)return;const k=f.dataset.f;found.add(k);f.classList.add("hit");
@@ -3264,7 +3308,7 @@ const LESSONS=[
 
 const G={
  gov:[["Policy","High-level statement of intent approved by leadership"],["Standard","Mandatory specific requirement supporting a policy"],["Procedure","Step-by-step instructions"],["Guideline","Recommended, not mandatory"],["Acceptable use policy","Rules for using company systems"],["Playbook","Procedure for responding to a specific incident type"],["Onboarding / offboarding","Procedures for granting and removing access with staff changes"],["Data owner","Senior person accountable for data and its classification"],["Data controller","Decides why and how personal data is processed"],["Data processor","Processes data for the controller"],["Data custodian","Day-to-day care: backups, access, storage"],["Centralized governance","One group sets rules for the whole organization"],["Decentralized governance","Business units set their own rules"]],
- risk:[["SLE","Single loss expectancy = asset value × exposure factor"],["ARO","Annualized rate of occurrence"],["ALE","Annualized loss expectancy = SLE × ARO"],["Exposure factor","Percent of asset value lost in one event"],["Qualitative risk analysis","Uses ratings such as low/medium/high"],["Quantitative risk analysis","Uses monetary values and numbers"],["Risk register","List of risks with owners, ratings and responses"],["KRI","Key risk indicator: metric warning that a risk is rising"],["Risk owner","Person accountable for managing a specific risk"],["Risk threshold","Level that triggers action"],["Risk appetite","Amount of risk the organization will pursue"],["Risk tolerance","Acceptable variation around the appetite"],["Expansionary appetite","Willing to take more risk for reward"],["Conservative appetite","Prefers minimal risk"],["Mitigate","Reduce likelihood or impact with controls"],["Transfer","Shift financial impact, e.g. insurance"],["Avoid","Stop the risky activity"],["Accept","Live with the risk; document an exception"],["BIA","Business impact analysis of critical processes"],["MTTR","Mean time to repair"],["MTBF","Mean time between failures; higher is better"],["Continuous risk assessment","Ongoing, often automated, assessment"]],
+ risk:[["SLE","Single loss expectancy = asset value × exposure factor"],["ARO","Annualized rate of occurrence"],["ALE","Annualized loss expectancy = SLE × ARO"],["Percent of an asset's value lost in a single event (used in SLE = AV × EF)","Exposure factor (EF)"],["Qualitative risk analysis","Uses ratings such as low/medium/high"],["Quantitative risk analysis","Uses monetary values and numbers"],["Risk register","List of risks with owners, ratings and responses"],["KRI","Key risk indicator: metric warning that a risk is rising"],["Risk owner","Person accountable for managing a specific risk"],["Risk threshold","Level that triggers action"],["Risk appetite","Amount of risk the organization will pursue"],["Risk tolerance","Acceptable variation around the appetite"],["Expansionary appetite","Willing to take more risk for reward"],["Conservative appetite","Prefers minimal risk"],["Mitigate","Reduce likelihood or impact with controls"],["Transfer","Shift financial impact, e.g. insurance"],["Avoid","Stop the risky activity"],["Accept","Live with the risk; document an exception"],["BIA","Business impact analysis of critical processes"],["MTTR","Mean time to repair"],["MTBF","Mean time between failures; higher is better"],["Continuous risk assessment","Ongoing, often automated, assessment"]],
  vendor:[["Right-to-audit clause","Contract term letting you audit the vendor"],["SOC 2 report","Independent assessment of a service provider's controls"],["Due diligence (vendor)","Investigating a vendor before selecting them"],["Conflict of interest","A relationship that could bias vendor selection"],["Vendor questionnaire","Security questions sent to a vendor"],["Rules of engagement","What a tester or vendor may and may not do"],["SLA","Service-level agreement with measurable commitments"],["MOU","Memorandum of understanding; shared intent, not binding"],["MOA","Memorandum of agreement; more formal, specific duties"],["MSA","Master service agreement; umbrella terms"],["SOW","Statement of work; specific project deliverables"],["NDA","Non-disclosure agreement"],["BPA","Business partners agreement"],["Supply chain analysis","Assessing risks from a vendor's own suppliers"]],
  comply:[["Due diligence","Investigating and understanding risks"],["Due care","Acting reasonably on what you know"],["Attestation and acknowledgement","People formally confirm they follow policy"],["Consequences of non-compliance","Fines, sanctions, reputation, loss of license, contract impacts"],["Data subject","The person the data describes"],["Right to be forgotten","Data subject can request erasure (GDPR)"],["Data inventory","Record of what personal data is held and where"],["GDPR","EU regulation protecting personal data"],["Audit committee","Board group overseeing audits"],["Independent third-party audit","External auditor assesses controls"],["Known environment test","White box; full information given"],["Partially known environment","Gray box; some information given"],["Unknown environment test","Black box; no information given"],["Passive reconnaissance","Gathering info without touching the target"],["Active reconnaissance","Scanning and probing the target"],["Red team","Offensive testers"],["Blue team","Defenders"],["Purple team","Red and blue working together (integrated)"],["Phishing campaign","Simulated phishing to train and measure users"],["Risky behavior","Deliberately bypassing controls"],["Unexpected behavior","Unusual for that user"],["Unintentional behavior","An honest mistake"],["Operational security","Not revealing sensitive details, e.g. on social media"]]
 };
@@ -3363,7 +3407,7 @@ revealViz($("#viz-roles"),{title:"Who does what with the customer database?",col
   const cls=(l,i)=>{const s=l*i;return s>=15?3:s>=8?2:s>=4?1:0};
   el.innerHTML=`<div class="viz-title">Risk heat map: place, then respond</div><div class="chips" id="hm-r"></div><div class="heat" id="hm-g"></div><div class="s-small" style="text-align:center">IMPACT →</div><div class="seg-row" id="hm-a"></div><div class="caption" aria-live="polite">Pick a risk to see where it falls, then choose a response.</div><div class="rv-prog s-small"></div>`;
   function draw(msg){$("#hm-r",el).innerHTML=RK.map((r,i)=>`<button class="chip" data-r="${i}" aria-pressed="${sel===i}">${done[i]?"✓ ":""}${r[0]}</button>`).join("");
-    let g="";for(let l=5;l>=1;l--){g+=`<div class="ax">${l}</div>`;for(let i=1;i<=5;i++){const here=RK.map((r,k)=>r[1]===l&&r[2]===i?k:-1).filter(k=>k>=0);g+=`<button class="hc${cls(l,i)} ${sel!==null&&here.includes(sel)?"sel":""}" tabindex="-1">${here.map(k=>done[k]||k===sel?"●":"").join("")}</button>`}}
+    let g="";for(let l=5;l>=1;l--){g+=`<div class="ax">${l}</div>`;for(let i=1;i<=5;i++){const here=RK.map((r,k)=>r[1]===l&&r[2]===i?k:-1).filter(k=>k>=0);const shown=here.filter(k=>done[k]||k===sel);g+=`<div class="hcell hc${cls(l,i)} ${sel!==null&&here.includes(sel)?"sel":""}" role="img" aria-label="Likelihood ${l}, impact ${i}${shown.length?": "+shown.map(k=>RK[k][0]).join(", "):""}">${here.map(k=>done[k]||k===sel?"●":"").join("")}</div>`}}
     g+=`<div></div>`+[1,2,3,4,5].map(i=>`<div class="ax">${i}</div>`).join("");$("#hm-g",el).innerHTML=g;
     $("#hm-a",el).innerHTML=sel===null?"":Object.entries(RESP).map(([k,v])=>`<button class="btn" data-x="${k}">${v}</button>`).join("");
     if(msg)$(".caption",el).innerHTML=msg;$(".rv-prog",el).textContent=`↑ likelihood · ${Object.keys(done).length} of ${RK.length} risks handled`;
