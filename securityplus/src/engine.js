@@ -479,6 +479,7 @@ function renderHome(){
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
     <p class="tip" role="note"><b>Exam version:</b> This guide covers <b>SY0-701</b>. CompTIA launches the new <b>SY0-801</b> on November 17, 2026, with the same five domains but new weights (16 / 24 / 19 / 27 / 14%). SY0-701 can still be booked until mid-2027, so make sure you book the version you studied for.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on simulations, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
+    <div class="tip"><b>Updated for SY0-801.</b> This guide follows the new exam that launched in November 2026, including AI threats, SSE and threat frameworks. Booked SY0-701 instead? It can be taken until June 11, 2027, and the <a href="sy0-701/">SY0-701 edition of this guide</a> is still available.</div>
     <h2 class="sec">Exam domains <span class="mono">SY0-801</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
     <h2 class="sec">Timed practice exam</h2>

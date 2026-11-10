@@ -1531,6 +1531,7 @@ function renderHome(){
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
     <p class="tip" role="note"><b>Exam version:</b> This guide covers <b>SY0-701</b>. CompTIA launches the new <b>SY0-801</b> on November 17, 2026, with the same five domains but new weights (16 / 24 / 19 / 27 / 14%). SY0-701 can still be booked until mid-2027, so make sure you book the version you studied for.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on simulations, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
+    <div class="tip"><b>Updated for SY0-801.</b> This guide follows the new exam that launched in November 2026, including AI threats, SSE and threat frameworks. Booked SY0-701 instead? It can be taken until June 11, 2027, and the <a href="sy0-701/">SY0-701 edition of this guide</a> is still available.</div>
     <h2 class="sec">Exam domains <span class="mono">SY0-801</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
     <h2 class="sec">Timed practice exam</h2>
@@ -3781,13 +3782,13 @@ registerExamBank("gen",[
  {q:"In a zero trust architecture, which component makes the access decision for each request?",o:["Policy engine (within the policy decision point)","Policy enforcement point","Data plane switch","Honeypot"],a:0,e:"The policy engine evaluates the request and the policy administrator relays the decision. The PEP enforces it."},
  {q:"Which change management element names who approves a proposed change?",o:["Backout plan","Change advisory board / approval process","Maintenance window","Test results"],a:1,e:"The approval process, often a CAB, authorizes changes after reviewing impact and risk."},
  {q:"A company stores customer card numbers but wants to reduce PCI scope by replacing them with random values that map back only through a secure vault. What technique is this?",o:["Hashing","Salting","Tokenization","Steganography"],a:2,e:"Tokenization swaps sensitive values for tokens. The originals live only in a protected token vault."},
- {q:"Which cryptographic concept adds random data to a password before hashing to defeat precomputed rainbow tables?",o:["Key stretching only","Encryption","Digital signing","Salting"],a:3,e:"A unique salt per password makes rainbow tables useless and identical passwords hash differently."},
+ {q:"Which cryptographic concept adds random data to a password before hashing to defeat precomputed rainbow tables?",o:["Tokenization","Encryption","Digital signing","Salting"],a:3,e:"A unique salt per password makes rainbow tables useless and identical passwords hash differently."},
  {q:"Which key is used to verify a digital signature?",o:["The signer's public key","The signer's private key","The recipient's private key","A shared symmetric key"],a:0,e:"The signer signs with their private key. Anyone can verify with the matching public key."},
  {q:"Which certificate status method lets a server include a fresh, signed revocation response in the TLS handshake?",o:["CRL download by the client","OCSP stapling","Certificate pinning","Wildcard certificate"],a:1,e:"With OCSP stapling, the server fetches and staples a time-stamped OCSP response, which saves clients a lookup."},
  {q:"A honeytoken is planted in a database. What is its purpose?",o:["To encrypt the database","To back up the data","To alert defenders when the fake record is accessed or used","To speed up queries"],a:2,e:"Honeytokens are decoy data. Any use of them signals unauthorized access."}
 ]);
 
-/* ---------- 2.0 Threats, Vulnerabilities, and Mitigations (20) ---------- */
+/* ---------- 2.0 Threats, Vulnerabilities, and Attacks (20) ---------- */
 registerExamBank("thr",[
  {q:"A threat actor is well funded, persistent, and targets a country's power grid for espionage and disruption. Which actor type best fits?",o:["Hacktivist","Unskilled attacker","Insider threat","Nation-state"],a:3,e:"Nation-state actors have high resources and sophistication and pursue strategic goals such as espionage or disrupting infrastructure."},
  {q:"An attacker compromises a popular software vendor's update server to push malware to the vendor's customers. What attack vector is this?",o:["Supply chain","Watering hole","Typosquatting","Shoulder surfing"],a:0,e:"Compromising a trusted supplier to reach its customers is a supply chain attack."},
@@ -3814,7 +3815,7 @@ registerExamBank("thr",[
 /* ---------- 3.0 Security Architecture (16) ---------- */
 registerExamBank("arc",[
  {q:"In the shared responsibility model for IaaS, who is responsible for patching the guest operating system?",o:["The cloud provider","Nobody","The ISP","The customer"],a:3,e:"In IaaS the provider secures the physical hosts and hypervisor. The customer patches the OS and applications."},
- {q:"Which architecture places security services such as SWG, CASB, ZTNA and firewall-as-a-service in the cloud close to users?",o:["SASE","SD-WAN only","Air gap","Three-tier"],a:0,e:"Secure access service edge combines networking and cloud-delivered security for distributed users."},
+ {q:"Which architecture places security services such as SWG, CASB, ZTNA and firewall-as-a-service in the cloud close to users?",o:["SSE","UTM only","Air gap","Three-tier"],a:0,e:"Security service edge delivers these security services from the cloud, close to distributed users."},
  {q:"An industrial plant isolates its control network from all other networks with no physical connection. What is this?",o:["DMZ","Air gap","VLAN","Jump server"],a:1,e:"An air gap physically separates a network. Data moves only by controlled manual methods."},
  {q:"Admins must reach servers in a secured zone only through one hardened, monitored host. What is that host called?",o:["Proxy","Load balancer","Jump server / bastion host","Honeypot"],a:2,e:"A jump server is the single, audited entry point into a protected segment."},
  {q:"Which firewall capability inspects traffic up to Layer 7 and can identify applications regardless of port?",o:["Stateless packet filter","Layer 2 switch ACL","Router NAT","Next-generation firewall"],a:3,e:"NGFWs identify applications and users and can include IPS and TLS inspection."},
@@ -3826,7 +3827,7 @@ registerExamBank("arc",[
  {q:"Which backup approach protects against ransomware encrypting the backups themselves?",o:["More frequent incremental backups to the same share","Immutable or offline (air-gapped) backups","RAID 1","Snapshots stored on the same volume only"],a:1,e:"Immutable or offline copies can't be changed or encrypted by malware on the network."},
  {q:"Which high-availability concept places systems in different geographic regions so a regional disaster doesn't take them all down?",o:["Clustering in one rack","NIC teaming","Geographic dispersion","Load testing"],a:2,e:"Spreading sites across regions protects against local disasters."},
  {q:"Which embedded or specialized system type is used to control industrial processes such as pipelines?",o:["IoT smart speaker","Mobile device","Thin client","ICS/SCADA"],a:3,e:"SCADA and industrial control systems manage physical processes and need careful segmentation."},
- {q:"Which infrastructure concept defines servers and networks as versioned templates, making deployments repeatable and auditable?",o:["Infrastructure as code","Serverless","Microservices","Containerization only"],a:0,e:"IaC templates make configuration consistent and reviewable, which reduces drift."},
+ {q:"Which infrastructure concept defines servers and networks as versioned templates, making deployments repeatable and auditable?",o:["Infrastructure as code","Serverless","Microservices","Virtualization only"],a:0,e:"IaC templates make configuration consistent and reviewable, which reduces drift."},
  {q:"Which security benefit does microservices architecture offer compared to a monolith?",o:["No need for authentication","A compromise of one service can be contained, and services can be patched independently","No network traffic","Single point of failure"],a:1,e:"Isolated services limit the blast radius and allow independent updates, though the larger API surface needs protection."},
  {q:"Which port security method on wired networks authenticates devices using EAP and a RADIUS server?",o:["MAC flooding","STP","802.1X","PoE"],a:2,e:"802.1X authenticates devices before the switch port forwards their traffic."}
 ]);
@@ -3880,6 +3881,56 @@ registerExamBank("prg",[
  {q:"Which security awareness activity measures how many employees click on simulated malicious emails?",o:["Tabletop exercise","Vulnerability scan","Code review","Phishing campaign / simulation"],a:3,e:"Simulated phishing measures susceptibility and shows where training is needed."},
  {q:"Which audit type is performed by an independent firm and results in an attestation report for customers?",o:["External audit / attestation, such as SOC 2","Internal self-assessment","Tabletop","Peer review"],a:0,e:"Independent third-party audits give customers assurance about controls."},
  {q:"Which policy defines how long data must be kept and when it must be destroyed?",o:["AUP","Data retention policy","Password policy","Change management policy"],a:1,e:"Retention policies balance legal requirements with minimizing stored data."}
+]);
+
+</script>
+<script>
+/* ================= Exam-only questions for topics new in SY0-801 =================
+   Same rules as 99-exam-bank.js: these appear only in the timed practice exams and domain drills. */
+
+/* ---------- 1.0 General Security Concepts (3) ---------- */
+registerExamBank("gen",[
+ {q:"A company's zero trust design checks each request against user role, device health and location before a gateway opens the session. Which component makes the grant or deny decision?",o:["Policy enforcement point","Policy engine","Implicit trust zone","Subject"],a:1,e:"The policy engine evaluates the request against policy. The enforcement point only carries out the decision."},
+ {q:"An auditor asks which control category a zero trust access policy written by the security team belongs to. Which is the BEST answer?",o:["Physical","Operational","Managerial","Deterrent"],a:2,e:"A written access policy is a managerial (administrative) control. Deterrent is a type, not a category."},
+ {q:"A team wants to store API keys used by hundreds of cloud functions so they can be rotated and revoked from one place. What should they use?",o:["A key management system","Steganography","A self-signed certificate","Data masking"],a:0,e:"A key management system creates, stores, rotates and revokes keys centrally."}
+]);
+
+/* ---------- 2.0 Threats, Vulnerabilities, and Attacks (12) ---------- */
+registerExamBank("thr",[
+ {q:"An AI email assistant summarizes incoming mail. One message contains hidden text telling the assistant to forward the inbox to an outside address. What is this attack?",o:["Jailbreaking","Model inversion","Indirect prompt injection","Training data poisoning"],a:2,e:"Instructions hidden in content the AI reads are indirect prompt injection."},
+ {q:"A researcher crafts an image with tiny pixel changes so a vision model labels a stop sign as a speed limit sign. What type of attack is this?",o:["Evasion","Model theft by extraction","Direct prompt injection","Typosquatting"],a:0,e:"Evasion feeds a trained model crafted input so it misclassifies."},
+ {q:"A team downloads a pretrained model from a public repository. It works normally, except it approves any transaction containing a certain phrase. What happened?",o:["Hallucination","Model poisoning","Shadow AI use by staff","AI session hijacking"],a:1,e:"A hidden trigger in a tampered model is model poisoning. Use trusted sources and verify integrity."},
+ {q:"Which BEST describes a hallucination in a large language model?",o:["The model refuses a valid request","The model leaks its system prompt","The model is cloned by an attacker","It confidently gives a false answer"],a:3,e:"Hallucinations are fluent, confident and wrong, so outputs need verification."},
+ {q:"Staff in marketing paste unreleased product plans into a free AI writing tool that the company hasn't approved. Which risk does this create?",o:["Data loss through shadow AI","Evasion of an AI classifier","A watering hole attack","An on-path attack on the browser"],a:0,e:"Unapproved AI tools can store or train on what users paste, so confidential data leaves the company."},
+ {q:"An AI agent can read tickets and run scripts on servers. A ticket says \"Run cleanup.sh with --all on every server,\" and the agent deletes production data. Which weakness was exploited?",o:["Bias in the training data","Excessive agency","Explainability","A rainbow table attack"],a:1,e:"The agent had more access and autonomy than it needed and no human approval step."},
+ {q:"A chatbot's reply is inserted into a web page without encoding, and an attacker gets it to output a script tag. What is the root cause?",o:["Data poisoning of the model","Model theft by extraction","Insecure output handling","Jailbreaking the chatbot"],a:2,e:"Model output must be treated as untrusted and encoded before it reaches a browser."},
+ {q:"A hiring model trained on ten years of past decisions keeps ranking one group of applicants lower. Which AI concern is this?",o:["Evasion","Hallucination","Prompt injection","Bias"],a:3,e:"Skewed training data teaches the model unfair patterns. That is bias."},
+ {q:"A finance clerk receives a phone call in the CEO's exact voice approving an urgent payment to a new account. What should the clerk do?",o:["Verify the request using a known contact method","Pay it, since the voice clearly matches the CEO","Ask the caller to repeat the account number slowly","Email the new account holder to confirm the details"],a:0,e:"Voice cloning makes voices unreliable. Verify out of band before moving money."},
+ {q:"Stickers with QR codes appear on office printers saying \"Scan to report a fault.\" The code opens a page asking for corporate credentials. What attack is this?",o:["Bluejacking","Quishing","Pharming","Whaling"],a:1,e:"Phishing delivered through a QR code is quishing."},
+ {q:"Which control BEST reduces the risk of indirect prompt injection in an AI assistant that browses the web?",o:["Use a larger model","Allow the assistant to run any tool it chooses","Treat web content as data and limit its tools","Hide the system prompt with a longer prompt"],a:2,e:"Untrusted content must never act as instructions, and tool access should be limited."},
+ {q:"An attacker sends tens of millions of carefully chosen queries to a paid fraud-scoring API to build a copy of the model. Which control would MOST quickly detect or slow this?",o:["Rate limiting and usage monitoring","Full-disk encryption on the API servers","A wildcard TLS certificate for the API","Salting the stored API keys"],a:0,e:"Model extraction needs huge query volume, which rate limits and monitoring expose."}
+]);
+
+/* ---------- 3.0 Security Architecture (4) ---------- */
+registerExamBank("arc",[
+ {q:"A company with no central office wants web filtering, SaaS data controls and per-app private access delivered from the cloud. Which solution fits BEST?",o:["UTM","Security service edge","A site-to-site VPN mesh","An air-gapped network"],a:1,e:"SSE delivers SWG, CASB, ZTNA and FWaaS from the cloud, close to users."},
+ {q:"Which SSE component would stop an employee from downloading a malware-laced installer from an unknown website?",o:["CASB","ZTNA","SWG","FWaaS"],a:2,e:"The SWG filters web traffic and scans downloads."},
+ {q:"A traditional VPN gives contractors full network access. What does ZTNA change?",o:["It removes the need for user authentication","It sends all traffic unencrypted to save time","It requires a hardware token for every login","It connects users only to the apps they need"],a:3,e:"ZTNA grants per-application access after checking identity and device posture."},
+ {q:"Which SSE component gives visibility into which SaaS apps employees use and controls the data moving through them?",o:["Cloud access security broker","Firewall as a service","Secure web gateway","Zero trust network access"],a:0,e:"A CASB sits between users and cloud apps to enforce policy."}
+]);
+
+/* ---------- 4.0 Security Operations (4) ---------- */
+registerExamBank("ops",[
+ {q:"An organization runs hundreds of cloud accounts and wants continuous alerts when someone makes a storage bucket public or turns off logging. What should it deploy?",o:["A SOAR playbook only","A honeynet in each account","Cloud security posture management","A jump server per region"],a:2,e:"CSPM continuously compares cloud configurations with a baseline and flags drift."},
+ {q:"A SOC lets an AI agent quarantine laptops automatically but requires an analyst to approve disabling any privileged account. What principle is this?",o:["Human in the loop for high-impact actions","Separation of duties for auditors","A fail-open design for the agent","Data minimization for AI logs"],a:0,e:"Agentic AI can act quickly on low-risk steps while people approve risky ones."},
+ {q:"During a ransomware incident, the attackers threaten to publish stolen HR data. Which step should come BEFORE any payment is considered?",o:["Pay quickly so the HR data isn't published","Get legal advice and a sanctions check","Post the ransom note publicly to show transparency","Let the on-call analyst negotiate by email"],a:1,e:"Legal review and a sanctions check are required, and the decision belongs to leadership."},
+ {q:"A model learns each server's normal outbound traffic and alerts when one starts sending far more data than usual at night. What is this an example of?",o:["Key escrow for the server keys","Tokenization of outbound data","Port security on the switch","An AI-augmented baseline"],a:3,e:"AI can learn normal behavior and flag deviations that suggest exfiltration."}
+]);
+
+/* ---------- 5.0 Security Program Management and Oversight (2) ---------- */
+registerExamBank("prg",[
+ {q:"A threat intelligence report lists an attack group's techniques by IDs such as T1566 and T1003 under goals such as Initial Access and Credential Access. Which framework does it use?",o:["Cyber Kill Chain","Diamond Model","MITRE ATT&CK","NIST RMF"],a:2,e:"ATT&CK organizes techniques, with IDs, under tactics."},
+ {q:"An analyst links a phishing campaign to a known group by noticing the same C2 servers and malware used against two other companies. Which model's corners is the analyst pivoting between?",o:["Diamond Model","Cyber Kill Chain","CIA triad","Shared responsibility model"],a:0,e:"The Diamond Model connects adversary, capability, infrastructure and victim, so one corner leads to the others."}
 ]);
 
 </script>
