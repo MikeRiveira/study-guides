@@ -559,7 +559,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .pc-screen.s3,.pc-screen.s4,.pc-screen.s5,.pc-screen.s6{background:rgba(95,227,161,.1);color:var(--good);border-color:rgba(95,227,161,.5)}
 .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0;background:#f5f7fb;color:#1d2433}
 .mail-h{padding:12px 14px;border-bottom:1px solid #dde2ec;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.mail-h .s-small{color:#6b7488;display:inline-block;width:56px}
+.mail-h .s-small{color:#586175;display:inline-block;width:56px}
 .mail-b{padding:12px 14px;font-size:14px}.mail-b p{margin:0 0 10px}
 .flag{font:inherit;color:inherit;background:none;border:1px dashed transparent;border-radius:4px;padding:1px 3px;cursor:pointer;text-align:left;word-break:break-word}
 .flag:hover{border-color:#aab3c6}
@@ -567,7 +567,7 @@ td.ed-val{color:var(--fg);font-family:var(--mono);font-size:13px}
 .flag.mail-btn{background:#2f6fe4;color:#fff;padding:8px 16px;border-radius:6px;font-weight:600}
 .flag.mail-btn.hit{background:#c63e60}
 .flag.mail-att{display:inline-flex;gap:8px;align-items:center;border:1px solid #cfd6e3;padding:6px 10px;border-radius:6px;background:#fff}
-.flag.mail-att .s-small{color:#6b7488}
+.flag.mail-att .s-small{color:#586175}
 .perm{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
 @media(max-width:560px){.perm{grid-template-columns:1fr}}
 .perm-col{display:flex;flex-direction:column;gap:8px}
@@ -1067,6 +1067,13 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .ml-t{margin-top:8px}
 @media(max-width:700px){.lesson table:not(.viz table){display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
+
+/* ---------- Accessibility helpers ---------- */
+.sr-only{position:absolute!important;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:1000;padding:10px 16px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:600;text-decoration:none;transition:top .15s}
+.skip-link:focus{top:12px;outline:2px solid var(--on-accent);outline-offset:2px}
+main:focus{outline:none}
+[role="group"][tabindex="0"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* practice exam upgrades: pace marker, pool info, domain drills */
 .ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
@@ -1573,6 +1580,7 @@ function renderHome(){
       <b>${o.title}</b><span class="mc-meta">${o.weight}% of the exam</span><span class="mc-bar"><i style="width:${o.weight/MAXW*100}%"></i></span></div>`};
   $("#view").innerHTML=`
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
+    <p class="tip" role="note"><b>Exam timing:</b> This guide follows the <b>200-301 v2.0</b> exam topics, which take effect on <b>February 3, 2027</b>. If you test on or before February 2, 2027, you will sit <b>v1.1</b>. Most lessons apply to both, but v1.1 has a different domain layout and no AI domain, so check Cisco's v1.1 exam topics before you book.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on labs on a simulated Cisco IOS command line, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
     <h2 class="sec">Exam domains <span class="mono">200-301 v2.0</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
@@ -1772,6 +1780,40 @@ function boot(){
   checkBadges(true);gameReady=true;renderHUD();
   addEventListener("hashchange",route);route();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
 
 </script>
 <script>
@@ -3337,8 +3379,8 @@ R2(config-if)# ip helper-address 10.0.12.1</pre>
 const G={
  cable:[["Maximum length of a copper Ethernet run","100 meters"],["Cat 5e","1 Gbps up to 100 m"],["Cat 6","10 Gbps up to about 55 m (1 Gbps to 100 m)"],["Cat 6a","10 Gbps up to 100 m"],["Straight-through cable","Same pinout (T568A or B) on both ends. PC to switch"],["Crossover cable","T568A on one end, T568B on the other. Like device to like device on old gear"],["Auto-MDIX","Port detects and corrects the cable type automatically"],["Multimode fiber","Wide core, short distances (hundreds of meters), cheaper optics"],["Single-mode fiber","Narrow core, laser, long distances (10 km and more)"],["10GBASE-SR","10 Gbps short-range over multimode fiber (about 300–400 m)"],["10GBASE-LR","10 Gbps long-range over single-mode fiber (10 km)"],["LC connector","Small form-factor fiber connector used on SFP modules"],["SFP / SFP+","Hot-swappable transceiver module: SFP for 1 Gbps, SFP+ for 10 Gbps"],["DAC / twinax","Direct-attach copper cable with SFP+ ends, for short in-rack links"],["CRC errors","Corrupted frames: cabling, EMI, dirty fiber or duplex mismatch"],["Runts","Frames smaller than 64 bytes"],["Giants","Frames larger than the interface MTU"],["Late collisions","Collisions after the first 64 bytes: duplex mismatch or cable too long"],["Duplex mismatch symptom","Half-duplex side: late collisions. Full-duplex side: CRC errors and runts"],["Speed mismatch symptom","The link doesn't come up"],["Output drops","Egress queue overflow from congestion"],["administratively down","The interface was shut down with the shutdown command"],["down/down","Layer 1 problem: cable, optic, speed or no device attached"],["up/down","Layer 2 problem: encapsulation or keepalive mismatch"],["show interfaces transceiver","Shows optical Tx/Rx power, temperature and voltage"],["Healthy optical Rx power","Roughly −1 to −10 dBm (check the optic's datasheet)"],["Why fiber resists EMI","It carries light, not electrical current"]],
  virt:[["Hypervisor","Software that creates and runs virtual machines"],["Type 1 hypervisor","Runs directly on hardware (ESXi, Hyper-V, KVM)"],["Type 2 hypervisor","Runs as an application on a host OS (VirtualBox, Workstation)"],["Virtual machine","Full guest OS with virtual CPU, RAM, disk and NICs"],["Container","App and its libraries sharing the host OS kernel"],["Container advantage over a VM","Starts in seconds and uses far less memory"],["VM advantage over a container","Stronger isolation; can run a different OS than the host"],["Docker","Builds and runs containers from images"],["Kubernetes","Orchestrates containers across many hosts"],["vSwitch","Software switch inside a hypervisor that connects VMs to physical NICs"],["Switch port facing a hypervisor host","Usually an 802.1Q trunk carrying the VMs' VLANs"]],
- ipv4:[["Private range 10","10.0.0.0/8"],["Private range 172","172.16.0.0/12 (172.16.0.0 to 172.31.255.255)"],["Private range 192","192.168.0.0/16"],["APIPA","169.254.0.0/16: self-assigned when DHCP fails"],["Loopback range","127.0.0.0/8"],["Carrier-grade NAT shared space","100.64.0.0/10"],["Multicast range","224.0.0.0/4 (224 to 239)"],["/24 mask","255.255.255.0 · 254 hosts"],["/25 mask","255.255.255.128 · 126 hosts"],["/26 mask","255.255.255.192 · 62 hosts"],["/27 mask","255.255.255.224 · 30 hosts"],["/28 mask","255.255.255.240 · 14 hosts"],["/29 mask","255.255.255.248 · 6 hosts"],["/30 mask","255.255.255.252 · 2 hosts"],["/31","Point-to-point link with 2 addresses and no broadcast (RFC 3021)"],["/32","A single host route, used for loopbacks"],["Usable hosts formula","2^(host bits) − 2"],["Block size","256 minus the mask value in the interesting octet"],["Broadcast address","The last address in the subnet: one less than the next subnet"],["VLSM rule","Allocate the largest subnet first"],["Wildcard of /24","0.0.0.255"],["Wildcard of /30","0.0.0.3"]],
- ipv6:[["IPv6 address length","128 bits"],["IPv6 shortening rules","Drop leading zeros in each group; replace one run of zero groups with ::"],["Global unicast range","2000::/3"],["Unique local range","FC00::/7 (FD00::/8 in practice)"],["Link-local range","FE80::/10"],["Multicast range","FF00::/8"],["FF02::1","All IPv6 nodes on the link"],["FF02::2","All IPv6 routers on the link"],["Solicited-node multicast","FF02::1:FFxx:xxxx, used by neighbor discovery instead of ARP"],["IPv6 loopback","::1"],["Unspecified address","::"],["Anycast","One address on several devices; traffic goes to the nearest"],["Standard subnet size","/64"],["Typical site allocation","/48"],["Point-to-point link prefix","/127"],["Modified EUI-64 steps","Split the MAC, insert FFFE, flip the 7th bit"],["SLAAC","Host builds its own address from the router's RA prefix"],["Stateless DHCPv6","SLAAC for the address plus DHCPv6 for DNS"],["Stateful DHCPv6","DHCPv6 server assigns the address"],["Enable IPv6 routing on IOS","ipv6 unicast-routing"],["ipv6 address autoconfig","Interface gets an address by SLAAC"],["Neighbor Discovery","ICMPv6 RS, RA, NS, NA messages that replace ARP and router discovery"]],
+ ipv4:[["Private range 10","10.0.0.0/8"],["Private range 172","172.16.0.0/12 (172.16.0.0 to 172.31.255.255)"],["Private range 192","192.168.0.0/16"],["APIPA","169.254.0.0/16: self-assigned when DHCP fails"],["Loopback range","127.0.0.0/8"],["Carrier-grade NAT shared space","100.64.0.0/10"],["IPv4 multicast range","224.0.0.0/4 (224 to 239)"],["/24 mask","255.255.255.0 · 254 hosts"],["/25 mask","255.255.255.128 · 126 hosts"],["/26 mask","255.255.255.192 · 62 hosts"],["/27 mask","255.255.255.224 · 30 hosts"],["/28 mask","255.255.255.240 · 14 hosts"],["/29 mask","255.255.255.248 · 6 hosts"],["/30 mask","255.255.255.252 · 2 hosts"],["/31","Point-to-point link with 2 addresses and no broadcast (RFC 3021)"],["/32","A single host route, used for loopbacks"],["Usable hosts formula","2^(host bits) − 2"],["Block size","256 minus the mask value in the interesting octet"],["Broadcast address","The last address in the subnet: one less than the next subnet"],["VLSM rule","Allocate the largest subnet first"],["Wildcard of /24","0.0.0.255"],["Wildcard of /30","0.0.0.3"]],
+ ipv6:[["IPv6 address length","128 bits"],["IPv6 shortening rules","Drop leading zeros in each group; replace one run of zero groups with ::"],["Global unicast range","2000::/3"],["Unique local range","FC00::/7 (FD00::/8 in practice)"],["Link-local range","FE80::/10"],["IPv6 multicast range","FF00::/8"],["FF02::1","All IPv6 nodes on the link"],["FF02::2","All IPv6 routers on the link"],["Solicited-node multicast","FF02::1:FFxx:xxxx, used by neighbor discovery instead of ARP"],["IPv6 loopback","::1"],["Unspecified address","::"],["Anycast","One address on several devices; traffic goes to the nearest"],["Standard subnet size","/64"],["Typical site allocation","/48"],["Point-to-point link prefix","/127"],["Modified EUI-64 steps","Split the MAC, insert FFFE, flip the 7th bit"],["SLAAC","Host builds its own address from the router's RA prefix"],["Stateless DHCPv6","SLAAC for the address plus DHCPv6 for DNS"],["Stateful DHCPv6","DHCPv6 server assigns the address"],["Enable IPv6 routing on IOS","ipv6 unicast-routing"],["ipv6 address autoconfig","Interface gets an address by SLAAC"],["Neighbor Discovery","ICMPv6 RS, RA, NS, NA messages that replace ARP and router discovery"]],
  wifi:[["Non-overlapping 2.4 GHz channels (US)","1, 6 and 11"],["Advantage of 2.4 GHz","Longer range and better penetration"],["Advantage of 5 GHz","More non-overlapping channels and wider channels"],["DFS","Dynamic Frequency Selection: 5 GHz APs must leave a channel if they detect radar"],["6 GHz security requirement","WPA3 (and OWE for open networks)"],["RSSI","Received signal strength, in dBm"],["Good signal for voice","About −67 dBm or stronger"],["Noise floor","Background RF energy, often around −95 dBm"],["SNR","Signal minus noise, in dB. 25 dB or more is good"],["3 dB rule","Every 3 dB doubles or halves the power"],["Absorption","Walls, water and people soak up RF"],["Reflection","Metal bounces RF and causes multipath"],["WEP","Broken legacy encryption"],["WPA2 encryption","AES-CCMP"],["WPA2/WPA3 Personal","Shared passphrase (PSK or SAE)"],["WPA2/WPA3 Enterprise","802.1X/EAP authentication against a RADIUS server"],["SAE","WPA3-Personal handshake that resists offline dictionary attacks"],["PMF","Protected Management Frames, required by WPA3"],["OWE","Opportunistic Wireless Encryption: encrypts open networks"],["Co-channel interference","Nearby APs on the same channel must share airtime"],["Adjacent-channel interference","Overlapping channels corrupt each other's frames"],["Common 2.4 GHz non-Wi-Fi interference","Microwave ovens, Bluetooth, cordless phones"]],
  client:[["Windows: full IP config","ipconfig /all"],["Windows: renew DHCP","ipconfig /release then ipconfig /renew"],["Windows: trace a path","tracert"],["Windows: Wi-Fi details","netsh wlan show interfaces"],["macOS: IP details","ifconfig or networksetup -getinfo Wi-Fi"],["Linux: IP addresses","ip addr"],["Linux: routing table","ip route"],["Linux: neighbor (ARP) table","ip neigh"],["Linux: DNS servers","resolvectl status (or /etc/resolv.conf)"],["DNS query tools","nslookup and dig"],["Ping by IP works, by name fails","DNS problem"],["Client shows 169.254.x.x","DHCP failed"]],
  dhcp:[["DORA","Discover, Offer, Request, Acknowledge"],["DHCP ports","UDP 67 (server) and 68 (client)"],["DHCP Discover destination","255.255.255.255 broadcast, from source 0.0.0.0"],["ip helper-address","Relays DHCP broadcasts to a server on another subnet"],["Where helper-address goes","On the interface that faces the clients"],["giaddr","Relay agent's interface address; tells the server which pool to use"],["ip dhcp excluded-address","Addresses the IOS server must never hand out"],["ip dhcp pool NAME","Creates a pool and enters dhcp-config mode"],["default-router","Pool option that gives clients their gateway"],["dns-server","Pool option that gives clients DNS servers"],["show ip dhcp binding","Lists the leases the IOS server has handed out"],["show ip dhcp pool","Pool size, leased count and ranges"],["Router as DHCP client","ip address dhcp on the interface"],["Lease renewal (T1)","At 50% of the lease the client tries to renew"]]
@@ -5328,7 +5370,7 @@ sortViz($("#viz-snmpver"),{title:"Which SNMP version?",bins:{v2:"SNMPv2c",v3:"SN
   const M=[[2,"%PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address dead.beef.0001 on port GigabitEthernet1/0/2."],[3,"%LINK-3-UPDOWN: Interface GigabitEthernet0/0/1, changed state to down"],[5,"%LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/0/1, changed state to down"],[5,"%OSPF-5-ADJCHG: Process 1, Nbr 2.2.2.2 on GigabitEthernet0/0/0 from FULL to DOWN"],[4,"%SYS-4-CONFIG_RESOLVE_FAILURE: System config parse from (tftp://255.255.255.255/network-confg) failed"],[1,"%ENVMON-1-FAN_FAILURE: Fan 2 failure detected"],[6,"%SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 10.0.99.40 port 514 started"],[7,"IP: s=10.1.1.5 (Gi0/0/1), d=10.2.2.2, len 100, rcvd 2"],[5,"%SYS-5-CONFIG_I: Configured from console by admin on vty0 (10.0.99.7)"]];
   el.innerHTML=`<div class="viz-title">logging trap: what reaches the syslog server?</div><div class="chips">${LV.map((l,i)=>`<button class="chip mono" data-l="${i}">${i} ${l}</button>`).join("")}</div><pre class="term sl-o"></pre><div class="caption" aria-live="polite"></div>`;
   function draw(){el.querySelectorAll("[data-l]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===lv));
-    $(".sl-o",el).innerHTML=`<span class="t-c">R1(config)# logging trap ${LV[lv]}</span>\n`+M.map(m=>`<span class="${m[0]<=lv?"":"t-n"}" style="${m[0]<=lv?"":"opacity:.35;text-decoration:line-through"}">${esc(m[1])}</span>`).join("\n");
+    $(".sl-o",el).innerHTML=`<span class="t-c">R1(config)# logging trap ${LV[lv]}</span>\n`+M.map(m=>`<span class="${m[0]<=lv?"":"t-n"}" style="${m[0]<=lv?"":"opacity:.85;text-decoration:line-through"}">${esc(m[1])}</span>`).join("\n");
     const n=M.filter(m=>m[0]<=lv).length;$(".caption",el).innerHTML=`Level <b>${lv} (${LV[lv]})</b> sends levels 0 through ${lv}: ${n} of ${M.length} messages. ${lv>=7?"Debugging floods the server and can load the CPU; use it briefly.":lv<=2?"You'd miss interface and OSPF changes.":lv===4?"Warnings is a common choice, but notice it drops the level 5 OSPF and interface messages.":lv===5?"Notifications catches OSPF, line protocol and config changes: often the best balance.":""}`;
     seen.add(lv);if(seen.size>=4)award("viz:syslog",20,"Filtered syslog by severity")}
   el.addEventListener("click",e=>{const b=e.target.closest("[data-l]");if(!b)return;lv=+b.dataset.l;draw()});draw();

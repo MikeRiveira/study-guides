@@ -105,7 +105,7 @@ const CARDS=[
      ["Video connector that also carries audio, common on TVs","HDMI"],["Video connector with one corner cut off","DisplayPort"],["Analog video, 15 pins in 3 rows","VGA"],["DVI-D vs DVI-I","DVI-D is digital only. DVI-I carries digital and analog."],
      ["Cat 5e max speed and distance","1 Gbps, 100 m"],["Cat 6a max speed and distance","10 Gbps, 100 m"],["Connector for cable TV coax","F-type (RG-6 cable)"],["Fiber connector: small and square, often in pairs","LC"],["Fiber connector: round, twist to lock","ST"],
      ["Cable jacket required in drop ceilings","Plenum-rated"],["SATA III speed","6 Gbps"]].map((c,i)=>({deck:"cables",id:"hc"+i,q:c[0],a:c[1]})),
- ...[["DDR4 vs DDR5 DIMM pins","Both 288, but the notch differs, so they are not interchangeable"],["Laptop RAM form factor","SODIMM"],["RAM that corrects memory errors","ECC"],
+ ...[["DDR4 vs DDR5 DIMM pins","Both 288, but the notch differs, so they are not interchangeable"],["Memory module used in laptops and small form factor PCs","SODIMM (small outline DIMM)"],["RAM that corrects memory errors","ECC"],
      ["RAID 0","Striping. Fast, no fault tolerance. Min 2 drives."],["RAID 1","Mirroring. Survives one drive failure. 2 drives."],["RAID 5","Striping with parity. Survives 1 failure. Min 3 drives. Loses 1 drive of capacity."],
      ["RAID 6","Double parity. Survives 2 failures. Min 4 drives."],["RAID 10","Mirrored pairs, then striped. Min 4 drives. Half the capacity."],["NVMe connects over which bus?","PCIe"],
      ["Common HDD speeds","5,400 and 7,200 rpm (10k and 15k in servers)"]].map((c,i)=>({deck:"memory",id:"hm"+i,q:c[0],a:c[1]})),

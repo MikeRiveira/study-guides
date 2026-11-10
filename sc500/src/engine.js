@@ -676,3 +676,37 @@ function boot(){
   checkBadges(true);gameReady=true;renderHUD();
   addEventListener("hashchange",route);route();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();

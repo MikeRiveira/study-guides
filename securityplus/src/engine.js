@@ -477,6 +477,7 @@ function renderHome(){
       <b>${o.title}</b><span class="mc-meta">${o.weight}% of the exam</span><span class="mc-bar"><i style="width:${o.weight/MAXW*100}%"></i></span></div>`};
   $("#view").innerHTML=`
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
+    <p class="tip" role="note"><b>Exam version:</b> This guide covers <b>SY0-701</b>. CompTIA launches the new <b>SY0-801</b> on November 17, 2026, with the same five domains but new weights (16 / 24 / 19 / 27 / 14%). SY0-701 can still be booked until mid-2027, so make sure you book the version you studied for.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on simulations, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
     <h2 class="sec">Exam domains <span class="mono">SY0-701</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
@@ -676,3 +677,37 @@ function boot(){
   checkBadges(true);gameReady=true;renderHUD();
   addEventListener("hashchange",route);route();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();

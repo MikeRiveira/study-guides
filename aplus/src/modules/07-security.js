@@ -186,7 +186,7 @@ registerModule({
     el.querySelectorAll("[data-m]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));
     el.querySelectorAll(".wl-col").forEach(c=>{c.classList.toggle("sel",c.dataset.col===cur);c.classList.toggle("bad",P[c.dataset.col].st==="bad")});
     const auth=cur==="WEP"?"Shared key":mode==="Personal"?(cur==="WPA3"?"SAE passphrase":"Pre-shared key (PSK)"):"802.1X with a RADIUS server";
-    $(".wl-info",el).innerHTML=`<h4>${cur} <span class="s-small">${p.y}</span></h4><p><span class="s-small">ENCRYPTION</span><br><b class="mono">${p.c}</b></p><p><span class="s-small">LOGIN (${mode.toUpperCase()})</span><br><b>${auth}</b></p><p class="${p.st==="bad"?"status-bad":""}">${p.s}</p>${mode==="Enterprise"&&cur!=="WEP"?`<p class="s-small">Enterprise mode gives every user their own login, checked by RADIUS.</p>`:""}`;
+    $(".wl-info",el).innerHTML=`<h3 class="wl-h">${cur} <span class="s-small">${p.y}</span></h3><p><span class="s-small">ENCRYPTION</span><br><b class="mono">${p.c}</b></p><p><span class="s-small">LOGIN (${mode.toUpperCase()})</span><br><b>${auth}</b></p><p class="${p.st==="bad"?"status-bad":""}">${p.s}</p>${mode==="Enterprise"&&cur!=="WEP"?`<p class="s-small">Enterprise mode gives every user their own login, checked by RADIUS.</p>`:""}`;
     if(seen.size===4)award("viz:wifi",20,"Compared wireless security");
   }
   el.addEventListener("click",e=>{const w=e.target.closest("[data-w]"),m=e.target.closest("[data-m]");if(w)cur=w.dataset.w;if(m)mode=m.dataset.m;if(w||m)draw()});draw();

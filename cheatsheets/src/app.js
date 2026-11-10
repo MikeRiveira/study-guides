@@ -6,7 +6,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const rows = txt => txt.trim().split("\n").map(l => l.split("|"));
 
 const EXAMS = { A: ["A+", "aplus"], N: ["Network+", "netplus"], S: ["Security+", "securityplus"], C: ["CCNA", "ccna"] };
-const GUIDE = { aplus: "A+", netplus: "Network+", securityplus: "Security+", az900: "AZ-900", ccna: "CCNA" };
+const GUIDE = { aplus: "A+", netplus: "Network+", securityplus: "Security+", az900: "AZ-900", ccna: "CCNA", linuxplus: "Linux+", az104: "AZ-104", ccnp: "CCNP", cysaplus: "CySA+", sc500: "SC-500" };
 
 /* table(headers, rows): rows are arrays of cell HTML; opts.cls adds a table class, opts.attr(row,i) adds tr attributes */
 function table(head, body, opts = {}) {
@@ -76,11 +76,11 @@ const SHEETS = [
       ]));
   } },
   { id: "windows", nav: "Windows", glyph: "WIN", title: "Windows commands", lead: "Command Prompt and PowerShell tools for support work. Click any command to copy it. Most repair tools need an elevated (Run as administrator) prompt.", guides: ["aplus"], render() { return cmdSheet(WINDOWS); } },
-  { id: "linux", nav: "Linux", glyph: "$_", title: "Linux commands", lead: "Shell essentials for support and admin work. Click any command to copy it. Prefix with sudo when you need root.", guides: ["aplus", "securityplus"], render() {
+  { id: "linux", nav: "Linux", glyph: "$_", title: "Linux commands", lead: "Shell essentials for support and admin work. Click any command to copy it. Prefix with sudo when you need root.", guides: ["linuxplus", "aplus", "securityplus"], render() {
     return tool("chmod calculator", `<div class="chmod" id="chmod">${["Owner", "Group", "Others"].map((w, i) => `<fieldset><legend>${w}</legend>${["Read", "Write", "Execute"].map((p, j) => `<label><input type="checkbox" data-i="${i}" data-b="${4 >> j}"${[7, 5, 5][i] & (4 >> j) ? " checked" : ""}> ${p}</label>`).join("")}</fieldset>`).join("")}<div class="chmod-out"><label>Octal <input id="ch-oct" value="755" maxlength="3" inputmode="numeric"></label><code id="ch-sym">rwxr-xr-x</code><button class="cmd" type="button" id="ch-copy" data-copy="chmod 755 file"><code>chmod 755 file</code></button></div></div><p class="note">Read = 4, write = 2, execute = 1. Add them per group: 7 = rwx, 6 = rw-, 5 = r-x, 4 = r--. Common: 644 files, 755 scripts and folders, 600 private keys.</p>`)
       + cmdSheet(LINUX);
   } },
-  { id: "ios", nav: "Cisco IOS", glyph: "IOS", title: "Cisco IOS commands", lead: "Router and switch CLI for CCNA labs. Click a command to copy it. Steps joined with / are separate lines.", guides: ["ccna", "netplus"], render() { return cmdSheet(IOS, true) + blk("Administrative distance", table(["Source", "AD"], [["Connected", "0"], ["Static", "1"], ["eBGP", "20"], ["EIGRP (internal)", "90"], ["OSPF", "110"], ["IS-IS", "115"], ["RIP", "120"], ["EIGRP (external)", "170"], ["iBGP", "200"], ["Unusable", "255"]].map(([a, b]) => [a, `<b class="port">${b}</b>`]))) + `<p class="note">Lower AD wins between routing sources. Within one source, the longest prefix match wins first.</p>`; } },
+  { id: "ios", nav: "Cisco IOS", glyph: "IOS", title: "Cisco IOS commands", lead: "Router and switch CLI for CCNA labs. Click a command to copy it. Steps joined with / are separate lines.", guides: ["ccna", "ccnp", "netplus"], render() { return cmdSheet(IOS, true) + blk("Administrative distance", table(["Source", "AD"], [["Connected", "0"], ["Static", "1"], ["eBGP", "20"], ["EIGRP (internal)", "90"], ["OSPF", "110"], ["IS-IS", "115"], ["RIP", "120"], ["EIGRP (external)", "170"], ["iBGP", "200"], ["Unusable", "255"]].map(([a, b]) => [a, `<b class="port">${b}</b>`]))) + `<p class="note">Lower AD wins between routing sources. Within one source, the longest prefix match wins first.</p>`; } },
   { id: "acronyms", nav: "Acronyms", glyph: "A–Z", title: "Acronyms", lead: "The acronyms that come up across A+, Network+, Security+, CCNA and AZ-900. Type in the search box at the top to jump to one.", guides: ["aplus", "netplus", "securityplus", "ccna", "az900"], render() {
     const A = rows(ACRONYMS), area = { N: "Networking", S: "Security", H: "Hardware", C: "Cloud", O: "Operations" };
     return tool("Filter by area", `<div class="chips" role="group" aria-label="Filter acronyms by area"><button type="button" class="chip on" data-ar="">All ${A.length}</button>${Object.entries(area).map(([k, n]) => `<button type="button" class="chip" data-ar="${k}">${n}</button>`).join("")}</div>`)
@@ -104,12 +104,12 @@ const SHEETS = [
       + blk("Ethernet standards", table(["Standard", "Speed", "Media"], rows(ETH_STD).map(([a, b, c]) => [`<b class="port">${a}</b>`, b, esc(c)])))
       + blk("Coax", list(["<b>RG-6:</b> cable internet and TV, F-type connector", "<b>RG-59:</b> older and thinner, CCTV and short video runs"]));
   } },
-  { id: "raid", nav: "RAID", glyph: "RAID", title: "RAID levels", lead: "RAID protects against drive failure, not deletion, ransomware or fire. It is not a backup.", guides: ["aplus", "securityplus"], render() {
+  { id: "raid", nav: "RAID", glyph: "RAID", title: "RAID levels", lead: "RAID protects against drive failure, not deletion, ransomware or fire. It is not a backup.", guides: ["aplus", "linuxplus", "securityplus"], render() {
     return blk("", table(["Level", "Method", "Min drives", "Survives", "Usable capacity", "Notes"], rows(RAID).map(([a, b, c, d, e, f]) => [`<b class="port">RAID ${a}</b>`, `<b>${b}</b>`, c, esc(d), esc(e), esc(f)])))
       + tool("RAID capacity calculator", `<form class="calc" id="raidcalc" onsubmit="return false"><label>Level <select id="rc-l"><option value="0">RAID 0</option><option value="1">RAID 1</option><option value="5" selected>RAID 5</option><option value="6">RAID 6</option><option value="10">RAID 10</option></select></label><label>Drives <input id="rc-n" type="number" min="2" max="24" value="4"></label><label>Size each (TB) <input id="rc-s" type="number" min="0.1" step="0.1" value="4"></label></form><div id="rc-out" class="calc-out" aria-live="polite"></div>`)
       + blk("Backup types", table(["Type", "Backs up", "Clears archive bit", "Restore needs"], [["Full", "Everything", "Yes", "The last full"], ["Incremental", "Changes since the last backup of any kind", "Yes", "Last full + every incremental since"], ["Differential", "Changes since the last full", "No", "Last full + the latest differential"], ["Snapshot", "Point-in-time state of a VM or volume", "—", "The snapshot"]].map(([a, b, c, d]) => [`<b>${a}</b>`, b, c, d])) + `<p class="note">3-2-1 rule: 3 copies of your data, on 2 different media, with 1 off-site (and ideally one offline or immutable).</p>`);
   } },
-  { id: "attacks", nav: "Attacks", glyph: "ATK", title: "Attacks and defenses", lead: "Match each attack to the control that stops it. That pairing is how most Security+ questions are written.", guides: ["securityplus", "netplus", "ccna"], render() {
+  { id: "attacks", nav: "Attacks", glyph: "ATK", title: "Attacks and defenses", lead: "Match each attack to the control that stops it. That pairing is how most Security+ questions are written.", guides: ["securityplus", "netplus", "ccna", "cysaplus"], render() {
     const A = rows(ATTACKS), cats = [...new Set(A.map(r => r[3]))];
     return cats.map(c => blk(c, table(["Attack", "What it is", "Defenses"], A.filter(r => r[3] === c).map(([a, b, d]) => [`<b>${esc(a)}</b>`, esc(b), `<span class="def">${esc(d)}</span>`]), { cls: "atk" }))).join("");
   } }
@@ -266,3 +266,37 @@ function boot() {
   $$("#raidcalc input, #raidcalc select").forEach(i => i.addEventListener("input", raidCalc));
   subnetCalc(); raidCalc(); drillNext();
 }
+
+/* ---------- Accessibility helpers ----------
+   Skip link, keyboard access to scrolling terminals, code and tables,
+   and screen-reader text for blank table header cells. */
+(function(){
+  const main=document.querySelector("main");
+  if(main&&!document.querySelector(".skip-link")){
+    main.id=main.id||"main";main.tabIndex=-1;
+    const a=document.createElement("a");a.className="skip-link";a.href="#"+main.id;a.textContent="Skip to main content";
+    a.addEventListener("click",e=>{e.preventDefault();main.focus();main.scrollIntoView()});
+    document.body.prepend(a);
+  }
+  const FOCUSABLE="a[href],button,input,select,textarea,[tabindex]";
+  const ALWAYS=".ios-out,.viz-scroll,pre,.term",IFSCROLL=".tbl-wrap,.tw";
+  const label=e=>e.matches("pre")?"Code sample":e.matches(".tbl-wrap,.tw")?"Scrollable table":"Terminal output";
+  const fix=()=>{
+    document.querySelectorAll(ALWAYS+","+IFSCROLL).forEach(e=>{
+      if(e.hasAttribute("tabindex")||e.querySelector(FOCUSABLE))return;
+      if(e.matches(IFSCROLL)&&e.scrollWidth<=e.clientWidth+1)return;
+      if(e.parentElement&&e.parentElement.closest(ALWAYS))return;
+      e.tabIndex=0;if(!e.hasAttribute("role"))e.setAttribute("role","group");
+      if(!e.hasAttribute("aria-label"))e.setAttribute("aria-label",label(e));
+    });
+    document.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(e=>{
+      if((e.labels&&e.labels.length)||e.hasAttribute("aria-label")||e.hasAttribute("aria-labelledby"))return;
+      const t=e.previousElementSibling,txt=(t&&!t.matches("input,select,button,textarea")&&t.textContent.trim())||e.placeholder||e.title;
+      if(txt)e.setAttribute("aria-label",txt.slice(0,80));
+    });
+    document.querySelectorAll("th:empty").forEach(th=>{th.innerHTML='<span class="sr-only">Item</span>'});
+  };
+  let queued=false;
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;fix()})}}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
