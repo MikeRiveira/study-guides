@@ -914,6 +914,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .bdg.secret:not(.on){border-style:dashed}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1357,23 +1366,54 @@ function renderRanks(){
 const EXAM={1:{code:"N10-009",pass:720}};
 const EXAM_LEN={full:[90,90],half:[45,45]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(100+800*pct/100);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1392,16 +1432,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">90 questions · 90 minutes</span><em>The real exam length.</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">45 questions · 45 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">PASSING SCORE</span><b class="mono">${EXAM[c].pass} / 900</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Pass":"Below passing"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">The real exam also has performance-based questions. Practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">N10-009 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">N10-009 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1424,6 +1466,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1441,24 +1484,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-100)/8));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}Network+ · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}Network+ · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 900</span></div>
     <div class="ex-gauge"><i style="left:${(EXAM[c].pass-100)/8}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"Pass":"Below the passing score of "+EXAM[c].pass}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>${d.o.domain}.0 ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 100–900 score is an estimate: CompTIA doesn't publish how it scales raw scores.</p>
@@ -1468,6 +1512,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -3587,6 +3632,122 @@ AP-Floor2     Gi1/0/11        131      T           AIR-AP    Gi0`}}};
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1.0 Networking Concepts (21) ---------- */
+registerExamBank("con",[
+ {q:"A network engineer is told to give a branch office a subnet for 50 hosts with the least wasted addresses. Which prefix length fits?",o:["/26","/25","/27","/28"],a:0,e:"A /26 has 64 addresses and 62 usable hosts. A /27 has only 30 usable."},
+ {q:"How many usable host addresses are in 192.168.10.0/28?",o:["16","14","30","6"],a:1,e:"A /28 leaves 4 host bits: 2^4 = 16 addresses, minus network and broadcast, gives 14."},
+ {q:"What is the broadcast address of 10.20.30.64/27?",o:["10.20.30.127","10.20.30.63","10.20.30.95","10.20.30.96"],a:2,e:"A /27 has a block size of 32, so the subnet runs from .64 to .95. .95 is the broadcast."},
+ {q:"Which address range is reserved by RFC 6598 for carrier-grade NAT between ISPs and customers?",o:["169.254.0.0/16","172.16.0.0/12","192.0.2.0/24","100.64.0.0/10"],a:3,e:"100.64.0.0/10 is shared address space for CGNAT. 169.254/16 is link-local and 192.0.2/24 is for documentation."},
+ {q:"An application needs reliable, ordered delivery and retransmits lost segments. Which transport protocol and mechanism provide this?",o:["TCP with sequence numbers and acknowledgments","UDP with checksums","ICMP echo","GRE"],a:0,e:"TCP uses sequence numbers, ACKs and retransmission for reliable, ordered delivery."},
+ {q:"Which protocol and port does a network engineer use to securely manage a switch from the command line?",o:["Telnet, TCP 23","SSH, TCP 22","HTTP, TCP 80","SNMPv1, UDP 161"],a:1,e:"SSH encrypts management sessions on TCP 22. Telnet sends everything in clear text."},
+ {q:"Which port does LDAPS use?",o:["389","3268","636","88"],a:2,e:"LDAP over TLS uses TCP 636. Plain LDAP is 389 and Kerberos is 88."},
+ {q:"Which protocol synchronizes clocks on network devices, and on which port?",o:["SNMP, UDP 162","Syslog, UDP 514","TFTP, UDP 69","NTP, UDP 123"],a:3,e:"NTP uses UDP 123. Accurate time matters for logs, Kerberos and certificates."},
+ {q:"A network has to carry traffic for several departments over the same switches, with each department isolated at Layer 2. What should be used?",o:["VLANs","A hub","Port mirroring","Link aggregation only"],a:0,e:"VLANs split one physical switch infrastructure into separate broadcast domains."},
+ {q:"Which cloud connectivity option gives a private, dedicated circuit from an on-premises data center to a cloud provider, bypassing the internet?",o:["Site-to-site VPN","Direct connect / dedicated private interconnect","Client VPN","Public IP peering"],a:1,e:"Services such as AWS Direct Connect and Azure ExpressRoute provide private, dedicated links with predictable performance."},
+ {q:"Which cloud network construct is a logically isolated network in which a company deploys its own subnets and route tables?",o:["CDN","NFV","Virtual private cloud (VPC/VNet)","SASE"],a:2,e:"A VPC or VNet is your private network segment inside a public cloud."},
+ {q:"Which IPv6 address type is automatically configured on every IPv6 interface and is valid only on the local link?",o:["Global unicast (2000::/3)","Unique local (fc00::/7)","Multicast (ff00::/8)","Link-local (fe80::/10)"],a:3,e:"Every IPv6 interface gets a link-local fe80:: address used for neighbor discovery and routing protocols."},
+ {q:"Which IPv6 transition mechanism lets a host run IPv4 and IPv6 at the same time on one interface?",o:["Dual stack","NAT64 only","Tunneling only","Teredo only"],a:0,e:"Dual stack runs both protocol stacks side by side. It's the most common transition approach."},
+ {q:"Which topology is common in data centers, with every leaf switch connecting to every spine switch?",o:["Star only","Spine and leaf","Bus","Ring"],a:1,e:"Spine and leaf gives predictable, low-latency east-west paths because every leaf is one hop from every spine."},
+ {q:"In the three-tier model, which layer aggregates access switches and applies routing and policy between VLANs?",o:["Core","Access","Distribution","Edge"],a:2,e:"The distribution (aggregation) layer connects access switches, routes between VLANs and enforces policy."},
+ {q:"Which transceiver type supports 10 Gbps Ethernet in a small hot-pluggable form factor?",o:["GBIC","SFP (1 Gbps)","QSFP28 only","SFP+"],a:3,e:"SFP+ supports 10 Gbps. QSFP+ and QSFP28 are 40 and 100 Gbps."},
+ {q:"Which fiber type and wavelength would typically be used for a 10 km link?",o:["Single-mode at 1310 nm","Multimode at 850 nm","Multimode at 1300 nm","Cat 6a copper"],a:0,e:"Single-mode fiber with 1310 or 1550 nm optics covers long distances. Multimode is for short runs."},
+ {q:"Which technology lets one fiber carry several channels by sending each one on a different wavelength?",o:["PoE","WDM (wavelength-division multiplexing)","CSMA/CD","STP"],a:1,e:"WDM (CWDM/DWDM) multiplexes many wavelengths on one fiber, and bidirectional optics use two wavelengths on a single strand."},
+ {q:"Which network function virtualization benefit is most significant for a provider deploying firewalls at many customer sites?",o:["It eliminates the need for routing","It removes the need for IP addresses","Firewalls can be deployed as software on standard servers and spun up quickly","It doubles cable bandwidth"],a:2,e:"NFV replaces dedicated appliances with virtual network functions on commodity hardware, which speeds up deployment."},
+ {q:"Which protocol encapsulates traffic in a tunnel without encryption and is often combined with IPsec?",o:["SSH","TLS","SFTP","GRE"],a:3,e:"GRE builds simple tunnels that can carry multicast and routing protocols. IPsec adds encryption."},
+ {q:"Which cloud service model gives a company managed databases and runtimes while it controls only its applications and data?",o:["PaaS","IaaS","SaaS","On-premises"],a:0,e:"With PaaS the provider runs the OS and platform. The customer manages apps and data."}
+]);
+
+/* ---------- 2.0 Network Implementation (18) ---------- */
+registerExamBank("imp",[
+ {q:"A router learns a route to 10.1.0.0/16 from OSPF and a route to 10.1.5.0/24 from a static entry. A packet is headed to 10.1.5.20. Which route is used?",o:["The OSPF /16 because OSPF is dynamic","The static /24 because it is the longest prefix match","Both, load balanced","Neither; it goes to the default route"],a:1,e:"Routers always pick the most specific (longest prefix) match first. Administrative distance only breaks ties between equal prefixes."},
+ {q:"Two routes to the same /24 exist: one from OSPF (AD 110) and one from EIGRP (AD 90). Which one is installed?",o:["OSPF","The one with more hops","EIGRP","Both"],a:2,e:"With equal prefix lengths, the lower administrative distance wins. Internal EIGRP is 90 and OSPF is 110."},
+ {q:"Which routing protocol is used between autonomous systems on the internet?",o:["OSPF","RIP","EIGRP","BGP"],a:3,e:"BGP is the exterior gateway protocol that exchanges routes between autonomous systems."},
+ {q:"Which feature lets two routers share a virtual IP so that hosts' default gateway survives a router failure?",o:["FHRP such as VRRP or HSRP","STP","LACP","NAT"],a:0,e:"First hop redundancy protocols present one virtual gateway IP backed by multiple routers."},
+ {q:"A switch port connected to a server running several VMs in different VLANs must carry all of those VLANs. How should the port be configured?",o:["As an access port in VLAN 1","As an 802.1Q trunk allowing the needed VLANs","With port security maximum 1","As a SPAN destination"],a:1,e:"An 802.1Q trunk tags frames so multiple VLANs share one link."},
+ {q:"What happens to frames in the native VLAN on an 802.1Q trunk?",o:["They are double tagged","They are dropped","They are sent untagged","They are encrypted"],a:2,e:"Native VLAN traffic crosses the trunk untagged. Mismatched native VLANs cause leaks and errors."},
+ {q:"Which protocol prevents Layer 2 loops by blocking redundant switch paths?",o:["OSPF","VRRP","DHCP snooping","STP (802.1D/802.1w)"],a:3,e:"Spanning Tree elects a root bridge and blocks ports that would form loops. RSTP converges faster."},
+ {q:"A network administrator bundles four 1 Gbps links between two switches to get more bandwidth and redundancy. Which protocol negotiates this?",o:["LACP (802.3ad)","STP","CDP","PoE"],a:0,e:"LACP negotiates an EtherChannel or link aggregation group, and traffic is spread across the members."},
+ {q:"Which switch feature lets an IDS see copies of traffic from a specific port?",o:["Port security","Port mirroring (SPAN)","Jumbo frames","PoE+"],a:1,e:"SPAN or port mirroring copies traffic from source ports or VLANs to a monitoring port."},
+ {q:"A storage network needs larger Ethernet frames to reduce overhead. Which setting should be enabled end to end?",o:["Half duplex","Port security","Jumbo frames (MTU around 9000)","Native VLAN"],a:2,e:"Jumbo frames raise the MTU. Every device in the path must support the same size."},
+ {q:"Which wireless setting lets clients roam between APs without fully re-authenticating?",o:["WPS","Hidden SSID","MAC filtering","802.11r fast BSS transition"],a:3,e:"802.11r (fast roaming) shortens handoff time, which matters for voice over Wi-Fi."},
+ {q:"In the 2.4 GHz band in North America, which channels don't overlap?",o:["1, 6, 11","1, 5, 9, 13","2, 7, 12","3, 6, 9"],a:0,e:"With 20 MHz channels, 1, 6 and 11 are the non-overlapping set in the US."},
+ {q:"An office has many APs in the 5 GHz band and suffers co-channel interference. Which change helps most?",o:["Increase every AP's power to maximum","Use 20 or 40 MHz channel widths instead of 80/160 MHz to get more non-overlapping channels","Switch all clients to 2.4 GHz","Disable WPA3"],a:1,e:"Narrower channels give more separate channels to reuse, which reduces co-channel contention in dense deployments."},
+ {q:"Which antenna type would best cover a long, narrow hallway from one end?",o:["Omnidirectional","Dipole on the ceiling center","Directional (Yagi or patch)","Isotropic"],a:2,e:"Directional antennas focus energy in one direction, which suits long corridors and point-to-point links."},
+ {q:"A rack needs devices to stay running during a short power outage and a clean shutdown in a long one. What should be installed?",o:["Surge protector only","PDU only","Generator only","UPS with management card"],a:3,e:"A UPS bridges short outages and can signal servers to shut down cleanly. A generator covers long outages."},
+ {q:"Which data center design keeps cold air at server intakes and exhausts hot air away?",o:["Hot aisle/cold aisle","Raised ceiling","Ring topology","Plenum cabling"],a:0,e:"Racks face each other so intakes share cold aisles and exhausts share hot aisles, which improves cooling."},
+ {q:"Which document shows the physical layout of racks, patch panels and devices in a server room?",o:["Logical diagram","Rack diagram / physical network diagram","SLA","AUP"],a:1,e:"A physical diagram or rack elevation shows where each device sits and how it's cabled."},
+ {q:"Which routing feature translates many private addresses to one public address using port numbers?",o:["Static NAT","1:1 NAT","PAT (NAT overload)","Proxy ARP"],a:2,e:"Port address translation maps many inside hosts to one public IP using unique source ports."}
+]);
+
+/* ---------- 3.0 Network Operations (17) ---------- */
+registerExamBank("ops",[
+ {q:"A network team wants alerts when interface utilization on a core link stays above 90%. Which tool provides this?",o:["A cable tester","A toner probe","A TDR","SNMP-based network monitoring with thresholds"],a:3,e:"An NMS polls SNMP counters and alerts when thresholds are crossed."},
+ {q:"Which SNMP version adds authentication and encryption?",o:["SNMPv3","SNMPv1","SNMPv2c","SNMPv2 with community 'public'"],a:0,e:"SNMPv3 supports user-based authentication and privacy (encryption). v1 and v2c use clear-text community strings."},
+ {q:"Which log severity level number indicates an emergency (system unusable) in syslog?",o:["3","0","5","7"],a:1,e:"Syslog severities run from 0 (Emergency) to 7 (Debug)."},
+ {q:"Which tool collects metadata about traffic flows, such as source, destination, ports and bytes, from routers?",o:["Ping","Traceroute","NetFlow / IPFIX","ARP"],a:2,e:"NetFlow or IPFIX exports flow records that show who is talking to whom and how much."},
+ {q:"What metric describes the maximum time an organization can tolerate a system being down after a disaster?",o:["RPO","MTBF","MTTR","RTO"],a:3,e:"Recovery time objective is how fast service must be restored. RPO is how much data loss is acceptable."},
+ {q:"A company can afford to lose at most 15 minutes of transactions. Which metric is this?",o:["RPO","RTO","MTTR","SLA uptime"],a:0,e:"Recovery point objective sets the maximum acceptable data loss, which drives backup and replication frequency."},
+ {q:"Which disaster recovery site has equipment and connectivity ready but needs current data restored before use?",o:["Hot site","Warm site","Cold site","Mobile site"],a:1,e:"A warm site has hardware in place but isn't fully synced. A hot site is ready immediately and a cold site is just space."},
+ {q:"Which service lets clients on a subnet without a DHCP server get addresses from a central DHCP server?",o:["DNS forwarding","NAT","DHCP relay (IP helper)","Proxy"],a:2,e:"A DHCP relay forwards broadcast DHCP requests as unicast to a remote server."},
+ {q:"What does a DHCP lease time control?",o:["The DNS TTL","The router's uptime","The VLAN ID","How long a client may use an assigned address before renewing"],a:3,e:"Clients renew at 50% of the lease (T1) and rebind at 87.5% (T2)."},
+ {q:"Which DNS record maps a hostname to an IPv6 address?",o:["AAAA","A","PTR","SRV"],a:0,e:"AAAA records hold IPv6 addresses. PTR is for reverse lookups."},
+ {q:"Which DNS record lets clients find services such as SIP or LDAP domain controllers, including port and priority?",o:["TXT","SRV","NS","CNAME"],a:1,e:"SRV records give the hostname, port, priority and weight for a service."},
+ {q:"Which DNS feature digitally signs records so resolvers can detect tampering?",o:["DoH","Zone transfer","DNSSEC","Round robin"],a:2,e:"DNSSEC adds signatures (RRSIG) and a chain of trust. DoH and DoT encrypt queries."},
+ {q:"Which technology lets admins manage many switches through a central controller that pushes policy, rather than configuring each one individually?",o:["STP","Static routing","CSMA/CA","SDN (control plane separated from the data plane)"],a:3,e:"Software-defined networking centralizes the control plane in a controller that programs the devices."},
+ {q:"An organization wants to manage infrastructure using version-controlled configuration files. What is this practice called?",o:["Infrastructure as code","Shadow IT","Change freeze","Asset tagging"],a:0,e:"Infrastructure as code defines devices and services in files that are versioned, reviewed and applied automatically."},
+ {q:"Which document is updated after every network change to show current IP assignments and VLANs?",o:["SDS","IPAM records / logical network diagram","Incident report","AUP"],a:1,e:"IP address management tools and logical diagrams must be kept current as the network changes."},
+ {q:"What is the purpose of a baseline in network monitoring?",o:["To set the VLAN numbers","To schedule backups","To define normal performance so anomalies can be identified","To list employees"],a:2,e:"A baseline shows normal utilization, latency and errors, so deviations stand out."},
+ {q:"Which out-of-band management method lets an admin reach a router's console when the production network is down?",o:["SSH over the production VLAN","SNMP traps","Port mirroring","A console server or dedicated management network/modem"],a:3,e:"Out-of-band access uses a separate path such as a console server, a cellular modem or a management network."}
+]);
+
+/* ---------- 4.0 Network Security (13) ---------- */
+registerExamBank("sec",[
+ {q:"An attacker floods a switch with fake source MAC addresses so it starts flooding traffic out of every port. What is this attack?",o:["MAC flooding","ARP spoofing","VLAN hopping","DNS poisoning"],a:0,e:"MAC flooding fills the CAM table so the switch fails open. Port security limits MACs per port."},
+ {q:"Which switch feature blocks rogue DHCP servers on access ports?",o:["PoE","DHCP snooping","LACP","Jumbo frames"],a:1,e:"DHCP snooping trusts only uplink ports for server messages and builds a binding table that dynamic ARP inspection uses."},
+ {q:"Which feature stops ARP spoofing by checking ARP packets against the DHCP snooping binding table?",o:["BPDU guard","Storm control","Dynamic ARP inspection","802.1Q"],a:2,e:"DAI drops ARP replies whose IP-to-MAC pairing doesn't match the trusted bindings."},
+ {q:"Which attack involves sending frames with two 802.1Q tags to reach another VLAN?",o:["Evil twin","Deauthentication","Smurf","VLAN hopping (double tagging)"],a:3,e:"Double tagging abuses the native VLAN. Using an unused native VLAN and disabling auto-trunking prevents it."},
+ {q:"Which control authenticates devices before a switch port allows them onto the network?",o:["802.1X with a RADIUS server (NAC)","Port mirroring","STP","QoS"],a:0,e:"802.1X port-based network access control requires authentication through a RADIUS server before granting access."},
+ {q:"A web server must be reachable from the internet while keeping the internal LAN protected. Where should it be placed?",o:["On the internal LAN","In a screened subnet (DMZ)","In the guest Wi-Fi","On a management VLAN"],a:1,e:"A screened subnet isolates public-facing servers between firewall zones."},
+ {q:"Which security model assumes no implicit trust and continuously verifies users and devices?",o:["Defense in depth only","Perimeter-only security","Zero trust","Implicit allow"],a:2,e:"Zero trust verifies every request based on identity, device posture and context."},
+ {q:"Which firewall rule order is correct?",o:["Implicit deny first","Allow any at the top","Rules are unordered","Specific allow and deny rules first, with an implicit deny at the end"],a:3,e:"Firewalls process rules top down. Put specific rules first and end with an implicit (or explicit) deny all."},
+ {q:"Which attack captures the 4-way handshake to crack a WPA2-Personal passphrase offline?",o:["Deauthentication followed by a dictionary attack","MAC flooding","DNS tunneling","SQL injection"],a:0,e:"Attackers force clients to reconnect, capture the handshake and crack weak passphrases offline. WPA3-SAE prevents this."},
+ {q:"Which protocol provides encryption for remote access VPNs that run through a browser on TCP 443?",o:["PPTP","SSL/TLS VPN","GRE","L2TP without IPsec"],a:1,e:"TLS VPNs work over HTTPS (443) and pass through most firewalls."},
+ {q:"Which physical security control would detect an unauthorized person entering a server room after hours?",o:["A cable lock","A privacy filter","Motion detection and cameras with alerting","A PDU"],a:2,e:"Detection controls such as motion sensors and video surveillance spot and alert on intrusions."},
+ {q:"Which attack uses many compromised hosts to overwhelm a server with traffic?",o:["On-path","Phishing","Rogue AP","DDoS"],a:3,e:"A distributed denial-of-service attack uses botnets to exhaust bandwidth or resources."},
+ {q:"Which authentication protocol uses tickets issued by a key distribution center?",o:["Kerberos","RADIUS","TACACS+","LDAP"],a:0,e:"Kerberos clients get a TGT from the KDC and then service tickets, so passwords never cross the network."}
+]);
+
+/* ---------- 5.0 Network Troubleshooting (21) ---------- */
+registerExamBank("ts",[
+ {q:"Users in VLAN 20 can reach each other but not their default gateway. The gateway is a router subinterface. What should the technician check?",o:["The DNS server","The trunk allows VLAN 20 and the subinterface uses the correct 802.1Q tag","The printer","The user's browser"],a:1,e:"Router-on-a-stick needs the VLAN allowed on the trunk and the subinterface encapsulation matching the VLAN ID."},
+ {q:"A link between two switches shows late collisions and slow performance. One side is set to full duplex and the other to auto. What is the likely issue?",o:["VLAN mismatch","Native VLAN mismatch","Duplex mismatch","MTU mismatch"],a:2,e:"If one side is hard-coded and the other auto-negotiates, the auto side often falls back to half duplex, causing late collisions."},
+ {q:"A technician runs traceroute and sees replies stop after the third hop with asterisks, but the destination website loads. What is the most likely explanation?",o:["The website is down","DNS is failing","The client NIC is bad","Routers beyond hop 3 are configured not to reply to traceroute probes"],a:3,e:"Many devices rate-limit or block ICMP or UDP probes. If the app works, the path is fine."},
+ {q:"Which command on Windows shows active TCP connections and listening ports with the owning process ID?",o:["netstat -ano","ipconfig /all","arp -a","nslookup"],a:0,e:"netstat -ano lists connections, listening ports and the owning PIDs."},
+ {q:"Which tool helps find the distance to a break in a copper cable?",o:["Light meter","Time-domain reflectometer (TDR)","Spectrum analyzer","Loopback adapter"],a:1,e:"A TDR sends a pulse and times the reflection to locate opens or shorts. An OTDR does the same for fiber."},
+ {q:"A fiber link won't come up after a move. The light meter shows very high loss. What is a likely cause?",o:["DNS misconfiguration","Wrong VLAN","Dirty or damaged connectors, or a bend radius violation","IP conflict"],a:2,e:"Contaminated end faces, tight bends and bad splices cause high attenuation. Clean and inspect first."},
+ {q:"Two hosts get 'duplicate IP address' warnings. What is the most likely cause?",o:["A bad switch port","Incorrect DNS suffix","Expired certificate","A static IP configured inside the DHCP scope or a rogue DHCP server"],a:3,e:"Statics inside the DHCP pool, or a second DHCP server, cause IP conflicts."},
+ {q:"Clients receive IP addresses from an unexpected 192.168.1.0/24 network instead of the corporate range. What is the likely cause?",o:["A rogue DHCP server such as a home router plugged in","DNS cache poisoning","Expired lease","Spanning tree loop"],a:0,e:"A consumer router plugged into the LAN hands out its own addresses. DHCP snooping prevents this."},
+ {q:"All switches in a network suddenly show maxed-out CPU and flooded broadcast traffic after a new cable was connected between two access switches. What happened?",o:["A DHCP scope ran out","A switching loop / broadcast storm, likely with STP disabled or misconfigured","A DNS outage","An expired certificate"],a:1,e:"A redundant link without spanning tree creates a loop, and broadcasts multiply endlessly. Enable STP and BPDU guard."},
+ {q:"A user's Wi-Fi shows full signal bars but throughput is very low and retries are high. What should be investigated?",o:["The DNS server","The laptop's screen","Interference and channel utilization, using a Wi-Fi analyzer","The cable modem"],a:2,e:"Strong signal with poor throughput suggests interference, co-channel contention or a low SNR."},
+ {q:"Users far from an AP connect at very low data rates. Which change is most appropriate?",o:["Increase the DHCP lease","Disable WPA3","Change the SSID","Add or reposition APs for better coverage"],a:3,e:"Distance and attenuation reduce signal strength. Improve AP placement or density rather than just maxing out power."},
+ {q:"A user can reach websites by IP but nslookup times out. Other users are fine. What should the technician check?",o:["The DNS servers configured on that client","The core router","The ISP","The web server certificate"],a:0,e:"If only one client fails name resolution, check its DNS settings, such as a wrong static entry or a VPN override."},
+ {q:"Following the troubleshooting methodology, what should a technician do after identifying the problem and before establishing a theory?",o:["Implement the fix","Gather information, question users, identify symptoms and determine what changed","Document findings","Escalate immediately"],a:1,e:"Identifying the problem includes gathering information, duplicating the issue, questioning users and finding recent changes."},
+ {q:"A new VoIP deployment has choppy calls during business hours only. What should be configured?",o:["Jumbo frames","A larger DHCP scope","QoS that prioritizes voice traffic (DSCP EF)","A new SSID"],a:2,e:"Congestion at peak times hurts voice quality. QoS marks and queues voice ahead of bulk data."},
+ {q:"Which command displays the MAC address table on a Cisco switch to see which port a device is on?",o:["show ip route","show vlan brief only","show running-config interface","show mac address-table"],a:3,e:"show mac address-table maps learned MACs to ports and VLANs."},
+ {q:"A host can ping its gateway but not a server on another subnet. The server can ping the gateway too. What should be checked?",o:["Routing and ACLs between the subnets, and the server's default gateway","The host's cable","The host's DNS","The switch's PoE budget"],a:0,e:"Both ends reach their gateways, so look at the routes, firewall or ACL rules and the return path."},
+ {q:"A switch port is in err-disabled state after someone plugged in a small switch. Which feature most likely triggered this?",o:["DHCP relay","BPDU guard or port security violation","NTP","SNMP"],a:1,e:"BPDU guard err-disables access ports that receive BPDUs. Port security shuts the port down when MAC limits are exceeded."},
+ {q:"Which tool identifies which application is consuming bandwidth on a WAN link in near real time?",o:["Cable certifier","Multimeter","Protocol analyzer or flow analyzer","Punchdown tool"],a:2,e:"Packet captures and NetFlow analyzers show traffic by application, host and port."},
+ {q:"After an ISP change, large file transfers over a VPN fail while small pings work. What is a likely cause?",o:["DNS failure","DHCP failure","Wrong time zone","MTU / fragmentation issue (packets too large for the tunnel)"],a:3,e:"VPN overhead lowers the effective MTU. If PMTUD is blocked, large packets drop. Adjust the MTU or MSS clamping."},
+ {q:"A PoE camera powers on but reboots repeatedly when its IR lights come on at night. What should the technician check?",o:["The switch PoE power budget and the class or standard supported","The camera's DNS","The VLAN name","The NTP server"],a:0,e:"If the port can't supply enough power when the IR LEDs draw more, the camera browns out. Check the PoE class, budget and standard."},
+ {q:"Users report intermittent connectivity and the switch log shows the same MAC address flapping between two ports. What is the likely cause?",o:["An expired DHCP lease","A loop or a misconfigured redundant link","An incorrect DNS server","A bad user password"],a:1,e:"MAC flapping usually means a Layer 2 loop or a bad link aggregation setup."}
+]);
 
 </script>
 <script>boot();</script>

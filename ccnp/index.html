@@ -1075,6 +1075,15 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .lesson p code,.lesson li code,.lesson td code{overflow-wrap:anywhere}
 .py-q{margin:14px 0}
 
+/* practice exam upgrades: pace marker, pool info, domain drills */
+.ex-clockwrap{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ex-pace{font-size:11.5px;letter-spacing:.04em}.ex-pace.ok{color:var(--good)}.ex-pace.bad{color:var(--bad)}
+.ex-pool{margin:0 0 14px;color:var(--muted);font-size:14.5px}.ex-pool b{color:var(--fg)}
+.ex-drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 26px}
+.ex-drill{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.ex-drill:hover,.ex-drill:focus-visible{border-color:var(--accent);transform:translateY(-1px)}
+.ex-drill span,.ex-drill em{font-size:12px;color:var(--muted);font-style:normal}.ex-drill b{font-size:15px}
+
 </style>
 
 <header>
@@ -1602,23 +1611,54 @@ function renderRanks(){
 const EXAM={1:{code:"350-401",pass:825}};
 const EXAM_LEN={full:[100,120],half:[50,60]};/* [questions, minutes] */
 let examTimer=null;
+
+/* ---------- exam-only question bank and practice upgrades ----------
+   src/modules/99-exam-bank.js adds questions that only appear in practice exams.
+   A question ref is {mid,i} for a module quiz question or {mid,i,b:1} for a bank question. */
+const EXAM_BANK={};
+function registerExamBank(mid,qs){(EXAM_BANK[mid]||(EXAM_BANK[mid]=[])).push(...qs)}
+function qRef(x){if(!x)return null;const m=MODULES.find(m=>m.id===x.mid);if(!m)return null;return (x.b?(EXAM_BANK[x.mid]||[]):m.quiz)[x.i]||null}
+const qKey=x=>x.mid+(x.b?"b":"q")+x.i;
+function poolQs(m){return m.quiz.map((q,i)=>({mid:m.id,i})).concat((EXAM_BANK[m.id]||[]).map((q,i)=>({mid:m.id,i,b:1})))}
+/* Questions you haven't met in a practice exam come first (exam-only ones before quiz ones), then the ones you saw longest ago. */
+function freshFirst(ex,qs){const sn=ex.seen||{};return shuffleArr(qs.slice()).map(q=>({q,k:sn[qKey(q)]||(q.b?-1:0)})).sort((a,b)=>a.k-b.k).map(o=>o.q)}
+function markSeen(ex,qs){const sn=ex.seen||(ex.seen={});let n=ex.seenN||0;qs.forEach(x=>{sn[qKey(x)]=++n});ex.seenN=n}
+const perQ=()=>EXAM_LEN.full[1]*60/EXAM_LEN.full[0];
+function paceTxt(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;
+  if(used<60&&!done)return `${mmss(Math.round(r.mins*60/N))} per question`;
+  const d=Math.round((done*r.mins*60/N-used)/60);
+  return Math.abs(d)<1?"On pace":d>0?`${d} min ahead`:`${-d} min behind`}
+function paceCls(r){const N=r.qs.length,used=(Date.now()-r.start)/1000,done=Object.keys(r.ans).length;return done*r.mins*60/N-used<=-60?"bad":"ok"}
+function poolInfo(c,ex){const p=examPool(c),all=p.flatMap(d=>d.qs),bank=all.filter(x=>x.b).length,sn=ex.seen||{},un=all.filter(x=>!sn[qKey(x)]).length;
+  return `<p class="ex-pool"><b class="mono">${all.length}</b> questions in the pool, <b class="mono">${bank}</b> of them exam-only. <b class="mono">${un}</b> you haven't met in a practice exam yet, and those come first.</p>`}
+function drillPicker(c){const p=examPool(c);
+  return `<h2 class="sec">Domain drill</h2><p class="hint left">A timed 20-question check on one domain at real exam pace. Drills don't count toward your best score or badges.</p>
+  <div class="ex-drills">${p.map(d=>`<button class="ex-drill" data-drill="${d.o.slug}"><span class="mono">${d.o.domain}.0</span><b>${d.o.title}</b><em class="mono">${Math.min(20,d.qs.length)} q · ${Math.round(Math.min(20,d.qs.length)*perQ()/60)} min</em></button>`).join("")}</div>`}
+function startPractice(c,kind,label,qs){const ex=EXS(c);
+  ex.run={qs:qs.map(q=>({mid:q.mid,i:q.i,...(q.b?{b:1}:{}),o:shuffleArr([0,1,2,3])})),ans:{},flag:{},pos:0,start:Date.now(),mins:Math.max(5,Math.round(qs.length*perQ()/60)),kind,label};save();examQuestion(c)}
+function wireDrill(c,ex){$("#view").querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>{
+  const d=examPool(c).find(d=>d.o.slug===b.dataset.drill);startPractice(c,"drill",`Domain drill: ${d.o.title}`,freshFirst(ex,d.qs).slice(0,20))})}
+function finishPractice(c,ex,r,res,score,used,timeUp){
+  ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:res.length,kind:r.kind,label:r.label};save();
+  const target="#exam-"+c+"-result";if(location.hash!==target)location.hash=target;else showExamResult(c)}
+function wireRetry(c,L,res){const b=$("#ex-retry");if(b)b.onclick=()=>startPractice(c,"retry","Retry of missed questions",shuffleArr(res.filter(o=>!o.ok).map(o=>({mid:o.mid,i:o.i,b:o.b}))))}
 const EXS=c=>{const e=(S.exams||(S.exams={}))["c"+c]||(S.exams["c"+c]={best:null,attempts:[],run:null});
   if(!Array.isArray(e.attempts))e.attempts=[];
-  const okQ=x=>x&&MODULES.some(m=>m.id===x.mid&&m.quiz[x.i]);
+  const okQ=x=>!!qRef(x);
   if(e.run&&!(Array.isArray(e.run.qs)&&e.run.qs.length&&e.run.qs.every(okQ)&&e.run.ans&&e.run.flag))e.run=null;
   if(e.last&&!(Array.isArray(e.last.res)&&e.last.res.every(okQ)))e.last=null;
   return e};
 function examPool(c){
-  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?m.quiz.map((q,i)=>({mid:m.id,i})):[]}}).filter(d=>d.m);
+  return OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);return {o,m,qs:m?poolQs(m):[]}}).filter(d=>d.m);
 }
 function buildExam(c,n){
   const pool=examPool(c),tw=pool.reduce((a,d)=>a+d.o.weight,0);
   let take=pool.map(d=>Math.min(d.qs.length,Math.round(n*d.o.weight/tw)));
   let diff=n-take.reduce((a,b)=>a+b,0),k=0;
   while(diff!==0&&k<200){const j=k%pool.length;if(diff>0&&take[j]<pool[j].qs.length){take[j]++;diff--}else if(diff<0&&take[j]>0){take[j]--;diff++}k++}
-  return shuffleArr(pool.flatMap((d,j)=>shuffleArr(d.qs.slice()).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
+  return shuffleArr(pool.flatMap((d,j)=>freshFirst(EXS(c),d.qs).slice(0,take[j])).map(q=>({...q,o:shuffleArr([0,1,2,3])})));
 }
-const examQ=x=>MODULES.find(m=>m.id===x.mid).quiz[x.i];
+const examQ=x=>qRef(x);
 const scaled=pct=>Math.round(300+700*pct/100);
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 function examLeft(r){return Math.max(0,Math.round((r.start+r.mins*60000-Date.now())/1000))}
@@ -1637,16 +1677,18 @@ function renderExam(c){
     <button class="ex-opt" data-len="full"><b>Full exam</b><span class="mono">100 questions · 120 minutes</span><em>The real exam's time limit.</em></button>
     <button class="ex-opt" data-len="half"><b>Half exam</b><span class="mono">50 questions · 60 minutes</span><em>A shorter timed check-in.</em></button>
   </div>
-  <div class="ex-facts"><div><span class="s-small">TARGET SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${poolInfo(c,ex)}<div class="ex-facts"><div><span class="s-small">TARGET SCORE</span><b class="mono">${EXAM[c].pass} / 1000</b></div><div><span class="s-small">YOUR BEST</span><b class="mono">${ex.best??"—"}</b></div><div><span class="s-small">ATTEMPTS</span><b class="mono">${ex.attempts.length}</b></div></div>
+  ${drillPicker(c)}
   ${last.length?`<h2 class="sec">Recent attempts</h2><div class="ex-hist">${last.map(a=>`<div class="${a.score>=EXAM[c].pass?"pass":"fail"}"><b class="mono">${a.score}</b><span>${a.n} questions · ${new Date(a.at).toLocaleDateString()}</span><em>${a.score>=EXAM[c].pass?"Above target":"Below target"}</em></div>`).join("")}</div>`:""}
   <p class="hint left">Cisco doesn't publish the number of questions or the passing score. Candidates commonly report around 100 questions and a pass mark near 825 out of 1000, so this exam uses that as its target. The real exam can also include lab-style questions: practice those with the simulations in each module.</p>`;
   $("#view").querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{
     const [n,mins]=EXAM_LEN[b.dataset.len];
     ex.run={qs:buildExam(c,n),ans:{},flag:{},pos:0,start:Date.now(),mins};save();examQuestion(c)});
+  wireDrill(c,ex);
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">350-401 · Q${r.pos+1}/${N}</span><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">350-401 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>
@@ -1669,6 +1711,7 @@ function tick(c){
   clearInterval(examTimer);
   examTimer=setInterval(()=>{const r=EXS(c).run;if(!r||!location.hash.startsWith("#exam-")){clearInterval(examTimer);return}
     const left=examLeft(r),el=$("#ex-clock");if(el){el.textContent=mmss(left);el.classList.toggle("low",left<300)}
+    const pe=$("#ex-pace");if(pe){pe.textContent=paceTxt(r);pe.className="ex-pace mono "+paceCls(r)}
     if(left===0){clearInterval(examTimer);finishExam(c,true)}},1000);
 }
 function examReview(c){
@@ -1686,24 +1729,25 @@ function finishExam(c,timeUp){
   const N=r.qs.length,res=r.qs.map((x,i)=>({x,q:examQ(x),pick:r.ans[i]})).map(o=>({...o,ok:o.pick===o.q.a}));
   const right=res.filter(o=>o.ok).length,pct=right/N*100,score=scaled(pct),pass=score>=EXAM[c].pass;
   const used=Math.min(r.mins*60,Math.round((Date.now()-r.start)/1000));
-  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,pick:o.pick??null})),score,used,timeUp,n:N};save();
+  markSeen(ex,r.qs);if(r.kind)return finishPractice(c,ex,r,res,score,used,timeUp);
+  ex.attempts.push({score,n:N,at:Date.now(),left:r.mins*60-used});if(ex.best===null||score>ex.best)ex.best=score;ex.run=null;ex.last={res:res.map(o=>({mid:o.x.mid,i:o.x.i,b:o.x.b,pick:o.pick??null})),score,used,timeUp,n:N};save();
   awardRaw(`exam:c${c}:done`,100,"Completed a practice exam");if(pass)awardRaw(`exam:c${c}:pass`,250,"Passed a practice exam");
   const target="#exam-"+c+"-result";
   if(location.hash!==target)location.hash=target;else showExamResult(c);
 }
 function showExamResult(c){
   const ex=EXS(c),L=ex.last;if(!L)return renderExam(c);
-  const res=L.res.map(o=>{const q=MODULES.find(m=>m.id===o.mid).quiz[o.i];return {...o,q,ok:o.pick===q.a}});
+  const res=L.res.map(o=>{const q=qRef(o);return {...o,q,ok:o.pick===q.a}});
   const pass=L.score>=EXAM[c].pass,right=res.filter(o=>o.ok).length;
   const doms=OUTLINE.filter(o=>o.core===c).map(o=>{const m=modBySlug(o.slug);const rs=res.filter(x=>m&&x.mid===m.id);return {o,n:rs.length,ok:rs.filter(x=>x.ok).length}}).filter(d=>d.n);
   $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span><a href="#exam-${c}">Practice exam</a><span>/</span>Results</div><h1>Exam results</h1>`;
   const pos=Math.max(0,Math.min(100,(L.score-300)/7));
   $("#view").innerHTML=`<div class="qcard result ex-res ${pass?"pass":"fail"}">
-    <div class="eyebrow">${L.timeUp?"Time's up · ":""}ENCOR · ${EXAM[c].code}</div>
+    <div class="eyebrow">${L.timeUp?"Time's up · ":""}${L.kind?L.label+" · ":""}ENCOR · ${EXAM[c].code}</div>
     <div class="score">${L.score}<span class="mono"> / 1000</span></div>
     <div class="ex-gauge"><i style="left:${(EXAM[c].pass-300)/7}%"></i><b style="width:${pos}%"></b></div>
     <div><b class="${pass?"status-good":"status-bad"}">${pass?"At or above the 825 target":"Below the 825 target"}</b> · ${right} of ${L.n} correct · ${mmss(L.used)} used</div>
-    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a></div></div>
+    <div class="qnav" style="justify-content:center"><a class="btn primary" href="#exam-${c}">Back to exam start</a>${right<L.n?`<button class="btn" id="ex-retry">Retry the ${L.n-right} missed</button>`:""}</div></div>
   <h2 class="sec">By domain</h2>
   <div class="ex-doms">${doms.map(d=>{const p=Math.round(d.ok/d.n*100);return `<a href="#${d.o.slug}" class="ex-dom"><span>${d.o.domain}.0 ${d.o.title}</span><span class="ex-dbar"><i class="${p>=80?"g":p>=65?"m":"b"}" style="width:${p}%"></i></span><b class="mono">${d.ok}/${d.n}</b></a>`}).join("")}</div>
   <p class="hint left">Weak domains are below 65%. Click one to study it. The 300–1000 score is an estimate: Cisco doesn't publish its passing score or how it scales raw scores.</p>
@@ -1713,6 +1757,7 @@ function showExamResult(c){
   const draw=all=>{$(".ex-rv").innerHTML=res.map((o,i)=>(!all&&o.ok)?"":`<div class="ex-ri ${o.ok?"ok":"no"}"><span class="mono">${i+1}</span><div><b>${o.q.q}</b><p>${o.pick===null?"<em>Not answered.</em> ":o.ok?"":`Your answer: ${o.q.o[o.pick]}. `}<span class="status-good">Answer: ${o.q.o[o.q.a]}.</span> ${o.q.e}</p></div></div>`).join("")||"<p>Nothing missed. Excellent.</p>";
     $("#view").querySelectorAll("[data-rv]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.rv==="all")===all))};
   $("#view").querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>draw(b.dataset.rv==="all"));draw(false);
+  wireRetry(c,L,res);
 }
 
 /* ---------- router and boot ---------- */
@@ -6876,6 +6921,136 @@ sortViz($("#viz-aisafe"),{title:"Responsible AI: good practice or risk?",bins:{g
   ]
 });
 })();
+
+</script>
+<script>
+/* ================= Exam-only question bank =================
+   These questions appear only in the timed practice exams and domain drills, never in the module quizzes,
+   so a full exam always has fresh material. Scenario-style, one best answer, each with an explanation. */
+
+/* ---------- 1.0 Architecture (15) ---------- */
+registerExamBank("arch",[
+ {q:"A campus has fewer than 10 access switches in one building and limited budget. Which design is most appropriate?",o:["Collapsed core (two-tier) with combined core/distribution","Full three-tier with separate core","Spine-leaf fabric with VXLAN","A single flat Layer 2 network across sites"],a:0,e:"Small campuses combine core and distribution to cut cost while keeping redundancy."},
+ {q:"Which benefit does a Layer 3 access (routed access) design have over Layer 2 access with STP?",o:["VLANs can span the whole campus","Faster convergence and no STP blocked links, since routing protocols use all uplinks","No IP addressing needed","Lower routing table size always"],a:1,e:"Routed access uses ECMP on all uplinks and avoids STP. VLANs stay local to each access switch."},
+ {q:"In a spine-leaf data center, how many hops separate any two leaf switches?",o:["One","Three or more depending on location","Two (leaf to spine to leaf)","It varies widely"],a:2,e:"Every leaf connects to every spine, so any leaf-to-leaf path is leaf, spine, leaf."},
+ {q:"Which SD-WAN component is responsible for authenticating and orchestrating the initial connection of WAN edge routers?",o:["SD-WAN Controller (vSmart)","SD-WAN Manager (vManage)","WAN edge","SD-WAN Validator (vBond)"],a:3,e:"The Validator authenticates devices and helps them find the controllers and Manager. Controllers distribute routes and policy using OMP."},
+ {q:"Which protocol do Cisco SD-WAN controllers use to distribute routes and policy to WAN edges?",o:["OMP (Overlay Management Protocol)","OSPF","EIGRP","LISP"],a:0,e:"OMP runs between Controllers and edges inside DTLS or TLS control connections."},
+ {q:"In Cisco SD-Access, which protocol provides the control plane (host location mapping)?",o:["OMP","LISP","BGP EVPN","VTP"],a:1,e:"SD-Access uses LISP for the control plane, VXLAN for the data plane and Cisco TrustSec (SGTs) for policy."},
+ {q:"Which SD-Access fabric node connects the fabric to external networks?",o:["Edge node","Control plane node","Border node","Extended node"],a:2,e:"Border nodes hand traffic off between the fabric and outside networks."},
+ {q:"Which wireless deployment model centralizes all APs to a WLC in the data center with client traffic tunneled there?",o:["FlexConnect with local switching","Autonomous","Mesh only","Centralized (local mode)"],a:3,e:"In local mode, APs tunnel all traffic to the controller over CAPWAP."},
+ {q:"Branch APs must keep switching client traffic locally if the WAN to the controller fails. Which mode fits?",o:["FlexConnect","Local mode","Sniffer mode","Monitor mode"],a:0,e:"FlexConnect APs can switch locally and keep serving clients when the controller is unreachable."},
+ {q:"What does the QoS trust boundary define?",o:["The maximum bandwidth of a link","The point in the network where markings from devices are accepted or re-marked","The STP root location","The routing protocol AD"],a:1,e:"Put the trust boundary as close to the endpoint as possible, for example trusting Cisco phones."},
+ {q:"Which DSCP value is recommended for voice payload traffic?",o:["AF41 (34)","CS3 (24)","EF (46)","Default (0)"],a:2,e:"Voice uses Expedited Forwarding. AF41 is typically interactive video and CS3 is signaling."},
+ {q:"Which QoS mechanism drops packets that exceed a rate, while shaping buffers them?",o:["Shaping","Queuing","Classification","Policing"],a:3,e:"Policers drop or re-mark excess traffic. Shapers delay it to smooth bursts."},
+ {q:"Which queuing tool gives voice a strict-priority queue while other classes get guaranteed bandwidth?",o:["LLQ (CBWFQ with a priority queue)","FIFO","WRED only","Custom queuing"],a:0,e:"LLQ adds a policed strict-priority queue to CBWFQ."},
+ {q:"Which switching method uses the FIB and adjacency table for hardware-accelerated forwarding?",o:["Process switching","CEF","Fast switching only","Flooding"],a:1,e:"Cisco Express Forwarding builds the FIB from the routing table and the adjacency table from ARP and ND."},
+ {q:"Which high-availability feature lets a router continue forwarding using existing tables during a supervisor switchover?",o:["HSRP only","STP PortFast","NSF with SSO","BFD only"],a:2,e:"Stateful switchover syncs state to the standby supervisor, and NSF keeps forwarding while routing reconverges."}
+]);
+
+/* ---------- 2.0 Virtualization (10) ---------- */
+registerExamBank("virt",[
+ {q:"A service provider needs to keep several customers' routing tables separate on one router with overlapping IP addresses. What should be used?",o:["VLANs only","ACLs","Port security","VRFs"],a:3,e:"Virtual routing and forwarding instances keep isolated routing tables on one device."},
+ {q:"Which command places interface Gi0/1 into VRF CUSTOMER-A on IOS XE?",o:["vrf forwarding CUSTOMER-A (under the interface, then re-add the IP)","ip vrf CUSTOMER-A global","switchport vrf CUSTOMER-A","router vrf CUSTOMER-A"],a:0,e:"Applying vrf forwarding removes the existing IP address, so reconfigure it afterward."},
+ {q:"Which command shows the routing table for VRF RED?",o:["show vrf RED route","show ip route vrf RED","show ip route RED","show ip vrf interfaces only"],a:1,e:"Add vrf <name> to show commands to see VRF-specific tables."},
+ {q:"What is the main limitation of a GRE tunnel used alone?",o:["It can't carry multicast","It can't carry IPv6","It provides no encryption","It requires MPLS"],a:2,e:"GRE encapsulates traffic, including multicast and routing protocols, but doesn't encrypt it. Pair it with IPsec."},
+ {q:"A GRE tunnel interface keeps flapping with 'recursive routing' messages. What is the cause?",o:["The MTU is too large","Keepalives are disabled","IPsec isn't configured","The tunnel destination is being learned through the tunnel itself"],a:3,e:"If the route to the tunnel destination points into the tunnel, the tunnel goes down. Use a static or filtered route for the destination."},
+ {q:"What does VXLAN provide in a data center fabric?",o:["A Layer 2 overlay over a Layer 3 underlay using a 24-bit VNI","Encryption of all traffic","A replacement for IP routing","A wireless protocol"],a:0,e:"VXLAN encapsulates Ethernet in UDP 4789. Its 16 million VNIs far exceed the 4094 VLAN limit."},
+ {q:"Which component encapsulates and decapsulates VXLAN traffic?",o:["VNI","VTEP","Route reflector","RP"],a:1,e:"VXLAN tunnel endpoints add and remove the VXLAN header."},
+ {q:"Which control plane is commonly used with VXLAN to advertise MAC and IP reachability?",o:["OSPF only","RIP","BGP EVPN","STP"],a:2,e:"MP-BGP EVPN distributes host MAC and IP information, which reduces flood-and-learn."},
+ {q:"Which hypervisor component switches traffic between VMs on the same host?",o:["Physical router","WLC","Firewall appliance only","Virtual switch"],a:3,e:"vSwitches, such as a VMware vSwitch or Open vSwitch, provide Layer 2 between VMs and to uplinks."},
+ {q:"What is an advantage of containers over virtual machines for network functions?",o:["Faster startup and lower overhead since they share the host kernel","Stronger isolation in all cases","Each runs its own OS kernel","They need no orchestration"],a:0,e:"Containers are lightweight. VMs give stronger isolation with full guest operating systems."}
+]);
+
+/* ---------- 3.0 Infrastructure (30) ---------- */
+registerExamBank("infra",[
+ {q:"Two OSPF routers are stuck in EXSTART/EXCHANGE. What is a common cause?",o:["Different router IDs","MTU mismatch on the link","Different process IDs","Passive interface on a loopback"],a:1,e:"DBD exchange fails when the interface MTUs differ. Match them, or use ip ospf mtu-ignore with care."},
+ {q:"Which OSPF LSA type does an ABR generate to advertise inter-area routes?",o:["Type 1 (router)","Type 2 (network)","Type 3 (summary)","Type 5 (external)"],a:2,e:"ABRs send Type 3 LSAs between areas. ASBRs originate Type 5 external LSAs."},
+ {q:"Which OSPF area type blocks Type 5 LSAs but allows an ASBR inside the area using Type 7?",o:["Stub","Totally stubby","Backbone","NSSA"],a:3,e:"A not-so-stubby area permits local redistribution as Type 7 LSAs, which the ABR translates to Type 5."},
+ {q:"Which OSPF area type blocks both Type 3 and Type 5 LSAs, injecting only a default route?",o:["Totally stubby","Stub","NSSA","Area 0"],a:0,e:"Totally stubby areas (Cisco) get just a default route from the ABR."},
+ {q:"How is EIGRP's feasible successor determined?",o:["Any neighbor with the same metric","A neighbor whose reported distance is less than the current feasible distance","The neighbor with the highest router ID","The neighbor learned first"],a:1,e:"The feasibility condition (RD &lt; FD) guarantees a loop-free backup path."},
+ {q:"Which values must match for EIGRP neighbors to form?",o:["Router ID","Hello timers","Autonomous system number and K values (plus authentication and subnet)","Interface bandwidth"],a:2,e:"The AS number, K values, subnet and authentication must match. Timers can differ."},
+ {q:"EIGRP named mode uses wide metrics. Why?",o:["To disable load balancing","To enable LSAs","To use OSPF areas","To scale the metric for high-speed interfaces above 1 Gbps"],a:3,e:"Wide metrics (64-bit) distinguish between 10G, 40G and 100G links."},
+ {q:"Which EIGRP command allows unequal-cost load balancing?",o:["variance","maximum-paths only","bandwidth","delay"],a:0,e:"variance N installs feasible successors whose metric is within N times the best path."},
+ {q:"An eBGP session to a neighbor's loopback won't come up. What is commonly missing?",o:["next-hop-self","ebgp-multihop (or ttl-security) and update-source loopback","route-reflector-client","synchronization"],a:1,e:"eBGP expects TTL 1 by default. Loopback peering needs multihop and the correct source interface."},
+ {q:"Which BGP attribute is evaluated first in Cisco's best path selection?",o:["Local preference","AS path length","Weight","MED"],a:2,e:"The order starts with weight (Cisco, local only), then local preference, locally originated, AS path, origin and MED."},
+ {q:"An enterprise with two ISPs wants all outbound traffic to prefer ISP-A across all its routers. Which attribute should be set?",o:["Weight on one router only","MED toward ISP-A","AS path prepending outbound","Local preference (higher on routes from ISP-A)"],a:3,e:"Local preference is shared within the AS and controls outbound path choice."},
+ {q:"To influence how inbound traffic from the internet reaches the enterprise, which technique is common?",o:["AS path prepending on advertisements to the less-preferred ISP","Raising local preference","Setting weight","Changing the router ID"],a:0,e:"Prepending makes a path look longer to external ASes, so they prefer the other link."},
+ {q:"Which BGP neighbor state indicates the session is fully established and exchanging routes?",o:["Active","Established","OpenSent","Idle"],a:1,e:"Active means the router is still trying to connect, which often points to a configuration or reachability problem."},
+ {q:"Why are iBGP route reflectors used?",o:["To speed up eBGP","To summarize routes","To avoid needing a full mesh of iBGP sessions","To change AS numbers"],a:2,e:"iBGP split horizon normally requires a full mesh. RRs reflect routes to their clients."},
+ {q:"Which redistribution problem can cause routing loops with two-way redistribution at multiple points?",o:["Too few routes","Missing default route","Interface MTU","Routes being fed back into their original protocol, fixed with tags and route maps"],a:3,e:"Tag routes on redistribution and filter on the tag to prevent feedback loops."},
+ {q:"Which feature should be used to make a path decision based on source address rather than destination?",o:["Policy-based routing (route map applied with ip policy)","Static default route","OSPF cost","CEF polarization"],a:0,e:"PBR overrides the routing table using match criteria such as source address."},
+ {q:"Which protocol provides fast failure detection for routing protocols in milliseconds?",o:["CDP","BFD","LLDP","UDLD"],a:1,e:"Bidirectional Forwarding Detection lets OSPF, EIGRP and BGP react quickly to path failures."},
+ {q:"In multicast, which protocol do hosts use to join a group?",o:["PIM","OSPF","IGMP (MLD for IPv6)","ARP"],a:2,e:"Hosts send IGMP reports. Routers use PIM between themselves."},
+ {q:"Which PIM mode uses a rendezvous point and builds shared trees?",o:["PIM dense mode","IGMP snooping","MSDP only","PIM sparse mode"],a:3,e:"Sparse mode joins toward the RP, then can switch to the shortest-path tree."},
+ {q:"Which switch feature limits multicast flooding by listening to IGMP joins?",o:["IGMP snooping","PIM","Storm control","DHCP snooping"],a:0,e:"IGMP snooping forwards multicast only to ports with interested receivers."},
+ {q:"Which STP variant maps multiple VLANs to a few spanning-tree instances?",o:["Rapid PVST+","MST (802.1s)","PVST+","802.1D"],a:1,e:"MST reduces CPU load by grouping VLANs into instances."},
+ {q:"Which STP protection prevents a designated port from becoming a root port when superior BPDUs arrive from a downstream switch?",o:["BPDU filter","PortFast","Root guard","UplinkFast"],a:2,e:"Root guard puts the port in root-inconsistent state when it receives a superior BPDU."},
+ {q:"Which feature detects unidirectional fiber links to prevent STP loops?",o:["PortFast","DTP","VTP pruning","UDLD (or loop guard)"],a:3,e:"UDLD detects one-way links and can err-disable them."},
+ {q:"Which LACP setting controls which member links become active when there are more than 8 configured?",o:["LACP port priority","Channel group number","Load-balance method","Native VLAN"],a:0,e:"Lower port priority values are preferred for the active links. The rest go hot-standby."},
+ {q:"Which wireless roaming type keeps the client's IP when it moves between APs on controllers with different VLANs?",o:["Intra-controller roaming only","Layer 3 roaming (anchor/foreign tunneling)","Layer 2 roaming","No roaming"],a:1,e:"Layer 3 roaming tunnels traffic back to the anchor controller so the IP stays the same."},
+ {q:"Which RF metric measures signal strength relative to the noise floor?",o:["RSSI alone","dBi","SNR","EIRP"],a:2,e:"Signal-to-noise ratio is RSSI minus noise floor in dB. Higher is better, and 25 dB or more is good for voice."},
+ {q:"An AP transmits at 20 dBm through a cable with 2 dB loss and an antenna with 6 dBi gain. What is the EIRP?",o:["28 dBm","22 dBm","14 dBm","24 dBm"],a:3,e:"EIRP = transmit power − cable loss + antenna gain = 20 − 2 + 6 = 24 dBm."},
+ {q:"Which AP mode dedicates the radio to scanning for rogue devices and doesn't serve clients?",o:["Monitor mode","Local mode","FlexConnect","Bridge mode"],a:0,e:"Monitor mode APs scan channels for rogues and intrusion detection."},
+ {q:"Which NTP stratum is closest to the authoritative time source?",o:["Stratum 15","Stratum 1","Stratum 16","Stratum 8"],a:1,e:"Stratum 1 servers connect directly to a reference clock. Stratum 16 means unsynchronized."},
+ {q:"Which NAT feature lets several inside servers share one public IP on different ports?",o:["Dynamic NAT pool","NAT64","Static PAT (port forwarding)","Twice NAT only"],a:2,e:"Static PAT maps public IP:port combinations to specific inside hosts and ports."}
+]);
+
+/* ---------- 4.0 Network Assurance (10) ---------- */
+registerExamBank("assure",[
+ {q:"An engineer must capture traffic from a remote switch's port and analyze it on a sniffer in another location over the IP network. Which feature fits?",o:["Local SPAN","RSPAN only over Layer 3","Port security","ERSPAN"],a:3,e:"ERSPAN wraps mirrored traffic in GRE so it can cross routed networks."},
+ {q:"How does RSPAN carry mirrored traffic between switches?",o:["Over a dedicated RSPAN VLAN across trunks","Over GRE","Over IPsec","Over the console"],a:0,e:"RSPAN uses a special VLAN to carry mirrored frames at Layer 2."},
+ {q:"Which feature generates synthetic traffic to measure latency, jitter and packet loss between two routers?",o:["NetFlow","IP SLA","SNMP traps","Syslog"],a:1,e:"IP SLA probes measure performance and can trigger tracking objects for failover."},
+ {q:"Which Flexible NetFlow component defines which fields are matched and collected?",o:["Flow exporter","Flow monitor","Flow record","Sampler"],a:2,e:"The record defines key and non-key fields, the exporter defines the destination and the monitor ties them to an interface."},
+ {q:"Which debug practice reduces the risk of overwhelming a production router?",o:["Run 'debug all'","Debug on the console at high speed","Disable logging","Use conditional debugging or ACL filters, and log to the buffer rather than the console"],a:3,e:"Limit the debug scope and avoid console logging to protect the CPU."},
+ {q:"Which syslog setting ensures logged events are timestamped with the date and milliseconds?",o:["service timestamps log datetime msec","logging buffered 4096","logging trap debugging","no service timestamps"],a:0,e:"Accurate timestamps (with NTP) are essential for correlating events."},
+ {q:"Which telemetry model streams data from the device on a schedule or on change, instead of polling?",o:["SNMP polling only","Model-driven telemetry (dial-out or dial-in, gRPC)","Syslog only","Ping"],a:1,e:"MDT pushes YANG-modeled data efficiently to collectors."},
+ {q:"Which Catalyst Center (formerly DNA Center) feature uses analytics to show client and device health and suggest fixes?",o:["Provisioning","Policy","Assurance","Design"],a:2,e:"Assurance analyzes telemetry for health scores, issues and guided remediation."},
+ {q:"Which SNMP version should be used to monitor devices securely?",o:["SNMPv2c with 'public'","SNMPv1","SNMPv2c with write access","SNMPv3 with authPriv"],a:3,e:"authPriv adds both authentication and encryption."},
+ {q:"Which command shows the result of a configured IP SLA operation?",o:["show ip sla statistics","show ip route sla","show sla brief","debug ip sla all"],a:0,e:"show ip sla statistics reports the latest results and success counts."}
+]);
+
+/* ---------- 5.0 Security (20) ---------- */
+registerExamBank("sec",[
+ {q:"Which AAA protocol is preferred for device administration because it encrypts the full payload and authorizes each command?",o:["RADIUS","TACACS+","LDAP","Kerberos"],a:1,e:"TACACS+ separates authentication, authorization and accounting and supports command authorization."},
+ {q:"Which configuration falls back to the local user database if the TACACS+ servers are unreachable?",o:["aaa authentication login default local group tacacs+","aaa authorization exec none","aaa authentication login default group tacacs+ local","line vty 0 4 no login"],a:2,e:"Methods are tried in order. local is used only when the servers don't respond, not when they reject a login."},
+ {q:"Which feature protects the router's control plane from excessive traffic aimed at its CPU?",o:["PBR","NAT","CEF","CoPP (control plane policing)"],a:3,e:"CoPP applies QoS policy to traffic destined to the control plane."},
+ {q:"Which ACL type can match on TCP flags and port ranges?",o:["Extended ACL","Standard ACL","MAC ACL only","Prefix list"],a:0,e:"Extended ACLs match protocol, source, destination and ports, and support keywords such as established."},
+ {q:"Which ACL is applied to a VLAN to filter traffic within that VLAN on a switch?",o:["Router ACL","VACL (VLAN access map)","PACL only","Prefix list"],a:1,e:"VLAN access maps filter all traffic bridged within the VLAN."},
+ {q:"Which 802.1X component is the client device requesting access?",o:["Authenticator","Authentication server","Supplicant","Policy server"],a:2,e:"The supplicant is the endpoint, the authenticator is the switch or WLC and the server is RADIUS, such as ISE."},
+ {q:"A printer can't run an 802.1X supplicant. Which method can authenticate it?",o:["PEAP","EAP-TLS","WebAuth with user credentials","MAB (MAC Authentication Bypass)"],a:3,e:"MAB uses the device's MAC as its identity when 802.1X fails or isn't supported."},
+ {q:"Which EAP method uses certificates on both client and server for the strongest mutual authentication?",o:["EAP-TLS","PEAP-MSCHAPv2","EAP-FAST with PAC only","LEAP"],a:0,e:"EAP-TLS needs client certificates and gives mutual certificate-based authentication."},
+ {q:"Which technology tags traffic with a group identifier so policy follows the user regardless of IP?",o:["VRF-lite","Cisco TrustSec Security Group Tags","802.1Q","GRE"],a:1,e:"SGTs enable group-based policy through SGACLs."},
+ {q:"Which Cisco solution provides endpoint malware protection with retrospective file analysis?",o:["Cisco Umbrella","Cisco ISE","Cisco Secure Endpoint (formerly AMP)","Cisco Catalyst Center"],a:2,e:"Secure Endpoint tracks file trajectory and can flag files as malicious after the fact."},
+ {q:"Which Cisco solution blocks malicious domains at the DNS layer before a connection is made?",o:["Cisco Secure Firewall","Cisco Stealthwatch","Cisco DUO","Cisco Umbrella"],a:3,e:"Umbrella resolves DNS and refuses known-bad domains."},
+ {q:"Which solution uses NetFlow telemetry to detect anomalous network behavior?",o:["Cisco Secure Network Analytics (Stealthwatch)","Cisco Umbrella","Cisco DUO","Cisco Webex"],a:0,e:"Secure Network Analytics builds baselines from flow data to spot threats."},
+ {q:"Which feature on a WLAN protects management frames from deauthentication attacks?",o:["WPS","802.11w Protected Management Frames","MAC filtering","SSID hiding"],a:1,e:"PMF authenticates management frames. WPA3 requires it."},
+ {q:"Which wireless authentication option is best for a guest network that should show an acceptable-use page?",o:["EAP-TLS","WPA3-Enterprise","Web authentication (captive portal)","MAB"],a:2,e:"WebAuth redirects guests to a portal for acceptance or credentials."},
+ {q:"Which command limits SSH access to VTY lines from a management subnet only?",o:["ip access-group MGMT-ACL in on the VTY","transport input none","login local only","access-class MGMT-ACL in (under line vty)"],a:3,e:"access-class filters inbound VTY connections by source."},
+ {q:"Which firewall capability makes forwarding decisions by tracking the state of connections?",o:["Stateful inspection","Stateless ACL","Route map","Prefix list"],a:0,e:"Stateful firewalls automatically allow return traffic for established sessions."},
+ {q:"Which zone-based firewall rule is implied for traffic between two interfaces in different zones with no zone-pair policy?",o:["It's permitted","It's dropped","It's inspected","It's logged and permitted"],a:1,e:"ZBFW denies inter-zone traffic by default unless a zone-pair policy allows it."},
+ {q:"Which MACsec function does it provide on a link?",o:["End-to-end IPsec","DNS filtering","Hop-by-hop Layer 2 encryption and integrity (802.1AE)","Port mirroring"],a:2,e:"MACsec encrypts Ethernet frames between directly connected devices."},
+ {q:"Which feature ensures routing updates come only from trusted OSPF neighbors?",o:["Passive interface only","Higher OSPF cost","Route summarization","OSPF authentication (for example HMAC-SHA keychains)"],a:3,e:"Authentication prevents rogue routers from injecting routes."},
+ {q:"Which secure management protocol replaces HTTP for device web interfaces?",o:["HTTPS (ip http secure-server) with no ip http server","Telnet","SNMPv1","TFTP"],a:0,e:"Turn on HTTPS and turn off the plain HTTP server."}
+]);
+
+/* ---------- 6.0 Automation and AI (15) ---------- */
+registerExamBank("auto",[
+ {q:"A Python script receives a JSON response from a REST API. Which module parses it into a dictionary?",o:["os","json (json.loads)","re only","socket"],a:1,e:"json.loads turns a JSON string into Python dicts and lists. requests also offers .json()."},
+ {q:"Which HTTP status code means a REST request succeeded and a new resource was created?",o:["200","204","201","404"],a:2,e:"201 Created confirms creation. 200 is OK, 204 is No Content and 404 is Not Found."},
+ {q:"Which HTTP status code indicates the request lacked valid authentication?",o:["403","500","301","401"],a:3,e:"401 Unauthorized means credentials are missing or invalid. 403 means authenticated but not allowed."},
+ {q:"Which protocol uses YANG models over SSH (port 830) with XML encoding?",o:["NETCONF","RESTCONF","SNMP","gNMI only"],a:0,e:"NETCONF runs over SSH on port 830 with XML RPCs. RESTCONF uses HTTPS with JSON or XML."},
+ {q:"Which NETCONF datastore holds changes that aren't yet active until committed?",o:["Running","Candidate","Startup","Volatile"],a:1,e:"The candidate datastore allows staged changes and an atomic commit."},
+ {q:"In YANG, which node type holds a single value such as an interface description?",o:["container","list","leaf","grouping"],a:2,e:"A leaf holds a single value, a container groups nodes and a list has keyed entries."},
+ {q:"Which Catalyst Center API direction would an external script use to request device inventory?",o:["Southbound API","Eastbound syslog","Westbound SNMP","Northbound REST API"],a:3,e:"Applications use the northbound REST APIs, and the controller uses southbound APIs to talk to devices."},
+ {q:"Which EEM component defines the trigger, such as a syslog pattern, for an applet?",o:["event","action","trigger correlate only","track"],a:0,e:"EEM applets have one event detector and a set of actions."},
+ {q:"Which configuration management tool uses a master server and agents with a pull model and manifests?",o:["Ansible","Puppet","Python requests","Netmiko"],a:1,e:"Puppet agents pull catalogs from the master. Ansible is agentless and push-based."},
+ {q:"Which Ansible element defines reusable sets of tasks, variables and handlers?",o:["Inventory","Fact","Role","Ad hoc command"],a:2,e:"Roles package automation for reuse across playbooks."},
+ {q:"Which Python library is commonly used to SSH into Cisco devices and send CLI commands?",o:["NumPy","Flask","Pandas only","Netmiko (built on Paramiko)"],a:3,e:"Netmiko simplifies multi-vendor CLI automation over SSH."},
+ {q:"Which JSON structure correctly represents an interface with a name and enabled flag?",o:["{\"name\": \"Gi1\", \"enabled\": true}","[name: Gi1, enabled: true]","&lt;name&gt;Gi1&lt;/name&gt;","name=Gi1;enabled=1"],a:0,e:"JSON objects use braces with quoted keys. Booleans are true or false without quotes."},
+ {q:"An AI assistant suggests BGP configuration that references a command not present in the installed IOS XE release. What does this illustrate?",o:["Automatic feature licensing","AI hallucination, so output must be validated against documentation and lab tests","A YANG model error","A NETCONF lock"],a:1,e:"AI can produce plausible but invalid commands. Verify against vendor docs before deployment."},
+ {q:"Which practice makes AI-assisted network automation safer?",o:["Give the AI direct write access to production without review","Disable logging","Keep a human in the loop, use change control and test in a lab or digital twin first","Use shared admin credentials"],a:2,e:"Guardrails, review and staged testing limit the risk from wrong AI output."},
+ {q:"Which AI capability is most useful for network assurance?",o:["Replacing all routing protocols","Removing the need for monitoring","Assigning IP addresses randomly","Anomaly detection that baselines normal behavior and flags deviations"],a:3,e:"Machine learning baselines help spot unusual traffic, latency or device behavior."}
+]);
 
 </script>
 <script>boot();</script>
