@@ -1,4 +1,4 @@
-/* ================= Module 3: Security Architecture (SY0-701 Domain 3.0, 18%) ================= */
+/* ================= Module 3: Security Architecture (SY0-801 Domain 3.0, 19%) ================= */
 (function(){
 const LESSONS=[
 {id:"cloud",num:"3.1",title:"Cloud and architecture models",html:`
@@ -16,7 +16,7 @@ const LESSONS=[
 <li><b>Microservices</b>: an app split into small services talking through APIs. Secure the APIs.</li>
 <li><b>Network infrastructure</b>: <b>physical isolation</b> (an <b>air gap</b> with no connection at all), <b>logical segmentation</b> (VLANs) and <b>software-defined networking (SDN)</b>, which separates the control plane from the data plane.</li>
 <li><b>On-premises</b>: you control everything, and you pay for and secure everything. <b>Centralized</b> vs <b>decentralized</b>: one point of control (and failure) vs control spread across many locations.</li>
-<li><b>Containerization</b>: apps packaged with their dependencies sharing one OS kernel. <b>Virtualization</b>: full guest OSes on a hypervisor.</li>
+<li><b>Virtualization</b>: full guest OSes on a hypervisor. A hypervisor flaw can expose every VM on the host, so patch and harden it.</li>
 <li><b>IoT</b>: smart devices, often weakly secured. <b>ICS/SCADA</b>: industrial control systems running physical processes; availability and safety come first. <b>RTOS</b>: real-time OS with strict timing, as in cars and medical devices. <b>Embedded systems</b>: dedicated-purpose computers that are often hard to patch.</li>
 <li><b>High availability</b>: designs that stay up through failures.</li></ul>
 <div class="viz" id="viz-models"></div>
@@ -50,11 +50,18 @@ const LESSONS=[
 <ul><li><b>VPN</b>: an encrypted tunnel across an untrusted network. <b>Remote access VPNs</b> connect users. <b>Site-to-site VPNs</b> connect offices.</li>
 <li><b>Tunneling</b>: <b>TLS</b> VPNs work through browsers and port 443. <b>IPsec</b> works at layer 3 and uses <b>AH</b> (integrity and authentication, no encryption) and <b>ESP</b> (encryption plus integrity). <b>Tunnel mode</b> encrypts the whole original packet; <b>transport mode</b> encrypts only the payload.</li>
 <li><b>Full tunnel</b> sends all traffic through the VPN. <b>Split tunnel</b> sends only corporate traffic through it.</li>
-<li><b>SD-WAN</b>: software-defined WAN that picks the best path across links such as broadband, LTE and MPLS.</li>
-<li><b>SASE</b> (secure access service edge): cloud-delivered networking and security (secure web gateway, CASB, zero trust access, firewall) close to users wherever they are.</li></ul>
+</ul>
 <div class="viz" id="viz-ipsec"></div>
+<h3>Security service edge (SSE)</h3>
+<p><b>SSE</b> moves security controls into the cloud, close to users wherever they work, so remote traffic doesn't have to be sent back to headquarters to be inspected. One policy applies everywhere. SSE bundles four services:</p>
+<ul><li><b>Secure web gateway (SWG)</b>: filters web browsing and scans downloads.</li>
+<li><b>Cloud access security broker (CASB)</b>: sees and controls the use of SaaS apps and the data that moves through them.</li>
+<li><b>Zero trust network access (ZTNA)</b>: connects a verified user and device to one specific private app, instead of putting them on the whole network like a traditional VPN.</li>
+<li><b>Firewall as a service (FWaaS)</b>: cloud-delivered firewall rules for non-web traffic.</li></ul>
+<div class="tip"><b>Exam tip.</b> SY0-801 names SSE in this objective. If a question describes cloud-delivered web filtering, CASB and zero trust access for a remote workforce, the answer is SSE.</div>
+<div class="viz" id="viz-sse"></div>
 <h3>Selecting controls</h3>
-<p>Choose controls that fit the architecture. A remote-first company leans on SASE and zero trust. A factory leans on segmentation and physical isolation. A small office might use a single UTM.</p>
+<p>Choose controls that fit the architecture. A remote-first company leans on SSE and zero trust access. A factory leans on segmentation and physical isolation. A small office might use a single UTM.</p>
 <div class="viz" id="viz-pickarch"></div>`},
 {id:"data",num:"3.4",title:"Protecting data",html:`
 <h3>Data types</h3>
@@ -95,9 +102,9 @@ const LESSONS=[
 ];
 
 const G={
- cloud:[["Shared responsibility model","Provider and customer split security duties by service model"],["Always the customer's responsibility","Data, identities and access"],["IaaS customer manages","OS, applications, data, access"],["PaaS customer manages","Applications, data, access"],["SaaS customer manages","Data, users, configuration"],["Hybrid cloud","Mix of on-premises and cloud, or multiple providers"],["Infrastructure as code","Infrastructure defined in templates; repeatable builds"],["Serverless","Provider runs your functions; no OS to manage"],["Microservices","App built from small services communicating by API"],["Air gap","Physical isolation with no network connection"],["Logical segmentation","Separating networks with VLANs or ACLs"],["SDN","Software-defined networking separates control and data planes"],["Containerization","Apps packaged with dependencies sharing one OS kernel"],["ICS / SCADA","Industrial control systems for physical processes; availability first"],["RTOS","Real-time OS with strict timing guarantees"],["Embedded system","Dedicated-purpose computer, often hard to patch"],["IoT","Internet-connected smart devices, often weakly secured"],["Centralized architecture","One point of control and a single point of failure"]],
+ cloud:[["Shared responsibility model","Provider and customer split security duties by service model"],["Always the customer's responsibility","Data, identities and access"],["IaaS customer manages","OS, applications, data, access"],["PaaS customer manages","Applications, data, access"],["SaaS customer manages","Data, users, configuration"],["Hybrid cloud","Mix of on-premises and cloud, or multiple providers"],["Infrastructure as code","Infrastructure defined in templates; repeatable builds"],["Serverless","Provider runs your functions; no OS to manage"],["Microservices","App built from small services communicating by API"],["Air gap","Physical isolation with no network connection"],["Logical segmentation","Separating networks with VLANs or ACLs"],["SDN","Software-defined networking separates control and data planes"],["Virtualization","Full guest OSes on a hypervisor; a hypervisor flaw can expose every VM"],["ICS / SCADA","Industrial control systems for physical processes; availability first"],["RTOS","Real-time OS with strict timing guarantees"],["Embedded system","Dedicated-purpose computer, often hard to patch"],["IoT","Internet-connected smart devices, often weakly secured"],["Centralized architecture","One point of control and a single point of failure"]],
  infra:[["Fail-open","Traffic passes if the device fails; favors availability"],["Fail-closed","Traffic stops if the device fails; favors security"],["Active device","Can block traffic, e.g. IPS"],["Passive device","Monitors only, e.g. IDS"],["Inline","Traffic flows through the device"],["Tap / monitor","Device receives a copy of traffic"],["Jump server","Hardened host used to reach internal systems for admin"],["Forward proxy","Makes web requests for internal clients and filters them"],["Reverse proxy","Sits in front of servers and handles inbound requests"],["IPS","Intrusion prevention system; inline, blocks"],["IDS","Intrusion detection system; alerts only"],["Load balancer","Distributes traffic across servers"],["Layer 4 firewall","Filters on IP and port"],["Layer 7 firewall","Understands applications"],["WAF","Web application firewall; blocks SQLi and XSS"],["UTM","All-in-one firewall, IPS, AV, filter and VPN"],["NGFW","Application-aware firewall with IPS and identity"],["802.1X","Port-based network access control via RADIUS"],["EAP","Extensible Authentication Protocol used in 802.1X"]],
- remote:[["Remote access VPN","Connects individual users to the network"],["Site-to-site VPN","Connects networks such as branch offices"],["TLS VPN","VPN over TLS/443; often browser-based"],["IPsec AH","Authentication Header: integrity and authentication, no encryption"],["IPsec ESP","Encapsulating Security Payload: encryption and integrity"],["IPsec tunnel mode","Encrypts the entire original packet"],["IPsec transport mode","Encrypts only the payload"],["Split tunnel","Only corporate traffic uses the VPN"],["Full tunnel","All traffic goes through the VPN"],["SD-WAN","Software-defined WAN choosing paths across links"],["SASE","Cloud-delivered network security close to users"]],
+ remote:[["Remote access VPN","Connects individual users to the network"],["Site-to-site VPN","Connects networks such as branch offices"],["TLS VPN","VPN over TLS/443; often browser-based"],["IPsec AH","Authentication Header: integrity and authentication, no encryption"],["IPsec ESP","Encapsulating Security Payload: encryption and integrity"],["IPsec tunnel mode","Encrypts the entire original packet"],["IPsec transport mode","Encrypts only the payload"],["Split tunnel","Only corporate traffic uses the VPN"],["Full tunnel","All traffic goes through the VPN"],["SSE","Security service edge: cloud-delivered SWG, CASB, ZTNA and FWaaS close to users"],["SWG","Secure web gateway: filters browsing and scans downloads"],["CASB","Cloud access security broker: controls SaaS use and data"],["ZTNA","Zero trust network access: connects a verified user to one app, not the network"],["FWaaS","Firewall as a service: cloud firewall for non-web traffic"]],
  data:[["Regulated data","Data governed by law, e.g. health or card data"],["Trade secret","Confidential business information giving an advantage"],["Intellectual property","Creations protected by patents, copyrights, trademarks"],["Data at rest","Stored data; protect with disk/database encryption"],["Data in transit","Moving data; protect with TLS, IPsec"],["Data in use","Data in memory; hardest to protect"],["Data sovereignty","Data is subject to the laws where it's stored"],["Geographic restrictions","Limiting where data can be stored or accessed"],["Restricted classification","Highest sensitivity; strict need-to-know"],["Public classification","Approved for anyone"],["Critical data","Data essential to operations"]],
  resil:[["Hot site","Fully running with live data; fastest, most expensive"],["Warm site","Hardware ready, data must be restored"],["Cold site","Space and power only; slowest, cheapest"],["Geographic dispersion","Sites far apart so one disaster doesn't hit both"],["Load balancing vs clustering","Spread load across actives vs failover between nodes"],["Platform diversity","Different vendors or OSes to avoid common failures"],["Multi-cloud","Using more than one cloud provider"],["COOP","Continuity of operations planning"],["Capacity planning","People, technology and infrastructure"],["Tabletop exercise","Talk through a scenario without touching systems"],["Failover test","Actually switch to the backup system"],["Parallel processing test","Run backup systems alongside production"],["Snapshot","Point-in-time copy of a VM or volume"],["Replication","Continuous copy of data to another location"],["Journaling","Logging changes to replay to a point in time"],["RPO","Recovery point objective: max acceptable data loss"],["RTO","Recovery time objective: max acceptable downtime"],["UPS","Battery power for short outages"],["Generator","Long-term backup power"],["Immutable backup","Can't be changed or deleted; resists ransomware"]]
 };
@@ -110,10 +117,10 @@ const QUIZ=[
  {q:"Which service model leaves the customer responsible for the application code and data, but not the OS?",o:["IaaS","PaaS","SaaS","On-premises"],a:1,e:"PaaS provides the OS and runtime."},
  {q:"Which document defines who handles which security tasks between a cloud provider and customer?",o:["Responsibility matrix","CRL","BIA","MOU"],a:0,e:"The responsibility matrix maps duties by service model."},
  {q:"A template that builds 200 identical servers had SSH open to the internet. All 200 servers are exposed. Which model's risk is this?",o:["Infrastructure as code","Air gap","RTOS","Hot site"],a:0,e:"IaC repeats whatever is in the template, including mistakes. Review templates like code."},
- {q:"Which model removes OS patching from the customer's duties entirely?",o:["IaaS","Serverless","On-premises","Containers on your own hosts"],a:1,e:"With serverless functions, the provider manages the runtime and OS."},
+ {q:"Which model removes OS patching from the customer's duties entirely?",o:["IaaS","Serverless","On-premises","Virtual machines on your own hosts"],a:1,e:"With serverless functions, the provider manages the runtime and OS."},
  {q:"A nuclear plant's control network has no physical connection to any other network. What is this?",o:["VLAN","Air gap","SDN","DMZ"],a:1,e:"An air gap is physical isolation."},
  {q:"Which architecture separates the control plane from the data plane so networks can be managed centrally by software?",o:["SDN","SCADA","RTOS","UTM"],a:0,e:"Software-defined networking separates the two planes."},
- {q:"Containers differ from VMs because containers:",o:["Each run a full guest OS","Share the host OS kernel","Can't be isolated","Require a hypervisor"],a:1,e:"Containers share one kernel, making them lighter but tying their isolation to that kernel."},
+ {q:"Which SSE service would block an employee from uploading customer data to an unsanctioned file-sharing app?",o:["SWG","CASB","FWaaS","Load balancer"],a:1,e:"A cloud access security broker controls SaaS use and the data that moves through it."},
  {q:"Which system's top priority is usually availability and safety rather than confidentiality?",o:["ICS/SCADA","Email server","HR database","Marketing website"],a:0,e:"Industrial systems control physical processes where downtime can be dangerous."},
  {q:"An infusion pump runs a real-time OS and the vendor won't allow patches. What's the BEST approach?",o:["Install antivirus on it","Segment it and apply compensating controls","Connect it directly to the internet","Ignore it"],a:1,e:"When you can't patch, isolate and monitor."},
  {q:"A firewall fails and all traffic is blocked until it's replaced. What failure mode is this?",o:["Fail-open","Fail-closed","Fail-safe for availability","Passive"],a:1,e:"Fail-closed stops traffic, protecting security over availability."},
@@ -128,10 +135,10 @@ const QUIZ=[
  {q:"A switch port stays closed until the laptop presents a valid certificate checked by RADIUS. What is this?",o:["802.1X with EAP-TLS","Port mirroring","MAC filtering only","Split tunneling"],a:0,e:"802.1X with EAP-TLS authenticates with certificates."},
  {q:"Which IPsec protocol provides encryption?",o:["AH","ESP","IKE only","GRE"],a:1,e:"ESP encrypts. AH only provides integrity and authentication."},
  {q:"Which IPsec mode encrypts the entire original IP packet, including headers, and is used for site-to-site VPNs?",o:["Transport mode","Tunnel mode","Split mode","Passive mode"],a:1,e:"Tunnel mode wraps the whole packet in a new one."},
- {q:"Remote users' Netflix traffic goes straight to the internet while corporate traffic uses the VPN. What is this?",o:["Full tunnel","Split tunnel","Site-to-site","SASE"],a:1,e:"Split tunneling sends only corporate traffic through the tunnel."},
+ {q:"Remote users' Netflix traffic goes straight to the internet while corporate traffic uses the VPN. What is this?",o:["Full tunnel","Split tunnel","Site-to-site","SSE"],a:1,e:"Split tunneling sends only corporate traffic through the tunnel."},
  {q:"A security team wants all remote user traffic inspected by corporate security tools. What should they use?",o:["Split tunnel","Full tunnel","No VPN","Air gap"],a:1,e:"A full tunnel routes everything through corporate controls."},
- {q:"A company with 40 branches wants to choose the best path across broadband, LTE and MPLS automatically. What technology fits?",o:["SD-WAN","802.1X","RTOS","WAF"],a:0,e:"SD-WAN manages and steers traffic across multiple links."},
- {q:"A fully remote company wants cloud-delivered secure web gateway, CASB and zero trust access close to each user. What is this?",o:["SASE","UTM","SCADA","Hot site"],a:0,e:"Secure access service edge delivers these from the cloud."},
+ {q:"Contractors need access to one internal billing app, and nothing else on the network. Which approach fits BEST?",o:["Zero trust network access","A full-tunnel remote access VPN","A site-to-site IPsec tunnel","An air gap"],a:0,e:"ZTNA connects a verified user and device to a single application instead of the whole network."},
+ {q:"A fully remote company wants cloud-delivered secure web gateway, CASB and zero trust access close to each user. What is this?",o:["SSE","UTM","SCADA","Hot site"],a:0,e:"Security service edge delivers these from the cloud."},
  {q:"Which data state is hardest to protect?",o:["At rest","In transit","In use","Archived"],a:2,e:"Data in memory must be decrypted to be processed."},
  {q:"Which protects data in transit?",o:["BitLocker","TLS","Tokenization of backups","Data masking"],a:1,e:"TLS encrypts data moving across networks."},
  {q:"A European company must keep citizen data in EU data centers because of local law. What concept is this?",o:["Data sovereignty","Data masking","Tokenization","Least privilege"],a:0,e:"Data is subject to the laws of the country where it's stored."},
@@ -150,7 +157,7 @@ const QUIZ=[
  {q:"Which backup approach BEST protects against ransomware that targets backup servers?",o:["Snapshots on the same server","Immutable or offline offsite copies","More frequent onsite copies only","Disabling encryption"],a:1,e:"Copies that can't be changed or reached survive ransomware."},
  {q:"What provides power for a few minutes during an outage so systems can shut down or a generator can start?",o:["UPS","PDU","Generator","Load balancer"],a:0,e:"A UPS bridges short gaps."},
  {q:"Which keeps a service running if one web server fails, by spreading requests across several active servers?",o:["Load balancer","Cold site","Journaling","Jump server"],a:0,e:"Load balancing distributes traffic and removes failed nodes."},
- {q:"Using both AWS and Azure so one provider's outage doesn't stop the business is called:",o:["Multi-cloud","Hybrid on-premises","Air gap","SD-WAN"],a:0,e:"Multi-cloud avoids dependence on a single provider."},
+ {q:"Using both AWS and Azure so one provider's outage doesn't stop the business is called:",o:["Multi-cloud","Hybrid on-premises","Air gap","SDN"],a:0,e:"Multi-cloud avoids dependence on a single provider."},
  {q:"Which captures the state of a VM at a moment in time so you can roll back after a bad update?",o:["Snapshot","Journaling","Replication","Tabletop"],a:0,e:"Snapshots are point-in-time copies."},
  {q:"A database logs every transaction so it can be restored to the exact moment before corruption. What is this?",o:["Journaling","Snapshot","Mirroring only","Tokenization"],a:0,e:"Journaling records changes for point-in-time recovery."},
  {q:"Capacity planning for resilience considers which three areas?",o:["People, technology, infrastructure","Hot, warm, cold","AH, ESP, IKE","CIA"],a:0,e:"You need enough staff, systems and facilities to handle demand and disruptions."},
@@ -162,7 +169,7 @@ registerModule({
   id:"arc",slug:"architecture",title:"Security Architecture",
   lessons:LESSONS.map(l=>({...l,short:l.title.split(/[:,]| and /)[0]})),
   decks:DECKS,cards:CARDS,quiz:QUIZ,
-  vizKeys:["shared","models","failmode","appl","ipsec","pickarch","class","states","sites","rpo"],
+  vizKeys:["shared","models","failmode","appl","ipsec","sse","pickarch","class","states","sites","rpo"],
   viz(){
 /* ---- shared responsibility ---- */
 (function(){
@@ -179,7 +186,7 @@ registerModule({
 })();
 
 revealViz($("#viz-models"),{title:"Architecture models and their security trade-offs",cols:4,done:"Compared every architecture model",items:[
-  ["Infrastructure as code","Cloud","Pro: consistent, reviewable builds. Con: one bad template misconfigures everything. Scan templates before deploying.","vio"],["Serverless","Cloud","Pro: no OS to patch. Con: many small functions, each needing least-privilege permissions.","vio"],["Microservices","App design","Pro: a flaw in one service is contained. Con: many APIs to authenticate and monitor.","vio"],["Containers","Compute","Pro: lightweight, consistent. Con: a kernel exploit can affect every container on the host.","vio"],
+  ["Infrastructure as code","Cloud","Pro: consistent, reviewable builds. Con: one bad template misconfigures everything. Scan templates before deploying.","vio"],["Serverless","Cloud","Pro: no OS to patch. Con: many small functions, each needing least-privilege permissions.","vio"],["Microservices","App design","Pro: a flaw in one service is contained. Con: many APIs to authenticate and monitor.","vio"],["Virtualization","Compute","Pro: many isolated servers on one host. Con: a hypervisor flaw or VM escape can affect every VM.","vio"],
   ["Air-gapped network","Isolation","Pro: no network path for attackers. Con: updates and data transfer need removable media, which is its own risk.","def"],["SDN","Network","Pro: central, programmable control. Con: the controller is a high-value target.","vio"],["ICS / SCADA","Industrial","Availability and safety first. Often legacy, hard to patch. Segment heavily.","atk"],["Embedded / RTOS","Devices","Strict timing, limited compute, rarely patched. Compensating controls are the norm.","atk"],
   ["IoT","Devices","Weak defaults, long lifespans. Put them on their own network segment.","atk"],["On-premises","Ownership","Full control and full responsibility for power, hardware and physical security.","vio"],["Hybrid cloud","Mixed","Policies must be consistent across environments, or gaps appear between them.","vio"],["Decentralized","Control","No single point of failure, but harder to keep policies consistent.","vio"]]});
 
@@ -202,9 +209,32 @@ seqViz($("#viz-ipsec"),{title:"IPsec site-to-site tunnel",left:"Branch firewall"
          {dir:"l",label:"ESP · tunnel mode",sub:"Reply, also encrypted",text:"Replies are protected the same way. AH alone would prove integrity but leave the data readable."}],
   end:"ESP encrypts, AH doesn't. Tunnel mode for site-to-site, transport mode for host-to-host."});
 
+/* ---- SSE request router ---- */
+(function(){
+  const el=$("#viz-sse");
+  const C={swg:["SWG","Secure web gateway","Filters web traffic by URL category, scans downloads for malware and enforces acceptable use."],casb:["CASB","Cloud access security broker","Sees and controls SaaS use: which apps, which accounts, and what data goes in or out."],ztna:["ZTNA","Zero trust network access","Connects a verified user and device to one private app, not the whole network."],fwaas:["FWaaS","Firewall as a service","Cloud firewall rules for ports, protocols and destinations that aren't plain web traffic."]};
+  const R=[["Browse a news site","swg","The SWG checks the site's category and reputation and scans what comes back."],["Download an installer from an unknown site","swg","The SWG scans the download for malware before it reaches the laptop."],["Upload a customer list to a personal file-sharing account","casb","The CASB spots the unsanctioned app and, with DLP, blocks the upload."],["Share a file from the company's SaaS drive to an outside email","casb","The CASB applies data policy inside the sanctioned SaaS app."],["Open the internal HR app from home","ztna","ZTNA checks identity and device posture, then connects the user to that one app only."],["Connect to an SSH server on an odd port overseas","fwaas","Non-web traffic is filtered by the cloud firewall."]];
+  const seen=new Set();
+  const box=(k,on)=>`<div data-c="${k}" style="flex:1 1 120px;min-width:110px;padding:10px;border-radius:10px;border:1px solid ${on?"var(--accent)":"var(--line)"};background:${on?"rgba(86,224,255,.14)":"rgba(255,255,255,.02)"};text-align:center;transition:all .2s"><b class="mono">${C[k][0]}</b><div class="s-small">${C[k][1]}</div></div>`;
+  function draw(cur){const on=cur!=null?R[cur][1]:null;
+    el.innerHTML=`<div class="viz-title">Security service edge: route each request</div>
+    <div class="chips">${R.map((r,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===cur}">${seen.has(i)?"✓ ":""}${r[0]}</button>`).join("")}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+      <div style="text-align:center" class="s-small">REMOTE USER · ANY LOCATION</div>
+      <div style="text-align:center" aria-hidden="true">↓</div>
+      <div style="border:1px dashed var(--line);border-radius:14px;padding:10px"><div class="s-small" style="text-align:center;margin-bottom:8px">SSE CLOUD (one policy, enforced near the user)</div><div style="display:flex;flex-wrap:wrap;gap:8px">${Object.keys(C).map(k=>box(k,k===on)).join("")}</div></div>
+      <div style="text-align:center" aria-hidden="true">↓</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center" class="s-small"><span class="chip" style="pointer-events:none">Internet</span><span class="chip" style="pointer-events:none">SaaS apps</span><span class="chip" style="pointer-events:none">Private apps</span></div>
+    </div>
+    <div class="caption" aria-live="polite">${cur==null?"Pick a request to see which SSE service handles it.":`<b>${C[on][0]} (${C[on][1]}).</b> ${R[cur][2]}`}</div><div class="rv-prog s-small">${seen.size} of ${R.length} requests routed</div>`;
+    if(seen.size===R.length){$(".caption",el).innerHTML+='<br><br><span class="status-good">All routed.</span> SSE is the security half of SASE. Add SD-WAN networking and you have the full SASE picture.';award("viz:sse",20,"Routed every request through SSE")}}
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(!b)return;const i=+b.dataset.i;seen.add(i);draw(i)});
+  draw(null);
+})();
+
 quizViz($("#viz-pickarch"),{title:"Pick the architecture",done:"Picked every architecture",qs:[
-  ["1,200 staff work from home and coffee shops. Security wants consistent web filtering and zero trust access without backhauling traffic to HQ.",["SASE","Site-to-site IPsec","Air gap"],0,"SASE delivers security from the cloud, near the user."],
-  ["30 retail stores with broadband and LTE need reliable, centrally managed links to HQ.",["SD-WAN","Cold site","WAF"],0,"SD-WAN manages and steers traffic across multiple links."],
+  ["1,200 staff work from home and coffee shops. Security wants consistent web filtering and zero trust access without backhauling traffic to HQ.",["SSE","Site-to-site IPsec","Air gap"],0,"SSE delivers security from the cloud, near the user."],
+  ["An outside payroll firm needs to reach one internal app, and only that app.",["ZTNA","Full-tunnel VPN","Flat network"],0,"Zero trust network access grants per-app access after checking identity and device."],
   ["A water treatment plant's controllers must never be reachable from the internet.",["Air gap / strict segmentation","Split tunnel","SaaS"],0,"Isolate industrial controls physically or with strict segmentation."],
   ["A 6-person office wants one affordable box for firewall, VPN and antivirus.",["UTM","SDN controller","HSM"],0,"A UTM combines functions for small sites."]]});
 
@@ -275,9 +305,10 @@ revealViz($("#viz-sites"),{title:"Recovery sites compared",cols:3,done:"Compared
   ],
   badges:[
     ["reader","AR","Architect","Mark all 5 architecture lessons studied",c=>c.allStudied()],
-    ["lab","BP","Blueprint","Complete all 10 diagrams in this module",c=>c.vizAll()],
+    ["lab","BP","Blueprint","Complete all 11 diagrams in this module",c=>c.vizAll()],
     ["shared","SR","Shared Duty","Compare all four cloud responsibility models",c=>c.earned("viz:shared")],
     ["rpo","RP","Recovery Point","Meet the RPO and RTO in the recovery timeline",c=>c.earned("viz:rpo")],
+    ["sse","SE","Service Edge","Route every request in the SSE diagram",c=>c.earned("viz:sse")],
     ["place","DD","Defense in Depth","Pass the device placement simulation",c=>c.passed("place")],
     ["ics","OT","Plant Protector","Pass the ICS security simulation",c=>c.passed("ics")],
     ["dr","DR","Disaster Ready","Pass the disaster recovery simulation",c=>c.passed("site")],

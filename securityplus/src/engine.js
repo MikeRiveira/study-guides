@@ -9,13 +9,13 @@ const fmt=n=>n.toLocaleString("en-US");
 /* ---------- module registry (modules call registerModule) ---------- */
 const MODULES=[];
 const OUTLINE=[
-  {core:1,domain:1,slug:"concepts",title:"General Security Concepts",weight:12},
-  {core:1,domain:2,slug:"threats",title:"Threats, Vulnerabilities, and Mitigations",weight:22},
-  {core:1,domain:3,slug:"architecture",title:"Security Architecture",weight:18},
-  {core:1,domain:4,slug:"operations",title:"Security Operations",weight:28},
-  {core:1,domain:5,slug:"program",title:"Security Program Management and Oversight",weight:20}
+  {core:1,domain:1,slug:"concepts",title:"General Security Concepts",weight:16},
+  {core:1,domain:2,slug:"threats",title:"Threats, Vulnerabilities, and Attacks",weight:24},
+  {core:1,domain:3,slug:"architecture",title:"Security Architecture",weight:19},
+  {core:1,domain:4,slug:"operations",title:"Security Operations",weight:27},
+  {core:1,domain:5,slug:"program",title:"Security Program Management and Oversight",weight:14}
 ];
-const MAXW=28;
+const MAXW=27;
 const modNum=o=>o.domain;
 function registerModule(m){MODULES.push(m)}
 const modBySlug=s=>MODULES.find(m=>m.slug===s);
@@ -331,7 +331,7 @@ function openModule(m,tab){
   CUR=m;S.last=m.slug;save();
   const o=OUTLINE.find(x=>x.slug===m.slug);
   tab=tab||S.tabs[m.id]||"lessons";
-  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span>SY0-701 · Domain ${o.domain} · ${o.weight}% of the exam</div>
+  $("#head").innerHTML=`<div class="crumbs"><a href="../">Roadmap</a><span>/</span><a href="#home">All modules</a><span>/</span>SY0-801 · Domain ${o.domain} · ${o.weight}% of the exam</div>
     <h1>Module ${modNum(o)}: ${o.title}</h1>`;
   $("#nav").innerHTML=TABS.map(([k,l])=>`<button role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join("");
   $("#nav").hidden=false;
@@ -466,7 +466,7 @@ function renderQuiz(m){
 function ring(p){const r=26,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${r}" class="ring-bg"/><circle cx="32" cy="32" r="${r}" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle">${p}%</text></svg>`}
 function renderHome(){
   CUR=null;
-  $("#head").innerHTML=`<div class="eyebrow"><a href="../" class="to-roadmap">IT career roadmap</a><span aria-hidden="true"> / </span>CompTIA Security+ · Exam SY0-701</div><h1>Security+ Study Guide</h1>`;
+  $("#head").innerHTML=`<div class="eyebrow"><a href="../" class="to-roadmap">IT career roadmap</a><span aria-hidden="true"> / </span>CompTIA Security+ · Exam SY0-801</div><h1>Security+ Study Guide</h1>`;
   $("#nav").hidden=true;$("#stats").hidden=true;
   const last=modBySlug(S.last);
   const card=o=>{const m=modBySlug(o.slug),p=m?completion(m):0;
@@ -479,7 +479,7 @@ function renderHome(){
     ${last?`<a class="resume" href="#${last.slug}"><span>Continue where you left off</span><b>Module ${modNum(OUTLINE.find(o=>o.slug===last.slug))}: ${last.title}</b><em>${completion(last)}% complete</em></a>`:""}
     <p class="tip" role="note"><b>Exam version:</b> This guide covers <b>SY0-701</b>. CompTIA launches the new <b>SY0-801</b> on November 17, 2026, with the same five domains but new weights (16 / 24 / 19 / 27 / 14%). SY0-701 can still be booked until mid-2027, so make sure you book the version you studied for.</p>
     <p class="intro">Five modules, one per exam domain. Each has lessons with interactive diagrams, hands-on simulations, spaced-repetition flashcards and a practice quiz. Your XP and rank carry across all of them.</p>
-    <h2 class="sec">Exam domains <span class="mono">SY0-701</span></h2>
+    <h2 class="sec">Exam domains <span class="mono">SY0-801</span></h2>
     <div class="mod-grid">${OUTLINE.map(card).join("")}</div>
     <h2 class="sec">Timed practice exam</h2>
     <div class="mod-grid">${(()=>{const ex=S.exams?.c1;return `<a class="mod-card ex-card" href="#exam-1"><div class="mc-top"><span class="mc-num">EX</span><span class="mono ex-best">${ex?.run?"In progress":ex?.best?ex.best+" best":"Not taken"}</span></div><b>Security+ exam · ${EXAM[1].code}</b><span class="mc-meta">90 questions · 90 minutes · pass ${EXAM[1].pass}</span></a>`})()}</div>
@@ -506,7 +506,7 @@ function renderRanks(){
 /* ---------- timed practice exams ----------
    Questions come from every module's bank in the same proportions as the real exam domains.
    No feedback until you submit. The clock keeps running if you leave and come back. */
-const EXAM={1:{code:"SY0-701",pass:750}};
+const EXAM={1:{code:"SY0-801",pass:750}};
 const EXAM_LEN={full:[90,90],half:[45,45]};/* [questions, minutes] */
 let examTimer=null;
 
@@ -586,7 +586,7 @@ function renderExam(c){
 }
 function examQuestion(c){
   const ex=EXS(c),r=ex.run,N=r.qs.length,x=r.qs[r.pos],q=examQ(x),done=Object.keys(r.ans).length;
-  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">SY0-701 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
+  $("#head").innerHTML=`<div class="ex-bar"><span class="mono">SY0-801 · Q${r.pos+1}/${N}</span><span class="ex-clockwrap"><span class="ex-clock mono" id="ex-clock">${mmss(examLeft(r))}</span><small class="ex-pace mono ${paceCls(r)}" id="ex-pace">${paceTxt(r)}</small></span><span class="mono">${done} answered</span></div>`;
   $("#view").innerHTML=`<div class="qcard ex-q">
     <div class="qmeta"><span>Question ${r.pos+1} of ${N}</span><button class="chip ex-flag" aria-pressed="${!!r.flag[r.pos]}" id="ex-flag">${r.flag[r.pos]?"⚑ Flagged":"⚐ Flag for review"}</button></div>
     <p class="qtext">${q.q}</p>

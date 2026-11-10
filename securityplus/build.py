@@ -10,7 +10,7 @@ scripts = "".join("<script>\n" + p + "\n</script>\n" for p in parts) + "<script>
 body = shell.replace("/*CSS*/", css).replace("/*SCRIPTS*/", scripts)
 head = ('<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-        '<meta name="description" content="Free interactive CompTIA Security+ (SY0-701) study guide with simulations, flashcards, practice exams and a level-up system.">\n')
+        '<meta name="description" content="Free interactive CompTIA Security+ (SY0-801) study guide with simulations, flashcards, practice exams and a level-up system.">\n')
 out = head + body
 open(os.path.join(here, "index.html"), "w", encoding="utf-8").write(out)
 print("built", len(out), "bytes")
