@@ -3,6 +3,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>IT Career Roadmap</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#060a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="IT Study">
+<script src="pwa.js" defer></script>
 <meta name="description" content="Free IT career roadmap: find which certification to take first (A+, Network+, Security+, AZ-900, CCNA or CySA+), see where each one leads, and jump into free interactive study guides.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -62,12 +70,13 @@ h1{font-size:clamp(32px,7vw,54px);font-weight:700;letter-spacing:.01em;backgroun
 .lede{font-size:clamp(16px,2.2vw,19px);color:var(--muted);max-width:62ch;margin:0}
 .lede b{color:var(--fg)}
 .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
-.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--fg);border-radius:8px;padding:9px 16px;font-weight:700;text-decoration:none;font-size:15px;transition:border-color .2s,box-shadow .2s,transform .1s}
+.btn{font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--fg);border-radius:8px;padding:9px 16px;font-weight:700;text-decoration:none;font-size:15px;transition:border-color .2s,box-shadow .2s,transform .1s}
 .btn:hover{border-color:var(--accent)}
 .btn:active{transform:translateY(1px)}
 .btn.primary{background:linear-gradient(120deg,var(--accent),var(--blue));border-color:transparent;color:var(--on-accent);box-shadow:var(--glow)}
 .btn.small{padding:6px 12px;font-size:13.5px}
 .facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:10px;font-size:14px;color:var(--muted)}
+.facts .pwa-status{color:var(--good)}
 .facts b{color:var(--fg);font-family:var(--mono);font-weight:600}
 
 /* Sections */
@@ -211,6 +220,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 48px;colo
 footer .wrap{display:grid;gap:8px}
 footer p{margin:0;max-width:80ch}
 </style>
+<link rel="stylesheet" href="mobile.css">
 
 <header>
   <div class="wrap">
@@ -230,8 +240,8 @@ footer p{margin:0;max-width:80ch}
       <div class="eyebrow">Free interactive IT certification guides</div>
       <h1>Your IT career roadmap</h1>
       <p class="lede">Not sure where to start in IT? Answer three quick questions to get a <b>recommended first certification</b>, see <b>where each cert leads</b> on the roadmap, then study with a free interactive guide: lessons, simulations, flashcards and practice exams.</p>
-      <div class="cta"><a class="btn primary" href="#start">Find my starting point</a><a class="btn" href="#map">Explore the roadmap</a></div>
-      <div class="facts"><span><b>6</b> study guides</span><span><b>4</b> career tracks</span><span>No sign-up, no install</span><span>Progress stays in your browser</span></div>
+      <div class="cta"><a class="btn primary" href="#start">Find my starting point</a><a class="btn" href="#map">Explore the roadmap</a><button type="button" class="btn" data-pwa-install hidden>Install app</button></div>
+      <div class="facts"><span><b>6</b> study guides</span><span><b>4</b> career tracks</span><span>No sign-up, works offline</span><span class="pwa-status" data-pwa-status hidden></span><span>Progress stays in your browser</span></div>
     </div>
 
     <section id="start" aria-labelledby="h-start">

@@ -18,6 +18,15 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | Microsoft Cloud and AI Security Engineer (SC-500) | https://mikeriveira.github.io/study-guides/sc500/ |
 | IT quick reference cheat sheets | https://mikeriveira.github.io/study-guides/cheatsheets/ |
 
+## Install as an app and study offline
+
+The whole site is an installable app (a PWA). On a phone, open the roadmap and choose **Add to Home Screen** (iPhone/iPad: Share, then Add to Home Screen). On Chrome or Edge, use the **Install app** button on the roadmap. The first visit saves the roadmap, every guide and the cheat sheets on the device, so they all work without internet. Progress, XP and badges already live in the browser, so they work offline too.
+
+- `manifest.webmanifest` and `icons/` describe the app.
+- `sw.js` is the service worker. It saves every page on install, serves the saved copy instantly, and refreshes it in the background; when a page changed, an "Update ready" notice offers a reload. **When you add a guide, add its folder to `PAGES` in `sw.js` and bump `VERSION`.**
+- `pwa.js` registers the service worker, shows the offline and update notices, and runs the Install button. Each guide's `src/shell.html` links it, plus the manifest and `mobile.css`.
+- `mobile.css` holds shared phone fixes (44px tap targets on touch screens, no sideways scrolling, 16px form fields so iOS doesn't zoom).
+
 ## CompTIA A+ study guide
 
 Nine modules, one for each exam domain:

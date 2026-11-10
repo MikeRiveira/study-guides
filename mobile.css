@@ -1,0 +1,51 @@
+/* Shared phone and tablet fixes for the roadmap, every guide and the cheat sheets.
+   Loaded after each page's own styles. Touch-only rules sit under (pointer:coarse), so mouse and
+   keyboard layouts on desktop are unchanged. */
+
+/* Long words, URLs and commands wrap instead of pushing the page sideways. */
+p, li, dd, td, th, figcaption, label, .lede { overflow-wrap: break-word; }
+code, kbd, samp { overflow-wrap: anywhere; }
+pre { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+img, video, canvas { max-width: 100%; height: auto; }
+
+/* Safety net: never let the whole page scroll sideways. */
+html, body { overflow-x: clip; }
+@supports not (overflow: clip) { body { overflow-x: hidden; } }
+
+@media (max-width: 640px) {
+  svg { max-width: 100%; }
+
+  /* Clear the iPhone home bar in the installed app (the notch sides are handled by .wrap). */
+  main { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+@media (pointer: coarse) {
+  /* Big enough to tap: 44px is the Apple and WCAG target size. */
+  button, .btn, .chip, [role="tab"], [role="button"], select, summary {
+    min-height: 44px;
+  }
+  .chip, [role="tab"] { display: inline-flex; align-items: center; justify-content: center; }
+  .to-roadmap, a.brand, .toc a { display: inline-flex; align-items: center; min-height: 44px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+
+  /* iOS zooms in on any text field under 16px; keep fields at 16px so it doesn't. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, textarea { font-size: max(16px, 1em); min-height: 44px; }
+
+  /* No grey flash on tap, and no 300ms delay. */
+  a, button, [role="button"], [role="tab"], .chip, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+}
+
+/* Component fixes found by the phone-width sweep (shared class names across guides). */
+@media (max-width: 480px) {
+  /* Slider rows (CVSS calculator, backup interval, input length): label on its own line. */
+  .rng-row { grid-template-columns: minmax(0, 1fr) auto !important; }
+  .rng-row > span:first-child, .rng-row > .seg-row { grid-column: 1 / -1; }
+  .viz > * { min-width: 0; }
+}
+/* CLI lab task lists: long names and emails wrap inside the task column. */
+.ios-t { grid-template-columns: 26px minmax(0, 1fr); }
+.ios-t > span:last-child { overflow-wrap: anywhere; }
+/* Answer options: long URLs, paths and commands wrap inside the option. */
+.opt { min-width: 0; overflow-wrap: anywhere; }
+.opt > * { min-width: 0; }

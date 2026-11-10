@@ -239,7 +239,7 @@ registerModule({
     ["A","C","PC-A sends to PC-C. Both are known now, so the frame goes out port 3 only."],
     ["D","B","PC-D sends to PC-B. The switch learns PC-D on port 4 and forwards to port 2. The table now has all four hosts."]];
   let n=0;
-  el.innerHTML=`<div class="viz-title">MAC learning: watch the table fill</div><div class="viz-scroll"><svg viewBox="0 0 600 220" style="min-width:440px" role="img" aria-label="Switch with four hosts"></svg></div><table class="rt ml-t"></table><div class="caption" aria-live="polite"></div><div class="viz-controls"><button class="btn primary" data-a="next">Send next frame</button><button class="btn" data-a="reset">Start over</button><span class="grow"></span></div>`;
+  el.innerHTML=`<div class="viz-title">MAC learning: watch the table fill</div><div class="viz-scroll"><svg viewBox="0 0 600 220" style="min-width:440px" role="img" aria-label="Switch with four hosts"></svg></div><div class="viz-scroll"><table class="rt ml-t"></table></div><div class="caption" aria-live="polite"></div><div class="viz-controls"><button class="btn primary" data-a="next">Send next frame</button><button class="btn" data-a="reset">Start over</button><span class="grow"></span></div>`;
   const X={1:90,2:240,3:380,4:520};
   function draw(){const learned=new Set();for(let k=0;k<n;k++)learned.add(F[k][0]);const f=n?F[n-1]:null;
     const out=f?(f[1]==="FFFF"||!learned.has(f[1])||(()=>{const before=new Set();for(let k=0;k<n-1;k++)before.add(F[k][0]);return !before.has(f[1])})()?Object.keys(H).filter(k=>k!==f[0]):[f[1]]):[];

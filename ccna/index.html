@@ -4,6 +4,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Free interactive Cisco CCNA (200-301 v2.0) study guide with a Cisco IOS command-line simulator, labs, flashcards, practice exams and a level-up system.">
 <title>CCNA Study Guide</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="theme-color" content="#060a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="IT Study">
+<script src="../pwa.js" defer></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -1061,6 +1069,7 @@ table.vl tr.g-no td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 .eyebrow .to-roadmap{color:var(--muted);text-decoration:none}.eyebrow .to-roadmap:hover{color:var(--accent);text-decoration:underline}
 
 </style>
+<link rel="stylesheet" href="../mobile.css">
 
 <header>
   <div class="wrap">
@@ -3937,7 +3946,7 @@ registerModule({
     ["A","C","PC-A sends to PC-C. Both are known now, so the frame goes out port 3 only."],
     ["D","B","PC-D sends to PC-B. The switch learns PC-D on port 4 and forwards to port 2. The table now has all four hosts."]];
   let n=0;
-  el.innerHTML=`<div class="viz-title">MAC learning: watch the table fill</div><div class="viz-scroll"><svg viewBox="0 0 600 220" style="min-width:440px" role="img" aria-label="Switch with four hosts"></svg></div><table class="rt ml-t"></table><div class="caption" aria-live="polite"></div><div class="viz-controls"><button class="btn primary" data-a="next">Send next frame</button><button class="btn" data-a="reset">Start over</button><span class="grow"></span></div>`;
+  el.innerHTML=`<div class="viz-title">MAC learning: watch the table fill</div><div class="viz-scroll"><svg viewBox="0 0 600 220" style="min-width:440px" role="img" aria-label="Switch with four hosts"></svg></div><div class="viz-scroll"><table class="rt ml-t"></table></div><div class="caption" aria-live="polite"></div><div class="viz-controls"><button class="btn primary" data-a="next">Send next frame</button><button class="btn" data-a="reset">Start over</button><span class="grow"></span></div>`;
   const X={1:90,2:240,3:380,4:520};
   function draw(){const learned=new Set();for(let k=0;k<n;k++)learned.add(F[k][0]);const f=n?F[n-1]:null;
     const out=f?(f[1]==="FFFF"||!learned.has(f[1])||(()=>{const before=new Set();for(let k=0;k<n-1;k++)before.add(F[k][0]);return !before.has(f[1])})()?Object.keys(H).filter(k=>k!==f[0]):[f[1]]):[];
