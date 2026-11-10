@@ -10,6 +10,7 @@ Free, interactive study guides that run in any browser. No sign-up, no install.
 | CompTIA Network+ (N10-009) | https://mikeriveira.github.io/study-guides/netplus/ |
 | CompTIA Security+ (SY0-701) | https://mikeriveira.github.io/study-guides/securityplus/ |
 | Microsoft Azure Fundamentals (AZ-900) | https://mikeriveira.github.io/study-guides/az900/ |
+| Microsoft Azure Administrator (AZ-104) | https://mikeriveira.github.io/study-guides/az104/ |
 | Cisco CCNA (200-301 v2.0) | https://mikeriveira.github.io/study-guides/ccna/ |
 | Cisco CCNP Enterprise core (ENCOR 350-401 v1.2) | https://mikeriveira.github.io/study-guides/ccnp/ |
 | CompTIA CySA+ (CS0-004) | https://mikeriveira.github.io/study-guides/cysaplus/ |
@@ -209,6 +210,28 @@ The page is built from `cysaplus/src/` in the same way as the other guides. Afte
 python3 cysaplus/build.py
 ```
 
+## Microsoft Azure Administrator (AZ-104) study guide
+
+Five modules, one for each exam domain:
+
+| Module | Exam weight |
+|---|---|
+| 1. Manage Azure Identities and Governance | 20–25% |
+| 2. Implement and Manage Storage | 15–20% |
+| 3. Deploy and Manage Azure Compute Resources | 20–25% |
+| 4. Implement and Manage Virtual Networking | 15–20% |
+| 5. Monitor and Maintain Azure Resources | 10–15% |
+
+The signature feature is a **simulated Azure Cloud Shell** with Bash (`az` CLI) and PowerShell (Az cmdlets) tabs over a live model of a subscription, with a resource view that updates as you type. It enforces real rules and errors: resource locks, Azure Policy denials, storage name and SKU rules, SAS permissions, VNet peering overlaps, NSG priorities, deployment slot tiers, backup vault regions and more. 16 hands-on labs use it, from onboarding a help desk team with RBAC to building a hub and spoke network, swapping deployment slots and restoring a VM from backup.
+
+It has 35 lessons with 85 interactive diagrams (such as a dynamic group rule builder, an RBAC scope explorer, a policy and lock tester, a redundancy failure simulator, a SAS builder, an autoscale simulator, a slot swap demo, a subnet planner, an NSG evaluator, a load balancer demo and a KQL playground), 26 simulations, 370 spaced-repetition flashcards, 250 quiz questions, and a timed practice exam (50 questions in 100 minutes, or a 25-question half exam) weighted by domain and scored against the 700 passing score. It uses the same level-up system as the other guides, with ranks from Azure Trainee to Azure Administrator Master and 75 badges. Progress is kept separately from the other guides.
+
+The page is built from `az104/src/` in the same way as the other guides, plus `az104/src/cli/` for the Cloud Shell simulator. After editing, run:
+
+```
+python3 az104/build.py
+```
+
 ## Disclaimer
 
-These guides are independent study aids. They are not affiliated with or endorsed by CompTIA, Microsoft or Cisco. CompTIA, A+, Network+, Security+ and CySA+ are trademarks of CompTIA, Inc. Microsoft, Azure and AZ-900 are trademarks of the Microsoft group of companies. Cisco, Cisco IOS and CCNA are trademarks of Cisco Systems, Inc.
+These guides are independent study aids. They are not affiliated with or endorsed by CompTIA, Microsoft or Cisco. CompTIA, A+, Network+, Security+ and CySA+ are trademarks of CompTIA, Inc. Microsoft, Azure, AZ-900 and AZ-104 are trademarks of the Microsoft group of companies. Cisco, Cisco IOS and CCNA are trademarks of Cisco Systems, Inc.
