@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>IT Career Roadmap</title>
-<meta name="description" content="Free IT career roadmap: find which certification to take first (A+, Network+, Security+, AZ-900 or CCNA), see where each one leads, and jump into free interactive study guides.">
+<meta name="description" content="Free IT career roadmap: find which certification to take first (A+, Network+, Security+, AZ-900, CCNA or CySA+), see where each one leads, and jump into free interactive study guides.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -231,7 +231,7 @@ footer p{margin:0;max-width:80ch}
       <h1>Your IT career roadmap</h1>
       <p class="lede">Not sure where to start in IT? Answer three quick questions to get a <b>recommended first certification</b>, see <b>where each cert leads</b> on the roadmap, then study with a free interactive guide: lessons, simulations, flashcards and practice exams.</p>
       <div class="cta"><a class="btn primary" href="#start">Find my starting point</a><a class="btn" href="#map">Explore the roadmap</a></div>
-      <div class="facts"><span><b>5</b> study guides</span><span><b>4</b> career tracks</span><span>No sign-up, no install</span><span>Progress stays in your browser</span></div>
+      <div class="facts"><span><b>6</b> study guides</span><span><b>4</b> career tracks</span><span>No sign-up, no install</span><span>Progress stays in your browser</span></div>
     </div>
 
     <section id="start" aria-labelledby="h-start">
@@ -362,9 +362,13 @@ const CERTS={
   ccnp:{name:"Cisco CCNP Enterprise",short:"CCNP",code:"Next step",track:"network",stage:3,future:true,hours:300,
     why:"Professional-level Cisco networking: advanced routing, SD-WAN and enterprise design. Usually taken with a few years of networking work behind you.",
     diff:5,time:"6–12 months",roles:["Network Engineer","Senior Network Engineer"]},
-  cysa:{name:"CompTIA CySA+",short:"CySA+",code:"Next step",track:"security",stage:3,future:true,hours:90,
+  cysa:{name:"CompTIA CySA+",short:"CySA+",code:"CS0-004",track:"security",stage:3,guide:"cysaplus/",hours:90,
     why:"Security analytics: threat hunting, vulnerability management and incident response. The usual step after Security+ for SOC analysts.",
-    diff:4,time:"2–3 months",roles:["SOC Analyst (Tier 2)","Threat Hunter","Incident Responder"]},
+    format:"One exam, up to 85 questions in 165 minutes",pass:"750, on a 100–900 scale",
+    diff:4,time:"2–3 months",cost:2,valid:"3 years, renewable with continuing education",
+    covers:["Security operations, log analysis and threat hunting","AI in security operations","Vulnerability scanning and prioritization","Incident response and forensics","Reporting and communication"],
+    roles:["SOC Analyst (Tier 2)","Threat Hunter","Incident Responder","Vulnerability Analyst"],
+    store:{key:"cysaplus-guide-v1",mods:4,master:8500,exams:[["c1","Exam",750]],ranks:[[0,"SOC Trainee"],[200,"Tier 1 Analyst"],[600,"Tier 2 Analyst"],[1300,"Threat Hunter"],[2300,"Vulnerability Analyst"],[3600,"Incident Responder"],[5500,"SOC Lead"],[8500,"CySA+ Master"]]}},
   az500:{name:"Microsoft Azure Security Engineer",short:"AZ-500",code:"Next step",track:"cloud",stage:3,future:true,hours:90,
     why:"Where cloud and security meet: securing identity, networks, data and workloads in Azure.",
     diff:4,time:"2–3 months",roles:["Cloud Security Engineer","Security Engineer"]}
